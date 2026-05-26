@@ -1,0 +1,10 @@
+name = "lean-redis"
+version = "0.1.0"
+defaultTargets = ["lean-redis"]
+
+[[lean_lib]]
+name = "LeanRedis"
+
+[[lean_exe]]
+name = "lean-redis"
+root = "Main"
