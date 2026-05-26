@@ -1,3 +1,16 @@
--- This module serves as the root of the `LeanRedis` library.
--- Import modules here that should be built as part of the library.
-import LeanRedis.Basic
+import LeanRedis.Error
+import LeanRedis.Command
+import LeanRedis.Transport.Types
+import LeanRedis.Transport.Tcp
+import LeanRedis.Connection.Policy
+import LeanRedis.Config
+import LeanRedis.Protocol.Version
+import LeanRedis.Protocol.Hello
+import LeanRedis.Protocol.Resp.Value
+import LeanRedis.Protocol.Resp.Encode
+import LeanRedis.Protocol.Resp.Parse
+import LeanRedis.Engine.State
+import LeanRedis.Engine.RequestQueue
+import LeanRedis.Engine.Session
+import LeanRedis.Connection.Manager
+import LeanRedis.Client

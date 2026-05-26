@@ -1,0 +1,33 @@
+import LeanRedis.Transport.Types
+import LeanRedis.Connection.Policy
+
+namespace LeanRedis
+
+inductive ProtocolPreference where
+  | auto
+  | resp2
+  | resp3
+  deriving BEq, Inhabited, Repr
+
+structure AuthConfig where
+  username? : Option String := none
+  password : String
+  deriving BEq, Inhabited, Repr
+
+structure TimeoutConfig where
+  connectMs? : Option UInt32 := none
+  responseMs? : Option UInt32 := none
+  deriving BEq, Inhabited, Repr
+
+structure Config where
+  endpoint : Transport.Endpoint
+  auth? : Option AuthConfig := none
+  database? : Option UInt32 := none
+  protocolPreference : ProtocolPreference := .auto
+  clientName? : Option String := none
+  timeouts : TimeoutConfig := {}
+  reconnectPolicy : Connection.ReconnectPolicy := .failImmediately
+  retryPolicy : Connection.RetryPolicy := .retryAfterReconnect
+  deriving BEq, Repr
+
+end LeanRedis
