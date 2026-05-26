@@ -1,5 +1,6 @@
 import LeanRedis.Config
 import LeanRedis.Command
+import LeanRedis.Engine.State
 import LeanRedis.Protocol.Version
 import LeanRedis.Protocol.Resp.Encode
 import LeanRedis.Protocol.Resp.Value
@@ -71,6 +72,50 @@ def decideHelloOutcome (reply : Resp.Value) : Option HelloOutcome :=
       | _ => none
   | .simpleString "OK" => some (.negotiated .resp2)
   | _ => none
+
+def protocolAfterHello (preference : ProtocolPreference) (reply : Resp.Value) : Option Version :=
+  match preference with
+  | .resp2 => some .resp2
+  | .resp3 =>
+      match decideHelloOutcome reply with
+      | some (.negotiated version) => some version
+      | some .fallbackToResp2 => none
+      | none => none
+  | .auto =>
+      match decideHelloOutcome reply with
+      | some (.negotiated version) => some version
+      | some .fallbackToResp2 => some .resp2
+      | none => none
+
+def applyHelloReply
+    (state : Engine.State)
+    (preference : ProtocolPreference)
+    (reply : Resp.Value)
+    : Option Engine.State := do
+  let version <- protocolAfterHello preference reply
+  pure { state with protocol? := some version, lastReply? := some reply }
+
+def markBootstrapReady
+    (state : Engine.State)
+    (protocol : Version)
+    (database? : Option UInt32)
+    : Engine.State :=
+  {
+    state with
+    phase := .ready
+    protocol? := some protocol
+    selectedDb? := database?
+  }
+
+def bootstrapSucceeded
+    (state : Engine.State)
+    (preference : ProtocolPreference)
+    (helloReply : Resp.Value)
+    (database? : Option UInt32)
+    : Option Engine.State := do
+  let state <- applyHelloReply state preference helloReply
+  let protocol <- state.protocol?
+  pure <| markBootstrapReady state protocol database?
 
 def encodeBootstrap (config : Config) : Array ByteArray :=
   bootstrapRequests config |>.map Resp.Encode.encodeCommand

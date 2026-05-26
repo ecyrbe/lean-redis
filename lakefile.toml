@@ -1,9 +1,13 @@
 name = "lean-redis"
 version = "0.1.0"
-defaultTargets = ["lean-redis"]
+defaultTargets = ["lean-redis", "LeanRedisTest"]
 
 [[lean_lib]]
 name = "LeanRedis"
+
+[[lean_lib]]
+name = "LeanRedisTest"
+globs = ["Test.++"]
 
 [[lean_exe]]
 name = "lean-redis"
