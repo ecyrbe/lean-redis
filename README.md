@@ -50,3 +50,4 @@ Current tests cover:
 - multi-value parsing from one buffer
 - RESP command encoding
 - bootstrap command encoding
+- transport factory wiring and byte-oriented read results

@@ -1,4 +1,8 @@
+import Std.Internal.Async
+
 namespace LeanRedis.Transport
+
+open Std.Internal.IO.Async
 
 structure Endpoint where
   host : String
@@ -12,11 +16,15 @@ inductive DisconnectReason where
   | writeFailure (message : String)
   deriving BEq, Inhabited, Repr
 
-structure Transport where
-  read : IO ByteArray
-  write : ByteArray -> IO Unit
-  close : IO Unit
+structure ReadResult where
+  bytes : ByteArray
+  disconnect? : Option DisconnectReason := none
+  deriving Inhabited
 
-abbrev Factory := Endpoint -> IO Transport
+class Transport (α : Type) where
+  connect : Endpoint -> Async α
+  recv : α -> UInt64 -> Async ReadResult
+  send : α -> ByteArray -> Async Unit
+  close : α -> Async Unit
 
 end LeanRedis.Transport

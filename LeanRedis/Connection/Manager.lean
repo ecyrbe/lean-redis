@@ -9,33 +9,33 @@ namespace LeanRedis.Connection
 open LeanRedis
 open LeanRedis.Engine
 open LeanRedis.Transport
+open Std.Internal.IO.Async
 
-structure Manager where
+
+structure Manager (τ : Type) where
   config : Config
-  transportFactory : Transport.Factory
-  transport? : Option Transport.Transport := none
+  transport? : Option τ := none
   session : Session := {}
 
-def Manager.new (config : Config) (transportFactory : Transport.Factory := Transport.Tcp.factory) : Manager :=
+def Manager.new (config : Config) : Manager τ :=
   {
     config
-    transportFactory
     transport? := none
     session := {}
   }
 
-def Manager.isConnected (manager : Manager) : Bool :=
+def Manager.isConnected (manager : Manager τ) : Bool :=
   manager.transport?.isSome && manager.session.isReady
 
-def Manager.connect (manager : Manager) : IO Manager := do
-  let transport <- manager.transportFactory manager.config.endpoint
-  let session := (manager.session.beginBootstrap).markReady <| Protocol.preferredVersion manager.config.protocolPreference
+def Manager.connect [Transport τ] (manager : Manager τ) : Async (Manager τ) := do
+  let transport <- Transport.connect manager.config.endpoint
+  let session := manager.session.beginBootstrap
   pure { manager with transport? := some transport, session }
 
-def Manager.disconnect (manager : Manager) : IO Manager := do
+def Manager.disconnect [Transport τ] (manager : Manager τ) : Async (Manager τ) := do
   match manager.transport? with
   | some transport =>
-      transport.close
+      Transport.close transport
       pure { manager with transport? := none, session := manager.session.markDisconnected }
   | none =>
       pure { manager with session := manager.session.markDisconnected }

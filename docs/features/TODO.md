@@ -16,7 +16,7 @@ Status values:
 | 00 | Master index and glossary | done | Documentation set created |
 | 01 | Architecture and module boundaries | done | Core module scaffold compiles |
 | 02 | RESP2/RESP3 protocol support | done | Value model, parser, encoder, fallback logic, and protocol tests implemented |
-| 03 | Transport abstraction and default TCP transport | planned | TLS explicitly out of scope for v1 |
+| 03 | Transport abstraction and default TCP transport | done | Byte-oriented transport, default Std.Internal TCP, and custom factory wiring verified |
 | 04 | Connection management and reconnect policies | planned | Includes pluggable policies |
 | 05 | Async public client API | in_progress | Minimal client and manager scaffold exists |
 

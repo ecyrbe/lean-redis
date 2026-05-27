@@ -1,5 +1,6 @@
 import LeanRedis.Transport.Types
 import LeanRedis.Connection.Policy
+import LeanRedis.Tools.Redacted
 
 namespace LeanRedis
 
@@ -11,7 +12,7 @@ inductive ProtocolPreference where
 
 structure AuthConfig where
   username? : Option String := none
-  password : String
+  password : Redacted
   deriving BEq, Inhabited, Repr
 
 structure TimeoutConfig where
