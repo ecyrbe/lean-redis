@@ -50,4 +50,6 @@ Current tests cover:
 - multi-value parsing from one buffer
 - RESP command encoding
 - bootstrap command encoding
-- transport factory wiring and byte-oriented read results
+- transport wiring and byte-oriented read results
+- connection bootstrap execution over scripted transports
+- reconnect-policy and disconnect-state behavior

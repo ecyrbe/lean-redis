@@ -6,6 +6,7 @@ abbrev REDACTED : String := "<REDACTED>"
 /-- A type for representing values that should be redacted in logs and error messages. -/
 structure Redacted where
   value : String
+  deriving BEq, Inhabited
 
 namespace Redacted
 

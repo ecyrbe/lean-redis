@@ -13,6 +13,9 @@ def Session.isReady (session : Session) : Bool :=
 def Session.beginBootstrap (session : Session) : Session :=
   { session with state := { session.state with phase := .bootstrapping } }
 
+def Session.markBootstrapping (session : Session) : Session :=
+  Session.beginBootstrap session
+
 def Session.markReady (session : Session) (version : Protocol.Version) : Session :=
   {
     session with
@@ -25,5 +28,8 @@ def Session.markReady (session : Session) (version : Protocol.Version) : Session
 
 def Session.markDisconnected (session : Session) : Session :=
   { session with state := { session.state with phase := .disconnected } }
+
+def Session.markFailed (session : Session) : Session :=
+  { session with state := { session.state with phase := .failed } }
 
 end LeanRedis.Engine

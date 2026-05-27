@@ -4,7 +4,7 @@ open LeanRedis
 
 namespace LeanRedisTest.Transport.Basic
 
-def testBytes : ByteArray := [1, 2, 3].toByteArray
+def testBytes : ByteArray := "%2\r\n+server\r\n+redis\r\n+proto\r\n:3\r\n".toUTF8
 
 structure FakeTransport where
   connected : Bool := false
@@ -27,7 +27,7 @@ info: true
   manager.transport?.isNone
 
 /--
-info: LeanRedis.Engine.SessionPhase.bootstrapping
+info: LeanRedis.Engine.SessionPhase.ready
 -/
 #guard_msgs in
 #eval do
