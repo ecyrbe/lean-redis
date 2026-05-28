@@ -140,18 +140,6 @@ def testSetExWritesTwoFrames : Async String := do
   let writes <- EAsync.lift <| writesOf client
   pure <| renderBytes <| writes[1]?.getD ByteArray.empty
 
-def testRealRedis : Async (Option String) := do
-  let client ← Client.newDefault {
-    endpoint := { host := "127.0.0.1", port := 6379 }
-  }
-  client.connect
-  let _ <- client.set "name" "alice" { expiry? := some (SetExpiry.relative (Expiration.ex 10)) }
-  let result <- client.get "name"
-  client.disconnect
-  return result
-
-#eval testRealRedis |>.block
-
 /--
 info: some "alice"
 -/

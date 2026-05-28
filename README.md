@@ -56,3 +56,4 @@ Current tests cover:
 - async client constructors and connection state
 - typed async `AUTH`, `PING`, and `SELECT` client methods
 - string command request encoding, option encoding, and typed async string command decoding
+- hash command request encoding, full-hash decoding, and typed async `HSCAN` handling

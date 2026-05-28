@@ -95,6 +95,61 @@ private def expectStringArray (context : String) (reply : Protocol.Resp.Value) :
   | .simpleError message => Error.raise <| .server message
   | _ => Error.raise <| .decode s!"unexpected {context} reply"
 
+private def expectPlainStringArray (context : String) (reply : Protocol.Resp.Value) : Async (Array String) := do
+  match reply with
+  | .array items =>
+      items.mapM (expectString context)
+  | .simpleError message => Error.raise <| .server message
+  | _ => Error.raise <| .decode s!"unexpected {context} reply"
+
+private def decodeStringPairsFromArray
+    (context : String)
+    (items : Array Protocol.Resp.Value)
+    : Async (Array (String × String)) := do
+  let rec loop (index : Nat) (acc : Array (String × String)) : Async (Array (String × String)) := do
+    if h : index < items.size then
+      let key <- expectString context items[index]
+      let next := index + 1
+      if hNext : next < items.size then
+        let value <- expectString context items[next]
+        loop (next + 1) (acc.push (key, value))
+      else
+        Error.raise <| .decode s!"unexpected odd-sized {context} reply"
+    else
+      pure acc
+  loop 0 #[]
+
+private def expectStringPairs (context : String) (reply : Protocol.Resp.Value) : Async (Array (String × String)) := do
+  match reply with
+  | .array items =>
+      decodeStringPairsFromArray context items
+  | .map entries =>
+      entries.mapM fun (key, value) => do
+        let key <- expectString context key
+        let value <- expectString context value
+        pure (key, value)
+  | .simpleError message => Error.raise <| .server message
+  | _ => Error.raise <| .decode s!"unexpected {context} reply"
+
+private def expectHScanResult (reply : Protocol.Resp.Value) : Async HashScanResult := do
+  match reply with
+  | .array #[cursor, entries] =>
+      let cursorText <- expectString "HSCAN" cursor
+      let some cursor := cursorText.toNat?
+        | Error.raise <| .decode "invalid HSCAN cursor"
+      let entries <- match entries with
+        | .array items => decodeStringPairsFromArray "HSCAN" items
+        | .map kvs =>
+            kvs.mapM fun (key, value) => do
+              let key <- expectString "HSCAN" key
+              let value <- expectString "HSCAN" value
+              pure (key, value)
+        | .simpleError message => Error.raise <| .server message
+        | _ => Error.raise <| .decode "unexpected HSCAN entries reply"
+      pure { cursor := cursor.toUInt64, entries }
+  | .simpleError message => Error.raise <| .server message
+  | _ => Error.raise <| .decode "unexpected HSCAN reply"
+
 private def stateAfterReply
     (manager : Connection.Manager τ)
     (request : CommandRequest)
@@ -319,6 +374,141 @@ def Client.pSetEx [Transport.Transport τ]
     : Async Unit := do
   let reply <- execute client <| CommandRequest.pSetEx key milliseconds value
   expectOk reply
+
+def Client.hGet [Transport.Transport τ]
+    (client : Client τ)
+    (key field : String)
+    : Async (Option String) := do
+  let reply <- execute client <| CommandRequest.hGet key field
+  expectOptionalString "HGET" reply
+
+def Client.hSet [Transport.Transport τ]
+    (client : Client τ)
+    (key : String)
+    (entries : Array (String × String))
+    : Async Int := do
+  let reply <- execute client <| CommandRequest.hSet key entries
+  expectInteger "HSET" reply
+
+def Client.hMGet [Transport.Transport τ]
+    (client : Client τ)
+    (key : String)
+    (fields : Array String)
+    : Async (Array (Option String)) := do
+  let reply <- execute client <| CommandRequest.hMGet key fields
+  expectStringArray "HMGET" reply
+
+def Client.hMSet [Transport.Transport τ]
+    (client : Client τ)
+    (key : String)
+    (entries : Array (String × String))
+    : Async Unit := do
+  let reply <- execute client <| CommandRequest.hMSet key entries
+  expectOk reply
+
+def Client.hGetAll [Transport.Transport τ]
+    (client : Client τ)
+    (key : String)
+    : Async (Array (String × String)) := do
+  let reply <- execute client <| CommandRequest.hGetAll key
+  expectStringPairs "HGETALL" reply
+
+def Client.hDel [Transport.Transport τ]
+    (client : Client τ)
+    (key : String)
+    (fields : Array String)
+    : Async Int := do
+  let reply <- execute client <| CommandRequest.hDel key fields
+  expectInteger "HDEL" reply
+
+def Client.hExists [Transport.Transport τ]
+    (client : Client τ)
+    (key field : String)
+    : Async Bool := do
+  let reply <- execute client <| CommandRequest.hExists key field
+  expectBoolean "HEXISTS" reply
+
+def Client.hLen [Transport.Transport τ]
+    (client : Client τ)
+    (key : String)
+    : Async Int := do
+  let reply <- execute client <| CommandRequest.hLen key
+  expectInteger "HLEN" reply
+
+def Client.hKeys [Transport.Transport τ]
+    (client : Client τ)
+    (key : String)
+    : Async (Array String) := do
+  let reply <- execute client <| CommandRequest.hKeys key
+  expectPlainStringArray "HKEYS" reply
+
+def Client.hVals [Transport.Transport τ]
+    (client : Client τ)
+    (key : String)
+    : Async (Array String) := do
+  let reply <- execute client <| CommandRequest.hVals key
+  expectPlainStringArray "HVALS" reply
+
+def Client.hStrLen [Transport.Transport τ]
+    (client : Client τ)
+    (key field : String)
+    : Async Int := do
+  let reply <- execute client <| CommandRequest.hStrLen key field
+  expectInteger "HSTRLEN" reply
+
+def Client.hIncrBy [Transport.Transport τ]
+    (client : Client τ)
+    (key field : String)
+    (amount : Int)
+    : Async Int := do
+  let reply <- execute client <| CommandRequest.hIncrBy key field amount
+  expectInteger "HINCRBY" reply
+
+def Client.hIncrByFloat [Transport.Transport τ]
+    (client : Client τ)
+    (key field amount : String)
+    : Async String := do
+  let reply <- execute client <| CommandRequest.hIncrByFloat key field amount
+  expectString "HINCRBYFLOAT" reply
+
+def Client.hSetNx [Transport.Transport τ]
+    (client : Client τ)
+    (key field value : String)
+    : Async Bool := do
+  let reply <- execute client <| CommandRequest.hSetNx key field value
+  expectBoolean "HSETNX" reply
+
+def Client.hRandField [Transport.Transport τ]
+    (client : Client τ)
+    (key : String)
+    : Async (Option String) := do
+  let reply <- execute client <| CommandRequest.hRandField key
+  expectOptionalString "HRANDFIELD" reply
+
+def Client.hRandFields [Transport.Transport τ]
+    (client : Client τ)
+    (key : String)
+    (count : Int)
+    : Async (Array String) := do
+  let reply <- execute client <| CommandRequest.hRandFields key count
+  expectPlainStringArray "HRANDFIELD" reply
+
+def Client.hRandFieldsWithValues [Transport.Transport τ]
+    (client : Client τ)
+    (key : String)
+    (count : Int)
+    : Async (Array (String × String)) := do
+  let reply <- execute client <| CommandRequest.hRandFieldsWithValues key count
+  expectStringPairs "HRANDFIELD" reply
+
+def Client.hScan [Transport.Transport τ]
+    (client : Client τ)
+    (key : String)
+    (cursor : UInt64)
+    (options : HScanOptions := {})
+    : Async HashScanResult := do
+  let reply <- execute client <| CommandRequest.hScan key cursor options
+  expectHScanResult reply
 
 def Client.currentState (client : Client τ) : Async Engine.State := do
   liftIO <| client.manager.atomically fun ref => do
