@@ -1,56 +1,264 @@
-# lean-redis
+<div align="center">
 
-Lean Redis client library focused on:
+# LeanRedis
 
-- Redis 6/7/8 compatibility
-- RESP2 and RESP3 support
-- async public API
-- IO-less internal protocol and state-machine design
-- transport abstraction for TCP first, other transports later
+[![Lean](https://img.shields.io/badge/Lean-4.30.0-0f4c81)](https://lean-lang.org/)
+[![Lake](https://img.shields.io/badge/build-Lake-blue)](https://github.com/leanprover/lake)
+[![Version](https://img.shields.io/badge/version-0.1.0-2ea44f)](./lakefile.lean)
+[![Redis](https://img.shields.io/badge/Redis-6%20%7C%207%20%7C%208-red)](https://redis.io/)
+[![License](https://img.shields.io/badge/license-MIT-green)](./LICENSE)
 
-## Build
+Async Redis client library for Lean 4.
 
-Build the library and executables:
+Typed commands, RESP2/RESP3 support, native async TCP, and a design built for explicit state transitions and scripted testability.
+
+</div>
+
+## Highlights
+
+- 🚀 Async-only public client API
+- 🔌 Native Lean TCP transport built on `Std.Internal.IO.Async`
+- 🧠 RESP2 and RESP3 parsing, encoding, and protocol fallback
+- 🧱 Clear layering: `Client` -> `Connection.Manager` -> `Connection.Runtime` -> RESP codec
+- 🧪 Transport abstraction makes mocked and scripted transports easy to use in tests
+- 🗂️ Typed command families for strings, hashes, lists, sets, and sorted sets
+- 🧪 Scripted tests for protocol, transport, connection, and typed command decoding
+- 🛠️ Modular internal layout split by command family for easier review and maintenance
+
+## Supported Features
+
+Core:
+- RESP parser and encoder
+- RESP2 / RESP3 bootstrap negotiation
+- default TCP transport
+- connection bootstrap and reconnect policy hooks
+- async client lifecycle and connection state inspection
+
+Command families:
+- 🔐 Connection: `AUTH`, `PING`, `SELECT`
+- 📝 Strings: `GET`, `SET`, `MGET`, `MSET`, `INCR`, `DECR`, `GETEX`, and related commands
+- 🧾 Hashes: `HGET`, `HSET`, `HMGET`, `HMSET`, `HGETALL`, `HSCAN`, and related commands
+- 📚 Lists: `LPUSH`, `RPUSH`, `LPOP`, `RPOP`, `LRANGE`, `LPOS`, and related commands
+- 🧩 Sets: `SADD`, `SREM`, `SMEMBERS`, `SINTER`, `SUNION`, `SSCAN`, and related commands
+- 📈 Sorted sets: `ZADD`, `ZSCORE`, `ZRANGE`, `ZINTER`, `ZUNION`, `ZSCAN`, and related commands
+
+Current non-goals for v1:
+- sync API
+- blocking Redis command variants
+- pub/sub mode
+- pipelines / transactions
+- cluster / sentinel support
+- TLS transport
+
+## Feature Snapshot
+
+| Area | Status | Notes |
+| --- | --- | --- |
+| RESP2 support | Yes | parser, encoder, bootstrap fallback |
+| RESP3 support | Yes | parser, encoder, typed reply handling |
+| Async client API | Yes | public API is async-only |
+| Native TCP transport | Yes | built on `Std.Internal.IO.Async` |
+| Mockable custom transports | Yes | transport is a typeclass over the concrete handle type |
+| Connection bootstrap | Yes | auth, HELLO negotiation, DB select |
+| Reconnect hooks | Yes | policy-driven manager behavior |
+| String commands | Yes | mainstream v1 coverage |
+| Hash commands | Yes | includes `HSCAN` |
+| List commands | Yes | non-blocking mainstream coverage |
+| Set commands | Yes | includes `SSCAN` |
+| Sorted set commands | Yes | includes `ZSCAN` |
+| Scripted transport tests | Yes | protocol, runtime, manager, client |
+| Pipelines / transactions | No | not part of v1 |
+| Pub/Sub | No | not part of v1 |
+| TLS | No | intended as future extension |
+| Cluster / Sentinel | No | not part of v1 |
+
+## Requirements
+
+- Lean `4.30.0`
+- Lake
+
+Toolchain is pinned in `lean-toolchain`.
+
+## Installation
+
+This repository is currently install-from-source.
+
+1. Clone the repository.
+2. Build the project:
 
 ```bash
 lake build
 ```
 
-## Tests
-
-Build the compile-time test target:
+3. Build the test target:
 
 ```bash
 lake build LeanRedisTest
 ```
 
-`lake build` also builds the test target by default.
-
-The current tests live under `Test/` and are mainly pure Lean checks using `#guard_msgs` with `#eval`.
-
-They are written in the style:
+## Quick Start
 
 ```lean
-/-
-info: <expected message>
--/
-#guard_msgs in
-#eval <test expression>
+import LeanRedis
+
+open LeanRedis
+open Std.Internal.IO.Async
+
+def example : Async (Option String) := do
+  let client <- Client.newDefault {
+    endpoint := { host := "127.0.0.1", port := 6379 }
+  }
+  let _ <- client.connect
+  let _ <- client.set "greeting" "hello"
+  client.get "greeting"
 ```
 
-The plan is:
+## Examples
 
-- pure protocol and state-machine tests in `Test/`
-- future runtime `IO` tests once the async client and TCP transport exist
+Basic connection commands:
 
-## Module Layout
+```lean
+def pingExample : Async (Option String) := do
+  let client <- LeanRedis.Client.newDefault {
+    endpoint := { host := "127.0.0.1", port := 6379 }
+  }
+  let _ <- client.connect
+  client.ping
+```
 
-The public import surface remains:
+String operations:
 
+```lean
+def stringExample : Async (Option String) := do
+  let client <- LeanRedis.Client.newDefault {
+    endpoint := { host := "127.0.0.1", port := 6379 }
+  }
+  let _ <- client.connect
+  let _ <- client.set "counter" "1"
+  let _ <- client.incr "counter"
+  client.get "counter"
+```
+
+Hash operations:
+
+```lean
+def hashExample : Async (Array (String × String)) := do
+  let client <- LeanRedis.Client.newDefault {
+    endpoint := { host := "127.0.0.1", port := 6379 }
+  }
+  let _ <- client.connect
+  let _ <- client.hSet "user:1" #[("name", "alice"), ("role", "admin")]
+  client.hGetAll "user:1"
+```
+
+Sorted set operations:
+
+```lean
+def sortedSetExample : Async (Array LeanRedis.SortedSetEntry) := do
+  let client <- LeanRedis.Client.newDefault {
+    endpoint := { host := "127.0.0.1", port := 6379 }
+  }
+  let _ <- client.connect
+  let _ <- client.zAdd "scores" #[
+    { score := "10", member := "alice" },
+    { score := "20", member := "bob" }
+  ]
+  client.zRangeWithScores "scores" 0 (-1)
+```
+
+Mocked transport for tests:
+
+```lean
+import LeanRedis
+
+open LeanRedis
+open Std.Internal.IO.Async
+
+structure FakeTransport where
+  replies : IO.Ref (Array ByteArray)
+
+private def popReply (ref : IO.Ref (Array ByteArray)) : IO ByteArray := do
+  let replies <- ref.get
+  match replies[0]? with
+  | some reply =>
+      ref.set (replies.extract 1 replies.size)
+      pure reply
+  | none =>
+      pure ByteArray.empty
+
+instance : Transport.Transport FakeTransport where
+  connect _ := do
+    let replies <- IO.mkRef #["+PONG\r\n".toUTF8]
+    pure { replies }
+
+  recv transport _ := do
+    let bytes <- EAsync.lift <| popReply transport.replies
+    if bytes.isEmpty then
+      pure { bytes := ByteArray.empty, disconnect? := some .closedByPeer }
+    else
+      pure { bytes }
+
+  send _ _ := pure ()
+  close _ := pure ()
+
+def pingWithMock : Async (Option String) := do
+  let client : Client FakeTransport <- Client.new {
+    endpoint := { host := "mock", port := 0 }
+  }
+  let _ <- client.connect
+  client.ping
+```
+
+This is the same mechanism used by the library test suite for scripted bootstrap, partial replies, and disconnect scenarios.
+
+## API Overview
+
+Main public entry points:
+
+- `Client.new`
+- `Client.newDefault`
+- `Client.connect`
+- `Client.disconnect`
+- `Client.isConnected`
+- `Client.currentState`
+
+Design notes:
+
+- `new*` allocates client state only
+- `connect` performs transport setup and Redis bootstrap
+- command methods are typed and async
+- command families are split into dedicated modules internally
+
+## Testing
+
+Build the test target with:
+
+```bash
+lake build LeanRedisTest
+```
+
+The test suite covers:
+
+- RESP parser basics
+- incremental parsing across fragmented inputs
+- command encoding
+- bootstrap encoding and negotiation behavior
+- scripted transport behavior
+- connection bootstrap and reconnect scenarios
+- typed client decoding for all implemented command families
+- runtime-level scripted partial-read and disconnect handling
+
+Tests live under `Test/` and are primarily Lean-native `#guard_msgs` / `#eval` checks.
+
+## Project Layout
+
+Public modules:
+
+- `LeanRedis`
 - `LeanRedis.Command`
 - `LeanRedis.Client`
 
-Internally, the command and client implementations are now split by command family for easier review:
+Internal command layout:
 
 - `LeanRedis/Command/Base.lean`
 - `LeanRedis/Command/Connection.lean`
@@ -59,6 +267,9 @@ Internally, the command and client implementations are now split by command fami
 - `LeanRedis/Command/List.lean`
 - `LeanRedis/Command/Set.lean`
 - `LeanRedis/Command/SortedSet.lean`
+
+Internal client layout:
+
 - `LeanRedis/Client/Internal.lean`
 - `LeanRedis/Client/Connection.lean`
 - `LeanRedis/Client/String.lean`
@@ -67,20 +278,19 @@ Internally, the command and client implementations are now split by command fami
 - `LeanRedis/Client/Set.lean`
 - `LeanRedis/Client/SortedSet.lean`
 
-Current tests cover:
+## Status
 
-- RESP parser basic values
-- incremental parsing across multiple chunks
-- multi-value parsing from one buffer
-- RESP command encoding
-- bootstrap command encoding
-- transport wiring and byte-oriented read results
-- connection bootstrap execution over scripted transports
-- reconnect-policy and disconnect-state behavior
-- async client constructors and connection state
-- typed async `AUTH`, `PING`, and `SELECT` client methods
-- string command request encoding, option encoding, and typed async string command decoding
-- hash command request encoding, full-hash decoding, and typed async `HSCAN` handling
-- list command request encoding, typed list reply decoding, and `LPOS` option handling
-- set command request encoding, set algebra decoding, and typed async `SSCAN` handling
-- sorted-set command request encoding, score-bearing reply decoding, and typed async `ZSCAN` handling
+Implemented and verified:
+
+- architecture and module boundaries
+- RESP protocol support
+- transport abstraction and default TCP transport
+- connection management
+- async public client API
+- connection, string, hash, list, set, and sorted-set command families
+
+Tracking details live in `docs/features/TODO.md`.
+
+## License
+
+MIT License. See [`LICENSE`](./LICENSE).
