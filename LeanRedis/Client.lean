@@ -183,6 +183,36 @@ private def expectOptionalStringOrArray
   | .simpleError message => Error.raise <| .server message
   | _ => Error.raise <| .decode s!"unexpected {context} reply"
 
+private def decodeSortedSetEntriesFromArray
+    (context : String)
+    (items : Array Protocol.Resp.Value)
+    : Async (Array SortedSetEntry) := do
+  let pairs <- decodeStringPairsFromArray context items
+  pure <| pairs.map fun (member, score) => { member, score }
+
+private def expectSortedSetEntries (context : String) (reply : Protocol.Resp.Value) : Async (Array SortedSetEntry) := do
+  match reply with
+  | .array items =>
+      decodeSortedSetEntriesFromArray context items
+  | .map entries =>
+      entries.mapM fun (member, score) => do
+        let member <- expectString context member
+        let score <- expectString context score
+        pure { member, score }
+  | .simpleError message => Error.raise <| .server message
+  | _ => Error.raise <| .decode s!"unexpected {context} reply"
+
+private def expectSortedSetScanResult (reply : Protocol.Resp.Value) : Async SortedSetScanResult := do
+  match reply with
+  | .array #[cursor, entries] =>
+      let cursorText <- expectString "ZSCAN" cursor
+      let some cursor := cursorText.toNat?
+        | Error.raise <| .decode "invalid ZSCAN cursor"
+      let entries <- expectSortedSetEntries "ZSCAN" entries
+      pure { cursor := cursor.toUInt64, entries }
+  | .simpleError message => Error.raise <| .server message
+  | _ => Error.raise <| .decode "unexpected ZSCAN reply"
+
 private def stateAfterReply
     (manager : Connection.Manager τ)
     (request : CommandRequest)
@@ -827,6 +857,270 @@ def Client.sScan [Transport.Transport τ]
     : Async SetScanResult := do
   let reply <- execute client <| CommandRequest.sScan key cursor options
   expectSetScanResult reply
+
+def Client.zAdd [Transport.Transport τ]
+    (client : Client τ)
+    (key : String)
+    (entries : Array SortedSetEntry)
+    : Async Int := do
+  let reply <- execute client <| CommandRequest.zAdd key entries
+  expectInteger "ZADD" reply
+
+def Client.zRem [Transport.Transport τ]
+    (client : Client τ)
+    (key : String)
+    (members : Array String)
+    : Async Int := do
+  let reply <- execute client <| CommandRequest.zRem key members
+  expectInteger "ZREM" reply
+
+def Client.zCard [Transport.Transport τ]
+    (client : Client τ)
+    (key : String)
+    : Async Int := do
+  let reply <- execute client <| CommandRequest.zCard key
+  expectInteger "ZCARD" reply
+
+def Client.zScore [Transport.Transport τ]
+    (client : Client τ)
+    (key member : String)
+    : Async (Option String) := do
+  let reply <- execute client <| CommandRequest.zScore key member
+  expectOptionalString "ZSCORE" reply
+
+def Client.zMScore [Transport.Transport τ]
+    (client : Client τ)
+    (key : String)
+    (members : Array String)
+    : Async (Array (Option String)) := do
+  let reply <- execute client <| CommandRequest.zMScore key members
+  expectStringArray "ZMSCORE" reply
+
+def Client.zRank [Transport.Transport τ]
+    (client : Client τ)
+    (key member : String)
+    : Async (Option Int) := do
+  let reply <- execute client <| CommandRequest.zRank key member
+  match reply with
+  | .null => pure none
+  | .number value => pure (some value)
+  | .simpleError message => Error.raise <| .server message
+  | _ => Error.raise <| .decode "unexpected ZRANK reply"
+
+def Client.zRevRank [Transport.Transport τ]
+    (client : Client τ)
+    (key member : String)
+    : Async (Option Int) := do
+  let reply <- execute client <| CommandRequest.zRevRank key member
+  match reply with
+  | .null => pure none
+  | .number value => pure (some value)
+  | .simpleError message => Error.raise <| .server message
+  | _ => Error.raise <| .decode "unexpected ZREVRANK reply"
+
+def Client.zRange [Transport.Transport τ]
+    (client : Client τ)
+    (key : String)
+    (start stop : Int)
+    : Async (Array String) := do
+  let reply <- execute client <| CommandRequest.zRange key start stop
+  expectPlainStringArray "ZRANGE" reply
+
+def Client.zRangeWithScores [Transport.Transport τ]
+    (client : Client τ)
+    (key : String)
+    (start stop : Int)
+    : Async (Array SortedSetEntry) := do
+  let reply <- execute client <| CommandRequest.zRangeWithScores key start stop
+  expectSortedSetEntries "ZRANGE" reply
+
+def Client.zRevRange [Transport.Transport τ]
+    (client : Client τ)
+    (key : String)
+    (start stop : Int)
+    : Async (Array String) := do
+  let reply <- execute client <| CommandRequest.zRevRange key start stop
+  expectPlainStringArray "ZREVRANGE" reply
+
+def Client.zRevRangeWithScores [Transport.Transport τ]
+    (client : Client τ)
+    (key : String)
+    (start stop : Int)
+    : Async (Array SortedSetEntry) := do
+  let reply <- execute client <| CommandRequest.zRevRangeWithScores key start stop
+  expectSortedSetEntries "ZREVRANGE" reply
+
+def Client.zRangeByScore [Transport.Transport τ]
+    (client : Client τ)
+    (key min max : String)
+    : Async (Array String) := do
+  let reply <- execute client <| CommandRequest.zRangeByScore key min max
+  expectPlainStringArray "ZRANGEBYSCORE" reply
+
+def Client.zRangeByScoreWithScores [Transport.Transport τ]
+    (client : Client τ)
+    (key min max : String)
+    : Async (Array SortedSetEntry) := do
+  let reply <- execute client <| CommandRequest.zRangeByScoreWithScores key min max
+  expectSortedSetEntries "ZRANGEBYSCORE" reply
+
+def Client.zRevRangeByScore [Transport.Transport τ]
+    (client : Client τ)
+    (key max min : String)
+    : Async (Array String) := do
+  let reply <- execute client <| CommandRequest.zRevRangeByScore key max min
+  expectPlainStringArray "ZREVRANGEBYSCORE" reply
+
+def Client.zRevRangeByScoreWithScores [Transport.Transport τ]
+    (client : Client τ)
+    (key max min : String)
+    : Async (Array SortedSetEntry) := do
+  let reply <- execute client <| CommandRequest.zRevRangeByScoreWithScores key max min
+  expectSortedSetEntries "ZREVRANGEBYSCORE" reply
+
+def Client.zRangeByLex [Transport.Transport τ]
+    (client : Client τ)
+    (key min max : String)
+    : Async (Array String) := do
+  let reply <- execute client <| CommandRequest.zRangeByLex key min max
+  expectPlainStringArray "ZRANGEBYLEX" reply
+
+def Client.zRevRangeByLex [Transport.Transport τ]
+    (client : Client τ)
+    (key max min : String)
+    : Async (Array String) := do
+  let reply <- execute client <| CommandRequest.zRevRangeByLex key max min
+  expectPlainStringArray "ZREVRANGEBYLEX" reply
+
+def Client.zCount [Transport.Transport τ]
+    (client : Client τ)
+    (key min max : String)
+    : Async Int := do
+  let reply <- execute client <| CommandRequest.zCount key min max
+  expectInteger "ZCOUNT" reply
+
+def Client.zLexCount [Transport.Transport τ]
+    (client : Client τ)
+    (key min max : String)
+    : Async Int := do
+  let reply <- execute client <| CommandRequest.zLexCount key min max
+  expectInteger "ZLEXCOUNT" reply
+
+def Client.zRemRangeByRank [Transport.Transport τ]
+    (client : Client τ)
+    (key : String)
+    (start stop : Int)
+    : Async Int := do
+  let reply <- execute client <| CommandRequest.zRemRangeByRank key start stop
+  expectInteger "ZREMRANGEBYRANK" reply
+
+def Client.zRemRangeByScore [Transport.Transport τ]
+    (client : Client τ)
+    (key min max : String)
+    : Async Int := do
+  let reply <- execute client <| CommandRequest.zRemRangeByScore key min max
+  expectInteger "ZREMRANGEBYSCORE" reply
+
+def Client.zRemRangeByLex [Transport.Transport τ]
+    (client : Client τ)
+    (key min max : String)
+    : Async Int := do
+  let reply <- execute client <| CommandRequest.zRemRangeByLex key min max
+  expectInteger "ZREMRANGEBYLEX" reply
+
+def Client.zIncrBy [Transport.Transport τ]
+    (client : Client τ)
+    (key increment member : String)
+    : Async String := do
+  let reply <- execute client <| CommandRequest.zIncrBy key increment member
+  expectString "ZINCRBY" reply
+
+def Client.zRandMember [Transport.Transport τ]
+    (client : Client τ)
+    (key : String)
+    : Async (Option String) := do
+  let reply <- execute client <| CommandRequest.zRandMember key
+  expectOptionalString "ZRANDMEMBER" reply
+
+def Client.zRandMembers [Transport.Transport τ]
+    (client : Client τ)
+    (key : String)
+    (count : Int)
+    : Async (Array String) := do
+  let reply <- execute client <| CommandRequest.zRandMembers key count
+  match (← expectOptionalStringOrArray "ZRANDMEMBER" reply) with
+  | .inl none => pure #[]
+  | .inl (some value) => pure #[value]
+  | .inr values => pure values
+
+def Client.zRandMembersWithScores [Transport.Transport τ]
+    (client : Client τ)
+    (key : String)
+    (count : Int)
+    : Async (Array SortedSetEntry) := do
+  let reply <- execute client <| CommandRequest.zRandMembersWithScores key count
+  expectSortedSetEntries "ZRANDMEMBER" reply
+
+def Client.zDiff [Transport.Transport τ]
+    (client : Client τ)
+    (keys : Array String)
+    : Async (Array String) := do
+  let reply <- execute client <| CommandRequest.zDiff keys
+  expectPlainStringArray "ZDIFF" reply
+
+def Client.zDiffStore [Transport.Transport τ]
+    (client : Client τ)
+    (destination : String)
+    (keys : Array String)
+    : Async Int := do
+  let reply <- execute client <| CommandRequest.zDiffStore destination keys
+  expectInteger "ZDIFFSTORE" reply
+
+def Client.zInter [Transport.Transport τ]
+    (client : Client τ)
+    (keys : Array String)
+    : Async (Array String) := do
+  let reply <- execute client <| CommandRequest.zInter keys
+  expectPlainStringArray "ZINTER" reply
+
+def Client.zInterCard [Transport.Transport τ]
+    (client : Client τ)
+    (keys : Array String)
+    : Async Int := do
+  let reply <- execute client <| CommandRequest.zInterCard keys
+  expectInteger "ZINTERCARD" reply
+
+def Client.zInterStore [Transport.Transport τ]
+    (client : Client τ)
+    (destination : String)
+    (keys : Array String)
+    : Async Int := do
+  let reply <- execute client <| CommandRequest.zInterStore destination keys
+  expectInteger "ZINTERSTORE" reply
+
+def Client.zUnion [Transport.Transport τ]
+    (client : Client τ)
+    (keys : Array String)
+    : Async (Array String) := do
+  let reply <- execute client <| CommandRequest.zUnion keys
+  expectPlainStringArray "ZUNION" reply
+
+def Client.zUnionStore [Transport.Transport τ]
+    (client : Client τ)
+    (destination : String)
+    (keys : Array String)
+    : Async Int := do
+  let reply <- execute client <| CommandRequest.zUnionStore destination keys
+  expectInteger "ZUNIONSTORE" reply
+
+def Client.zScan [Transport.Transport τ]
+    (client : Client τ)
+    (key : String)
+    (cursor : UInt64)
+    (options : ZScanOptions := {})
+    : Async SortedSetScanResult := do
+  let reply <- execute client <| CommandRequest.zScan key cursor options
+  expectSortedSetScanResult reply
 
 def Client.currentState (client : Client τ) : Async Engine.State := do
   liftIO <| client.manager.atomically fun ref => do

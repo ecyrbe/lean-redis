@@ -3,10 +3,12 @@ import Test.Command.String
 import Test.Command.Hash
 import Test.Command.List
 import Test.Command.Set
+import Test.Command.SortedSet
 import Test.Client.Basic
 import Test.Client.String
 import Test.Client.Hash
 import Test.Client.List
 import Test.Client.Set
+import Test.Client.SortedSet
 import Test.Connection.Manager
 import Test.Transport.Basic
