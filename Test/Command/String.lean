@@ -1,23 +1,10 @@
 import LeanRedis
+import Test.Utils
 
 open LeanRedis
+open LeanRedisTest.Utils
 
 namespace LeanRedisTest.Command.String
-
-def escapeText (text : String) : String :=
-  text.toList.foldl (fun acc ch =>
-    acc ++
-      match ch with
-      | '\r' => "\\r"
-      | '\n' => "\\n"
-      | '\\' => "\\\\"
-      | '"' => "\\\""
-      | other => String.singleton other) ""
-
-def renderBytes (bytes : ByteArray) : String :=
-  match String.fromUTF8? bytes with
-  | some text => "\"" ++ escapeText text ++ "\""
-  | none => s!"<bytes:{bytes.size}>"
 
 private def renderCommand (request : CommandRequest) : String :=
   renderBytes <| Protocol.Resp.Encode.encodeCommand request

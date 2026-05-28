@@ -1,7 +1,9 @@
 import LeanRedis
 import Std.Sync.Mutex
+import Test.Utils
 
 open LeanRedis
+open LeanRedisTest.Utils
 open Std.Internal.IO.Async
 
 namespace LeanRedisTest.Client.Basic
@@ -24,21 +26,6 @@ private def writesOf (client : Client FakeTransport) : IO (Array ByteArray) := d
     match manager.runtime? with
     | some runtime => runtime.transport.writes.get
     | none => pure #[]
-
-private def escapeText (text : String) : String :=
-  text.toList.foldl (fun acc ch =>
-    acc ++
-      match ch with
-      | '\r' => "\\r"
-      | '\n' => "\\n"
-      | '\\' => "\\\\"
-      | '"' => "\\\""
-      | other => String.singleton other) ""
-
-private def renderBytes (bytes : ByteArray) : String :=
-  match String.fromUTF8? bytes with
-  | some text => "\"" ++ escapeText text ++ "\""
-  | none => s!"<bytes:{bytes.size}>"
 
 instance : Transport.Transport FakeTransport where
   connect endpoint := do
