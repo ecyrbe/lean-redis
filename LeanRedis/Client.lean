@@ -102,6 +102,13 @@ private def expectPlainStringArray (context : String) (reply : Protocol.Resp.Val
   | .simpleError message => Error.raise <| .server message
   | _ => Error.raise <| .decode s!"unexpected {context} reply"
 
+private def expectIntegerArray (context : String) (reply : Protocol.Resp.Value) : Async (Array Int) := do
+  match reply with
+  | .array items =>
+      items.mapM (expectInteger context)
+  | .simpleError message => Error.raise <| .server message
+  | _ => Error.raise <| .decode s!"unexpected {context} reply"
+
 private def decodeStringPairsFromArray
     (context : String)
     (items : Array Protocol.Resp.Value)
@@ -509,6 +516,141 @@ def Client.hScan [Transport.Transport τ]
     : Async HashScanResult := do
   let reply <- execute client <| CommandRequest.hScan key cursor options
   expectHScanResult reply
+
+def Client.lPush [Transport.Transport τ]
+    (client : Client τ)
+    (key : String)
+    (values : Array String)
+    : Async Int := do
+  let reply <- execute client <| CommandRequest.lPush key values
+  expectInteger "LPUSH" reply
+
+def Client.rPush [Transport.Transport τ]
+    (client : Client τ)
+    (key : String)
+    (values : Array String)
+    : Async Int := do
+  let reply <- execute client <| CommandRequest.rPush key values
+  expectInteger "RPUSH" reply
+
+def Client.lPushX [Transport.Transport τ]
+    (client : Client τ)
+    (key value : String)
+    : Async Int := do
+  let reply <- execute client <| CommandRequest.lPushX key value
+  expectInteger "LPUSHX" reply
+
+def Client.rPushX [Transport.Transport τ]
+    (client : Client τ)
+    (key value : String)
+    : Async Int := do
+  let reply <- execute client <| CommandRequest.rPushX key value
+  expectInteger "RPUSHX" reply
+
+def Client.lPop [Transport.Transport τ]
+    (client : Client τ)
+    (key : String)
+    : Async (Option String) := do
+  let reply <- execute client <| CommandRequest.lPop key
+  expectOptionalString "LPOP" reply
+
+def Client.rPop [Transport.Transport τ]
+    (client : Client τ)
+    (key : String)
+    : Async (Option String) := do
+  let reply <- execute client <| CommandRequest.rPop key
+  expectOptionalString "RPOP" reply
+
+def Client.lLen [Transport.Transport τ]
+    (client : Client τ)
+    (key : String)
+    : Async Int := do
+  let reply <- execute client <| CommandRequest.lLen key
+  expectInteger "LLEN" reply
+
+def Client.lIndex [Transport.Transport τ]
+    (client : Client τ)
+    (key : String)
+    (index : Int)
+    : Async (Option String) := do
+  let reply <- execute client <| CommandRequest.lIndex key index
+  expectOptionalString "LINDEX" reply
+
+def Client.lRange [Transport.Transport τ]
+    (client : Client τ)
+    (key : String)
+    (start stop : Int)
+    : Async (Array String) := do
+  let reply <- execute client <| CommandRequest.lRange key start stop
+  expectPlainStringArray "LRANGE" reply
+
+def Client.lSet [Transport.Transport τ]
+    (client : Client τ)
+    (key : String)
+    (index : Int)
+    (value : String)
+    : Async Unit := do
+  let reply <- execute client <| CommandRequest.lSet key index value
+  expectOk reply
+
+def Client.lTrim [Transport.Transport τ]
+    (client : Client τ)
+    (key : String)
+    (start stop : Int)
+    : Async Unit := do
+  let reply <- execute client <| CommandRequest.lTrim key start stop
+  expectOk reply
+
+def Client.lRem [Transport.Transport τ]
+    (client : Client τ)
+    (key : String)
+    (count : Int)
+    (value : String)
+    : Async Int := do
+  let reply <- execute client <| CommandRequest.lRem key count value
+  expectInteger "LREM" reply
+
+def Client.lInsert [Transport.Transport τ]
+    (client : Client τ)
+    (key : String)
+    (position : LInsertPosition)
+    (pivot value : String)
+    : Async Int := do
+  let reply <- execute client <| CommandRequest.lInsert key position pivot value
+  expectInteger "LINSERT" reply
+
+def Client.lMove [Transport.Transport τ]
+    (client : Client τ)
+    (source destination : String)
+    (fromWhere toWhere : LMoveWhere)
+    : Async (Option String) := do
+  let reply <- execute client <| CommandRequest.lMove source destination fromWhere toWhere
+  expectOptionalString "LMOVE" reply
+
+def Client.lPos [Transport.Transport τ]
+    (client : Client τ)
+    (key element : String)
+    (options : LPosOptions := {})
+    : Async (Option Int) := do
+  if options.count?.isSome then
+    Error.raise <| .decode "LPOS with COUNT returns multiple positions; use lPosMany"
+  let reply <- execute client <| CommandRequest.lPos key element options
+  match reply with
+  | .null => pure none
+  | .number value => pure (some value)
+  | .simpleError message => Error.raise <| .server message
+  | _ => Error.raise <| .decode "unexpected LPOS reply"
+
+def Client.lPosMany [Transport.Transport τ]
+    (client : Client τ)
+    (key element : String)
+    (options : LPosOptions)
+    : Async (Array Int) := do
+  match options.count? with
+  | none => Error.raise <| .decode "lPosMany requires COUNT"
+  | some _ =>
+      let reply <- execute client <| CommandRequest.lPos key element options
+      expectIntegerArray "LPOS" reply
 
 def Client.currentState (client : Client τ) : Async Engine.State := do
   liftIO <| client.manager.atomically fun ref => do

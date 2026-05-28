@@ -1,8 +1,10 @@
 import Test.Protocol.Resp
 import Test.Command.String
 import Test.Command.Hash
+import Test.Command.List
 import Test.Client.Basic
 import Test.Client.String
 import Test.Client.Hash
+import Test.Client.List
 import Test.Connection.Manager
 import Test.Transport.Basic

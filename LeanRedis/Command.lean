@@ -39,6 +39,22 @@ structure HashScanResult where
   entries : Array (String × String)
   deriving BEq, Inhabited, Repr
 
+inductive LInsertPosition where
+  | before
+  | after
+  deriving BEq, Inhabited, Repr
+
+inductive LMoveWhere where
+  | left
+  | right
+  deriving BEq, Inhabited, Repr
+
+structure LPosOptions where
+  rank? : Option Int := none
+  count? : Option UInt64 := none
+  maxLen? : Option UInt64 := none
+  deriving BEq, Inhabited, Repr
+
 structure CommandRequest where
   name : String
   args : Array ByteArray := #[]
@@ -76,6 +92,27 @@ private def hScanArgs (options : HScanOptions) : Array ByteArray :=
     | none => #[])
   ++ (match options.count? with
     | some count => utf8Args #["COUNT", toString count]
+    | none => #[])
+
+private def lInsertPositionArg (position : LInsertPosition) : String :=
+  match position with
+  | .before => "BEFORE"
+  | .after => "AFTER"
+
+private def lMoveWhereArg (where_ : LMoveWhere) : String :=
+  match where_ with
+  | .left => "LEFT"
+  | .right => "RIGHT"
+
+private def lPosArgs (options : LPosOptions) : Array ByteArray :=
+  (match options.rank? with
+    | some rank => utf8Args #["RANK", toString rank]
+    | none => #[])
+  ++ (match options.count? with
+    | some count => utf8Args #["COUNT", toString count]
+    | none => #[])
+  ++ (match options.maxLen? with
+    | some maxLen => utf8Args #["MAXLEN", toString maxLen]
     | none => #[])
 
 def CommandRequest.ping (message? : Option String := none) : CommandRequest :=
@@ -382,6 +419,114 @@ def CommandRequest.hScan (key : String) (cursor : UInt64) (options : HScanOption
   {
     name := "HSCAN"
     args := utf8Args #[key, toString cursor] ++ hScanArgs options
+    allowRetry := true
+  }
+
+def CommandRequest.lPush (key : String) (values : Array String) : CommandRequest :=
+  {
+    name := "LPUSH"
+    args := utf8Args #[key] ++ utf8Args values
+    allowRetry := true
+  }
+
+def CommandRequest.rPush (key : String) (values : Array String) : CommandRequest :=
+  {
+    name := "RPUSH"
+    args := utf8Args #[key] ++ utf8Args values
+    allowRetry := true
+  }
+
+def CommandRequest.lPushX (key : String) (value : String) : CommandRequest :=
+  {
+    name := "LPUSHX"
+    args := utf8Args #[key, value]
+    allowRetry := true
+  }
+
+def CommandRequest.rPushX (key : String) (value : String) : CommandRequest :=
+  {
+    name := "RPUSHX"
+    args := utf8Args #[key, value]
+    allowRetry := true
+  }
+
+def CommandRequest.lPop (key : String) : CommandRequest :=
+  {
+    name := "LPOP"
+    args := utf8Args #[key]
+    allowRetry := true
+  }
+
+def CommandRequest.rPop (key : String) : CommandRequest :=
+  {
+    name := "RPOP"
+    args := utf8Args #[key]
+    allowRetry := true
+  }
+
+def CommandRequest.lLen (key : String) : CommandRequest :=
+  {
+    name := "LLEN"
+    args := utf8Args #[key]
+    allowRetry := true
+  }
+
+def CommandRequest.lIndex (key : String) (index : Int) : CommandRequest :=
+  {
+    name := "LINDEX"
+    args := utf8Args #[key, toString index]
+    allowRetry := true
+  }
+
+def CommandRequest.lRange (key : String) (start stop : Int) : CommandRequest :=
+  {
+    name := "LRANGE"
+    args := utf8Args #[key, toString start, toString stop]
+    allowRetry := true
+  }
+
+def CommandRequest.lSet (key : String) (index : Int) (value : String) : CommandRequest :=
+  {
+    name := "LSET"
+    args := utf8Args #[key, toString index, value]
+    allowRetry := true
+  }
+
+def CommandRequest.lTrim (key : String) (start stop : Int) : CommandRequest :=
+  {
+    name := "LTRIM"
+    args := utf8Args #[key, toString start, toString stop]
+    allowRetry := true
+  }
+
+def CommandRequest.lRem (key : String) (count : Int) (value : String) : CommandRequest :=
+  {
+    name := "LREM"
+    args := utf8Args #[key, toString count, value]
+    allowRetry := true
+  }
+
+def CommandRequest.lInsert (key : String) (position : LInsertPosition) (pivot value : String) : CommandRequest :=
+  {
+    name := "LINSERT"
+    args := utf8Args #[key, lInsertPositionArg position, pivot, value]
+    allowRetry := true
+  }
+
+def CommandRequest.lMove
+    (source destination : String)
+    (fromWhere toWhere : LMoveWhere)
+    : CommandRequest :=
+  {
+    name := "LMOVE"
+    args := utf8Args #[source, destination, lMoveWhereArg fromWhere, lMoveWhereArg toWhere]
+    allowRetry := true
+  }
+
+def CommandRequest.lPos (key element : String) (options : LPosOptions := {}) : CommandRequest :=
+  {
+    name := "LPOS"
+    args := utf8Args #[key, element] ++ lPosArgs options
     allowRetry := true
   }
 
