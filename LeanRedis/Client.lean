@@ -120,26 +120,18 @@ private def execute [Transport.Transport τ]
       let (reply, runtime) <- Connection.Runtime.execute runtime request
       pure (reply, runtime, stateAfterReply manager request reply)
 
-def Client.connectWith [Transport.Transport τ] (config : Config) : Async (Client τ) := do
+def Client.new [Transport.Transport τ] (config : Config) : Async (Client τ) := do
   let manager <- liftIO <| Std.Mutex.new (Connection.Manager.new config : Connection.Manager τ)
   pure { manager }
 
-def Client.connect (config : Config) : Async (Client Transport.TCP) :=
-  Client.connectWith config
+def Client.newDefault (config : Config) : Async (Client Transport.TCP) :=
+  Client.new config
 
-def Client.connectNow (client : Client τ) [Transport.Transport τ] : Async (Client τ) := do
+def Client.connect (client : Client τ) [Transport.Transport τ] : Async Unit := do
   let _ <- withManager client fun manager => do
     let manager <- manager.connect
     pure ((), manager)
-  pure client
-
-def Client.connectNowWith [Transport.Transport τ] (config : Config) : Async (Client τ) := do
-  let client <- Client.connectWith config
-  Client.connectNow client
-
-def Client.connectNowDefault (config : Config) : Async (Client Transport.TCP) := do
-  let client <- Client.connect config
-  Client.connectNow client
+  pure ()
 
 def Client.disconnect [Transport.Transport τ] (client : Client τ) : Async Unit := do
   let _ <- withManager client fun manager => do

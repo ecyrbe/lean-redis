@@ -32,16 +32,16 @@ def testManagerConnectsToReady : Async LeanRedis.Engine.SessionPhase := do
   pure manager.session.state.phase
 
 def testDefaultClientStartsDisconnected : Async Bool := do
-  let client <- (Client.connect {
+  let client <- (Client.newDefault {
     endpoint := { host := "127.0.0.1", port := 6379 }
   } : Async (Client Transport.TCP))
   Client.isConnected client
 
 def testCustomClientConnectNow : Async Bool := do
-  let client <- (Client.connectWith {
+  let client <- (Client.new {
     endpoint := { host := "127.0.0.1", port := 6379 }
   } : Async (Client FakeTransport))
-  let _ <- Client.connectNow client
+  let _ <- Client.connect client
   Client.isConnected client
 
 def testClosedByPeerReadResult : Option Transport.DisconnectReason :=

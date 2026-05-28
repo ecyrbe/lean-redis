@@ -88,7 +88,8 @@ This is the main user-facing deliverable of the library, so clarity matters more
 
 ```lean
 -- Illustrative shape only.
-let client <- LeanRedis.Client.connect cfg
+let client <- LeanRedis.Client.newDefault cfg
+let client <- LeanRedis.Client.connect client
 let _ <- client.set "key" "value"
 let value <- client.get "key"
 ```

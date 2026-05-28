@@ -82,66 +82,88 @@ instance : Transport.Transport FakeTransport where
   close _ := pure ()
 
 def testGet : Async (Option String) := do
-  let client : Client FakeTransport <- Client.connectNowWith {
+  let client : Client FakeTransport <- Client.new {
     endpoint := { host := "string-get", port := 6379 }
   }
-  Client.get client "name"
+  client.connect
+  client.get "name"
 
 def testSetReturnsStored : Async Bool := do
-  let client : Client FakeTransport <- Client.connectNowWith {
+  let client : Client FakeTransport <- Client.new {
     endpoint := { host := "string-set-ok", port := 6379 }
   }
-  Client.set client "name" "alice"
+  client.connect
+  client.set "name" "alice"
 
 def testSetNxStyleMissReturnsFalse : Async Bool := do
-  let client : Client FakeTransport <- Client.connectNowWith {
+  let client : Client FakeTransport <- Client.new {
     endpoint := { host := "string-set-nx-miss", port := 6379 }
   }
-  Client.set client "name" "alice" { condition? := some .nx }
+  client.connect
+  client.set "name" "alice" { condition? := some .nx }
 
 def testMGet : Async (Array (Option String)) := do
-  let client : Client FakeTransport <- Client.connectNowWith {
+  let client : Client FakeTransport <- Client.new {
     endpoint := { host := "string-mget", port := 6379 }
   }
-  Client.mGet client #["a", "b", "c"]
+  client.connect
+  client.mGet #["a", "b", "c"]
 
 def testMSetNx : Async Bool := do
-  let client : Client FakeTransport <- Client.connectNowWith {
+  let client : Client FakeTransport <- Client.new {
     endpoint := { host := "string-bool", port := 6379 }
   }
-  Client.mSetNx client #[("a", "1")]
+  client.connect
+  client.mSetNx #[("a", "1")]
 
 def testGetDelNull : Async (Option String) := do
-  let client : Client FakeTransport <- Client.connectNowWith {
+  let client : Client FakeTransport <- Client.new {
     endpoint := { host := "string-getdel-null", port := 6379 }
   }
-  Client.getDel client "name"
+  client.connect
+  client.getDel "name"
 
 def testGetRange : Async String := do
-  let client : Client FakeTransport <- Client.connectNowWith {
+  let client : Client FakeTransport <- Client.new {
     endpoint := { host := "string-getrange", port := 6379 }
   }
-  Client.getRange client "name" 0 2
+  client.connect
+  client.getRange "name" 0 2
 
 def testAppend : Async Int := do
-  let client : Client FakeTransport <- Client.connectNowWith {
+  let client : Client FakeTransport <- Client.new {
     endpoint := { host := "string-int", port := 6379 }
   }
-  Client.append client "name" "ice"
+  client.connect
+  client.append "name" "ice"
 
 def testIncrByFloat : Async String := do
-  let client : Client FakeTransport <- Client.connectNowWith {
+  let client : Client FakeTransport <- Client.new {
     endpoint := { host := "string-float", port := 6379 }
   }
-  Client.incrByFloat client "counter" "1.5"
+  client.connect
+  client.incrByFloat "counter" "1.5"
 
 def testSetExWritesTwoFrames : Async String := do
-  let client : Client FakeTransport <- Client.connectNowWith {
+  let client : Client FakeTransport <- Client.new {
     endpoint := { host := "string-setex", port := 6379 }
   }
-  let _ <- Client.setEx client "name" 10 "alice"
+  client.connect
+  let _ <- client.setEx "name" 10 "alice"
   let writes <- EAsync.lift <| writesOf client
   pure <| renderBytes <| writes[1]?.getD ByteArray.empty
+
+def testRealRedis : Async (Option String) := do
+  let client ← Client.newDefault {
+    endpoint := { host := "127.0.0.1", port := 6379 }
+  }
+  client.connect
+  let _ <- client.set "name" "alice" { expiry? := some (SetExpiry.relative (Expiration.ex 10)) }
+  let result <- client.get "name"
+  client.disconnect
+  return result
+
+#eval testRealRedis |>.block
 
 /--
 info: some "alice"
@@ -202,5 +224,7 @@ info: "\"*4\\r\\n$5\\r\\nSETEX\\r\\n$4\\r\\nname\\r\\n$2\\r\\n10\\r\\n$5\\r\\nal
 -/
 #guard_msgs in
 #eval testSetExWritesTwoFrames |>.block
+
+
 
 end LeanRedisTest.Client.String

@@ -67,9 +67,10 @@ instance : Transport.Transport FakeTransport where
   close _ := pure ()
 
 def testIsConnected  : Async Bool := do
-  let client: Client FakeTransport ← Client.connectNowWith {
+  let client: Client FakeTransport ← Client.new {
     endpoint := { host := "client-ping", port := 6379 }
   }
+  Client.connect client
   client.isConnected
 
 /--
@@ -79,9 +80,10 @@ info: true
 #eval testIsConnected |>.block
 
 def testEmptyPing : Async (Option String) := do
-  let client: Client FakeTransport ← Client.connectNowWith {
+  let client: Client FakeTransport ← Client.new {
     endpoint := { host := "client-ping", port := 6379 }
   }
+  client.connect
   client.ping
 
 /--
@@ -91,9 +93,10 @@ info: none
 #eval testEmptyPing |>.block
 
 def testMessagePing : Async (Option String) := do
-  let client: Client FakeTransport ← Client.connectNowWith {
+  let client: Client FakeTransport ← Client.new {
     endpoint := { host := "client-message", port := 6379 }
   }
+  client.connect
   client.ping (some "hello")
 
 /--
@@ -103,9 +106,10 @@ info: some "hello"
 #eval testMessagePing |>.block
 
 def testPasswordAuth : Async Nat := do
-  let client : Client FakeTransport <- Client.connectNowWith {
+  let client : Client FakeTransport <- Client.new {
     endpoint := { host := "client-auth", port := 6379 }
   }
+  client.connect
   client.auth { password := "secret" }
   let writes <- EAsync.lift <| writesOf client
   pure writes.size
@@ -117,26 +121,29 @@ info: 2
 #eval testPasswordAuth |>.block
 
 def testUsernameAuth : Async String := do
-  let client : Client FakeTransport <- Client.connectNowWith {
+  let client : Client FakeTransport <- Client.new {
     endpoint := { host := "client-auth-user", port := 6379 }
   }
+  client.connect
   client.auth { username? := some "default", password := "secret" }
   let writes <- EAsync.lift <| writesOf client
   pure <| renderBytes <| writes[1]?.getD ByteArray.empty
 
 def testSelectUpdatesClientState : Async String := do
-  let client : Client FakeTransport <- Client.connectNowWith {
+  let client : Client FakeTransport <- Client.new {
     endpoint := { host := "client-select", port := 6379 }
   }
+  client.connect
   let _ <- Client.select client 3
   let state <- Client.currentState client
   pure s!"{state.protocol?.isSome.toNat}|{state.selectedDb?.getD 0}"
 
 def testPingWritesTwoFrames : Async Nat := do
-  let client : Client FakeTransport <- Client.connectNowWith {
+  let client : Client FakeTransport <- Client.new {
     endpoint := { host := "client-ping", port := 6379 }
   }
-  let _ <- Client.ping client
+  client.connect
+  let _ <- client.ping
   let writes <- EAsync.lift <| writesOf client
   pure writes.size
 
