@@ -55,6 +55,16 @@ structure LPosOptions where
   maxLen? : Option UInt64 := none
   deriving BEq, Inhabited, Repr
 
+structure SScanOptions where
+  match? : Option String := none
+  count? : Option UInt64 := none
+  deriving BEq, Inhabited, Repr
+
+structure SetScanResult where
+  cursor : UInt64
+  members : Array String
+  deriving BEq, Inhabited, Repr
+
 structure CommandRequest where
   name : String
   args : Array ByteArray := #[]
@@ -113,6 +123,14 @@ private def lPosArgs (options : LPosOptions) : Array ByteArray :=
     | none => #[])
   ++ (match options.maxLen? with
     | some maxLen => utf8Args #["MAXLEN", toString maxLen]
+    | none => #[])
+
+private def sScanArgs (options : SScanOptions) : Array ByteArray :=
+  (match options.match? with
+    | some pattern => utf8Args #["MATCH", pattern]
+    | none => #[])
+  ++ (match options.count? with
+    | some count => utf8Args #["COUNT", toString count]
     | none => #[])
 
 def CommandRequest.ping (message? : Option String := none) : CommandRequest :=
@@ -527,6 +545,139 @@ def CommandRequest.lPos (key element : String) (options : LPosOptions := {}) : C
   {
     name := "LPOS"
     args := utf8Args #[key, element] ++ lPosArgs options
+    allowRetry := true
+  }
+
+def CommandRequest.sAdd (key : String) (members : Array String) : CommandRequest :=
+  {
+    name := "SADD"
+    args := utf8Args #[key] ++ utf8Args members
+    allowRetry := true
+  }
+
+def CommandRequest.sRem (key : String) (members : Array String) : CommandRequest :=
+  {
+    name := "SREM"
+    args := utf8Args #[key] ++ utf8Args members
+    allowRetry := true
+  }
+
+def CommandRequest.sCard (key : String) : CommandRequest :=
+  {
+    name := "SCARD"
+    args := utf8Args #[key]
+    allowRetry := true
+  }
+
+def CommandRequest.sIsMember (key member : String) : CommandRequest :=
+  {
+    name := "SISMEMBER"
+    args := utf8Args #[key, member]
+    allowRetry := true
+  }
+
+def CommandRequest.sMIsMember (key : String) (members : Array String) : CommandRequest :=
+  {
+    name := "SMISMEMBER"
+    args := utf8Args #[key] ++ utf8Args members
+    allowRetry := true
+  }
+
+def CommandRequest.sMembers (key : String) : CommandRequest :=
+  {
+    name := "SMEMBERS"
+    args := utf8Args #[key]
+    allowRetry := true
+  }
+
+def CommandRequest.sPop (key : String) : CommandRequest :=
+  {
+    name := "SPOP"
+    args := utf8Args #[key]
+    allowRetry := true
+  }
+
+def CommandRequest.sPopCount (key : String) (count : UInt64) : CommandRequest :=
+  {
+    name := "SPOP"
+    args := utf8Args #[key, toString count]
+    allowRetry := true
+  }
+
+def CommandRequest.sRandMember (key : String) : CommandRequest :=
+  {
+    name := "SRANDMEMBER"
+    args := utf8Args #[key]
+    allowRetry := true
+  }
+
+def CommandRequest.sRandMembers (key : String) (count : Int) : CommandRequest :=
+  {
+    name := "SRANDMEMBER"
+    args := utf8Args #[key, toString count]
+    allowRetry := true
+  }
+
+def CommandRequest.sMove (source destination member : String) : CommandRequest :=
+  {
+    name := "SMOVE"
+    args := utf8Args #[source, destination, member]
+    allowRetry := true
+  }
+
+def CommandRequest.sDiff (keys : Array String) : CommandRequest :=
+  {
+    name := "SDIFF"
+    args := utf8Args keys
+    allowRetry := true
+  }
+
+def CommandRequest.sDiffStore (destination : String) (keys : Array String) : CommandRequest :=
+  {
+    name := "SDIFFSTORE"
+    args := utf8Args #[destination] ++ utf8Args keys
+    allowRetry := true
+  }
+
+def CommandRequest.sInter (keys : Array String) : CommandRequest :=
+  {
+    name := "SINTER"
+    args := utf8Args keys
+    allowRetry := true
+  }
+
+def CommandRequest.sInterCard (keys : Array String) : CommandRequest :=
+  {
+    name := "SINTERCARD"
+    args := utf8Args #[toString keys.size] ++ utf8Args keys
+    allowRetry := true
+  }
+
+def CommandRequest.sInterStore (destination : String) (keys : Array String) : CommandRequest :=
+  {
+    name := "SINTERSTORE"
+    args := utf8Args #[destination] ++ utf8Args keys
+    allowRetry := true
+  }
+
+def CommandRequest.sUnion (keys : Array String) : CommandRequest :=
+  {
+    name := "SUNION"
+    args := utf8Args keys
+    allowRetry := true
+  }
+
+def CommandRequest.sUnionStore (destination : String) (keys : Array String) : CommandRequest :=
+  {
+    name := "SUNIONSTORE"
+    args := utf8Args #[destination] ++ utf8Args keys
+    allowRetry := true
+  }
+
+def CommandRequest.sScan (key : String) (cursor : UInt64) (options : SScanOptions := {}) : CommandRequest :=
+  {
+    name := "SSCAN"
+    args := utf8Args #[key, toString cursor] ++ sScanArgs options
     allowRetry := true
   }
 

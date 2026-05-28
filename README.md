@@ -58,3 +58,4 @@ Current tests cover:
 - string command request encoding, option encoding, and typed async string command decoding
 - hash command request encoding, full-hash decoding, and typed async `HSCAN` handling
 - list command request encoding, typed list reply decoding, and `LPOS` option handling
+- set command request encoding, set algebra decoding, and typed async `SSCAN` handling

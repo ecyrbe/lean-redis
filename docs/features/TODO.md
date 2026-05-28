@@ -28,7 +28,7 @@ Status values:
 | 07 | String commands | done | Mainstream string command builders plus typed async GET/SET/MGET/MSET/MSETNX/GETDEL/GETEX/GETRANGE/GETSET/SETRANGE/STRLEN/APPEND/INCR/INCRBY/INCRBYFLOAT/DECR/DECRBY/SETNX/SETEX/PSETEX verified |
 | 08 | Hash commands | done | Mainstream hash command builders plus typed async HGET/HSET/HMGET/HMSET/HGETALL/HDEL/HEXISTS/HLEN/HKEYS/HVALS/HSTRLEN/HINCRBY/HINCRBYFLOAT/HSETNX/HRANDFIELD/HSCAN verified |
 | 09 | List commands | done | Mainstream list command builders plus typed async LPUSH/RPUSH/LPUSHX/RPUSHX/LPOP/RPOP/LLEN/LINDEX/LRANGE/LSET/LTRIM/LREM/LINSERT/LMOVE/LPOS verified; blocking variants remain out of scope |
-| 10 | Set commands | planned | Includes SSCAN |
+| 10 | Set commands | done | Mainstream set command builders plus typed async SADD/SREM/SCARD/SISMEMBER/SMISMEMBER/SMEMBERS/SPOP/SRANDMEMBER/SMOVE/SDIFF/SDIFFSTORE/SINTER/SINTERCARD/SINTERSTORE/SUNION/SUNIONSTORE/SSCAN verified |
 | 11 | Sorted set commands | planned | Includes ZSCAN |
 
 ## Quality

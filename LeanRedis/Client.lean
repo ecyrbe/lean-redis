@@ -157,6 +157,32 @@ private def expectHScanResult (reply : Protocol.Resp.Value) : Async HashScanResu
   | .simpleError message => Error.raise <| .server message
   | _ => Error.raise <| .decode "unexpected HSCAN reply"
 
+private def expectSetScanResult (reply : Protocol.Resp.Value) : Async SetScanResult := do
+  match reply with
+  | .array #[cursor, members] =>
+      let cursorText <- expectString "SSCAN" cursor
+      let some cursor := cursorText.toNat?
+        | Error.raise <| .decode "invalid SSCAN cursor"
+      let members <- expectPlainStringArray "SSCAN" members
+      pure { cursor := cursor.toUInt64, members }
+  | .simpleError message => Error.raise <| .server message
+  | _ => Error.raise <| .decode "unexpected SSCAN reply"
+
+private def expectOptionalStringOrArray
+    (context : String)
+    (reply : Protocol.Resp.Value)
+    : Async (Option String ⊕ Array String) := do
+  match reply with
+  | .null => pure <| .inl none
+  | .blobString _ | .simpleString _ =>
+      let value <- expectOptionalString context reply
+      pure <| .inl value
+  | .array _ =>
+      let values <- expectPlainStringArray context reply
+      pure <| .inr values
+  | .simpleError message => Error.raise <| .server message
+  | _ => Error.raise <| .decode s!"unexpected {context} reply"
+
 private def stateAfterReply
     (manager : Connection.Manager τ)
     (request : CommandRequest)
@@ -651,6 +677,156 @@ def Client.lPosMany [Transport.Transport τ]
   | some _ =>
       let reply <- execute client <| CommandRequest.lPos key element options
       expectIntegerArray "LPOS" reply
+
+def Client.sAdd [Transport.Transport τ]
+    (client : Client τ)
+    (key : String)
+    (members : Array String)
+    : Async Int := do
+  let reply <- execute client <| CommandRequest.sAdd key members
+  expectInteger "SADD" reply
+
+def Client.sRem [Transport.Transport τ]
+    (client : Client τ)
+    (key : String)
+    (members : Array String)
+    : Async Int := do
+  let reply <- execute client <| CommandRequest.sRem key members
+  expectInteger "SREM" reply
+
+def Client.sCard [Transport.Transport τ]
+    (client : Client τ)
+    (key : String)
+    : Async Int := do
+  let reply <- execute client <| CommandRequest.sCard key
+  expectInteger "SCARD" reply
+
+def Client.sIsMember [Transport.Transport τ]
+    (client : Client τ)
+    (key member : String)
+    : Async Bool := do
+  let reply <- execute client <| CommandRequest.sIsMember key member
+  expectBoolean "SISMEMBER" reply
+
+def Client.sMIsMember [Transport.Transport τ]
+    (client : Client τ)
+    (key : String)
+    (members : Array String)
+    : Async (Array Bool) := do
+  let reply <- execute client <| CommandRequest.sMIsMember key members
+  match reply with
+  | .array items =>
+      items.mapM (expectBoolean "SMISMEMBER")
+  | .simpleError message => Error.raise <| .server message
+  | _ => Error.raise <| .decode "unexpected SMISMEMBER reply"
+
+def Client.sMembers [Transport.Transport τ]
+    (client : Client τ)
+    (key : String)
+    : Async (Array String) := do
+  let reply <- execute client <| CommandRequest.sMembers key
+  expectPlainStringArray "SMEMBERS" reply
+
+def Client.sPop [Transport.Transport τ]
+    (client : Client τ)
+    (key : String)
+    : Async (Option String) := do
+  let reply <- execute client <| CommandRequest.sPop key
+  expectOptionalString "SPOP" reply
+
+def Client.sPopMany [Transport.Transport τ]
+    (client : Client τ)
+    (key : String)
+    (count : UInt64)
+    : Async (Array String) := do
+  let reply <- execute client <| CommandRequest.sPopCount key count
+  expectPlainStringArray "SPOP" reply
+
+def Client.sRandMember [Transport.Transport τ]
+    (client : Client τ)
+    (key : String)
+    : Async (Option String) := do
+  let reply <- execute client <| CommandRequest.sRandMember key
+  expectOptionalString "SRANDMEMBER" reply
+
+def Client.sRandMembers [Transport.Transport τ]
+    (client : Client τ)
+    (key : String)
+    (count : Int)
+    : Async (Array String) := do
+  let reply <- execute client <| CommandRequest.sRandMembers key count
+  match (← expectOptionalStringOrArray "SRANDMEMBER" reply) with
+  | .inl none => pure #[]
+  | .inl (some value) => pure #[value]
+  | .inr values => pure values
+
+def Client.sMove [Transport.Transport τ]
+    (client : Client τ)
+    (source destination member : String)
+    : Async Bool := do
+  let reply <- execute client <| CommandRequest.sMove source destination member
+  expectBoolean "SMOVE" reply
+
+def Client.sDiff [Transport.Transport τ]
+    (client : Client τ)
+    (keys : Array String)
+    : Async (Array String) := do
+  let reply <- execute client <| CommandRequest.sDiff keys
+  expectPlainStringArray "SDIFF" reply
+
+def Client.sDiffStore [Transport.Transport τ]
+    (client : Client τ)
+    (destination : String)
+    (keys : Array String)
+    : Async Int := do
+  let reply <- execute client <| CommandRequest.sDiffStore destination keys
+  expectInteger "SDIFFSTORE" reply
+
+def Client.sInter [Transport.Transport τ]
+    (client : Client τ)
+    (keys : Array String)
+    : Async (Array String) := do
+  let reply <- execute client <| CommandRequest.sInter keys
+  expectPlainStringArray "SINTER" reply
+
+def Client.sInterCard [Transport.Transport τ]
+    (client : Client τ)
+    (keys : Array String)
+    : Async Int := do
+  let reply <- execute client <| CommandRequest.sInterCard keys
+  expectInteger "SINTERCARD" reply
+
+def Client.sInterStore [Transport.Transport τ]
+    (client : Client τ)
+    (destination : String)
+    (keys : Array String)
+    : Async Int := do
+  let reply <- execute client <| CommandRequest.sInterStore destination keys
+  expectInteger "SINTERSTORE" reply
+
+def Client.sUnion [Transport.Transport τ]
+    (client : Client τ)
+    (keys : Array String)
+    : Async (Array String) := do
+  let reply <- execute client <| CommandRequest.sUnion keys
+  expectPlainStringArray "SUNION" reply
+
+def Client.sUnionStore [Transport.Transport τ]
+    (client : Client τ)
+    (destination : String)
+    (keys : Array String)
+    : Async Int := do
+  let reply <- execute client <| CommandRequest.sUnionStore destination keys
+  expectInteger "SUNIONSTORE" reply
+
+def Client.sScan [Transport.Transport τ]
+    (client : Client τ)
+    (key : String)
+    (cursor : UInt64)
+    (options : SScanOptions := {})
+    : Async SetScanResult := do
+  let reply <- execute client <| CommandRequest.sScan key cursor options
+  expectSetScanResult reply
 
 def Client.currentState (client : Client τ) : Async Engine.State := do
   liftIO <| client.manager.atomically fun ref => do
