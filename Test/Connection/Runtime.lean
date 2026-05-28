@@ -49,14 +49,14 @@ def testRuntimeExecuteReadsFragmentedReply : Async String := do
     | _ => pure "unexpected"
   pure s!"{payload}|{writes.size}|{renderBytes <| writes[0]?.getD ByteArray.empty}"
 
-def testRuntimeExecuteFailsWhenReplyDisconnects : IO String := do
+def testRuntimeExecuteFailsWhenReplyDisconnects : Async String := do
   try
-    let transport <- mkTransport #[
+    let transport <- EAsync.lift <| mkTransport #[
       { bytes := "$5\r\nhe".toUTF8 },
       { bytes := ByteArray.empty, disconnect? := some .closedByPeer }
     ]
     let runtime : Connection.Runtime ScriptedTransport := { transport }
-    let _ <- (Connection.Runtime.execute runtime <| CommandRequest.ping).block
+    let _ <- Connection.Runtime.execute runtime <| CommandRequest.ping
     pure "unexpected success"
   catch err =>
     pure err.toString
@@ -71,6 +71,6 @@ info: "\"hello\"|1|\"*1\\r\\n$4\\r\\nPING\\r\\n\""
 info: "transport error: connection closed while waiting for reply"
 -/
 #guard_msgs in
-#eval testRuntimeExecuteFailsWhenReplyDisconnects
+#eval testRuntimeExecuteFailsWhenReplyDisconnects |>.block
 
 end LeanRedisTest.Connection.Runtime

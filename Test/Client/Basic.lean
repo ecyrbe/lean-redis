@@ -36,6 +36,8 @@ instance : Transport.Transport FakeTransport where
         #["%2\r\n+server\r\n+redis\r\n+proto\r\n:3\r\n".toUTF8, "+OK\r\n".toUTF8]
       else if endpoint.host == "client-auth-user" then
         #["%2\r\n+server\r\n+redis\r\n+proto\r\n:3\r\n".toUTF8, "+OK\r\n".toUTF8]
+      else if endpoint.host == "client-server-error" then
+        #["%2\r\n+server\r\n+redis\r\n+proto\r\n:3\r\n".toUTF8, "-ERR no such key\r\n".toUTF8]
       else if endpoint.host == "client-message" then
         #["%2\r\n+server\r\n+redis\r\n+proto\r\n:3\r\n".toUTF8, "$5\r\nhello\r\n".toUTF8]
       else
@@ -134,6 +136,17 @@ def testPingWritesTwoFrames : Async Nat := do
   let writes <- EAsync.lift <| writesOf client
   pure writes.size
 
+def testServerErrorsStayServerErrors : Async String := do
+  try
+    let client : Client FakeTransport <- Client.new {
+      endpoint := { host := "client-server-error", port := 6379 }
+    }
+    let _ <- client.connect
+    let _ <- client.ping
+    pure "unexpected success"
+  catch err =>
+    pure err.toString
+
 /--
 info: "\"*3\\r\\n$4\\r\\nAUTH\\r\\n$7\\r\\ndefault\\r\\n$6\\r\\nsecret\\r\\n\""
 -/
@@ -151,5 +164,11 @@ info: 2
 -/
 #guard_msgs in
 #eval testPingWritesTwoFrames |>.block
+
+/--
+info: "server error: ERR no such key"
+-/
+#guard_msgs in
+#eval testServerErrorsStayServerErrors |>.block
 
 end LeanRedisTest.Client.Basic

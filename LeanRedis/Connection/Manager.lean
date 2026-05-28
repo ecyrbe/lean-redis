@@ -17,6 +17,22 @@ open LeanRedis.Engine
 open LeanRedis.Transport
 open Std.Internal.IO.Async
 
+private def classifyRuntimeFailure (message : String) : Error :=
+  if message.startsWith "server error: " then
+    .server <| (message.drop "server error: ".length).toString
+  else if message.startsWith "decode error: " then
+    .decode <| (message.drop "decode error: ".length).toString
+  else if message.startsWith "protocol error: " then
+    .protocol <| (message.drop "protocol error: ".length).toString
+  else if message.startsWith "bootstrap error: " then
+    .bootstrap <| (message.drop "bootstrap error: ".length).toString
+  else if message.startsWith "unavailable: " then
+    .unavailable <| (message.drop "unavailable: ".length).toString
+  else if message.startsWith "transport error: " then
+    .transport <| (message.drop "transport error: ".length).toString
+  else
+    .transport message
+
 structure Manager (τ : Type) where
   config : Config
   runtime? : Option (Runtime τ) := none
@@ -165,7 +181,7 @@ def Manager.withRuntime [Transport τ]
     }
     pure (result, manager)
   catch err =>
-    Error.raise <| .transport err.toString
+    Error.raise <| classifyRuntimeFailure err.toString
 
 def Manager.disconnect [Transport τ] (manager : Manager τ) : Async (Manager τ) := do
   match manager.runtime? with
