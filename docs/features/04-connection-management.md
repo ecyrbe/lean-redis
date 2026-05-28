@@ -30,6 +30,10 @@ It should own:
 - reconnect attempts after disconnect
 - coordination of retry behavior according to policy
 
+It should not own ordinary request execution or typed command decoding directly.
+
+Instead, the manager should own a live connection runtime abstraction that contains the current transport and parser state. Request execution can then run against that runtime while the manager remains responsible for replacing it after disconnect.
+
 Retry should only begin after a disconnect is detected. It should not speculate on transient failures while the session is still considered connected.
 
 ## Policies

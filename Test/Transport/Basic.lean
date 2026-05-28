@@ -24,7 +24,7 @@ info: true
   let manager : Connection.Manager FakeTransport := Connection.Manager.new {
     endpoint := { host := "127.0.0.1", port := 6379 }
   }
-  manager.transport?.isNone
+  manager.runtime?.isNone
 
 /--
 info: LeanRedis.Engine.SessionPhase.ready
@@ -41,22 +41,21 @@ info: false
 -/
 #guard_msgs in
 #eval do
-  let client <- (Client.connect {
+  let client <- Std.Internal.IO.Async.Async.block <| (Client.connect {
     endpoint := { host := "127.0.0.1", port := 6379 }
-  } : IO (Client Transport.TCP))
-  client.isConnected
+  } : Std.Internal.IO.Async.Async (Client Transport.TCP))
+  Std.Internal.IO.Async.Async.block <| Client.isConnected client
 
 /--
 info: true
 -/
 #guard_msgs in
 #eval do
-  let client <- (Client.connectWith {
+  let client <- Std.Internal.IO.Async.Async.block <| (Client.connectWith {
     endpoint := { host := "127.0.0.1", port := 6379 }
-  } : IO (Client FakeTransport))
-  let manager <- client.managerRef.get
-  let connected <- Std.Internal.IO.Async.Async.block manager.connect
-  pure connected.transport?.isSome
+  } : Std.Internal.IO.Async.Async (Client FakeTransport))
+  let _ <- Std.Internal.IO.Async.Async.block <| Client.connectNow client
+  Std.Internal.IO.Async.Async.block <| Client.isConnected client
 
 /--
 info: some (LeanRedis.Transport.DisconnectReason.closedByPeer)

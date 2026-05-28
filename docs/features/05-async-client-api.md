@@ -30,6 +30,16 @@ It should provide:
 
 The public API should not require users to reason about RESP frames, manual bootstrap, or transport lifecycle details.
 
+Internally, request execution should not be owned directly by the connection manager.
+
+Recommended split:
+
+- `Connection.Manager` owns session lifecycle, reconnect policy, bootstrap, and live-connection replacement
+- `Connection.Runtime` owns one live transport plus parser state for that connection
+- `Client` and command-facing helpers build requests, execute them through a ready runtime, and decode typed replies
+
+This keeps reconnect logic above request execution while still allowing the client to recover cleanly from disconnects.
+
 ## API Direction
 
 The user experience should feel high-level and ergonomic.
@@ -86,5 +96,5 @@ let value <- client.get "key"
 ## Diagram
 
 ```text
-Client Config --> Async Client --> Typed Command Method --> Connection Manager --> Engine
+Client Config --> Async Client --> Typed Command Method --> Connection Manager --> Connection Runtime --> RESP Codec
 ```

@@ -12,5 +12,6 @@ import LeanRedis.Protocol.Resp.Parse
 import LeanRedis.Engine.State
 import LeanRedis.Engine.RequestQueue
 import LeanRedis.Engine.Session
+import LeanRedis.Connection.Runtime
 import LeanRedis.Connection.Manager
 import LeanRedis.Client

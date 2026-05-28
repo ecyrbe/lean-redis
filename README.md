@@ -53,3 +53,5 @@ Current tests cover:
 - transport wiring and byte-oriented read results
 - connection bootstrap execution over scripted transports
 - reconnect-policy and disconnect-state behavior
+- async client constructors and connection state
+- typed async `PING` and `SELECT` client methods
