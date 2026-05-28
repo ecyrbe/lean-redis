@@ -11,4 +11,5 @@ import Test.Client.List
 import Test.Client.Set
 import Test.Client.SortedSet
 import Test.Connection.Manager
+import Test.Connection.Runtime
 import Test.Transport.Basic

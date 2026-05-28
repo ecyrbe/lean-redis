@@ -35,7 +35,7 @@ Status values:
 
 | ID | Feature | Status | Notes |
 | --- | --- | --- | --- |
-| 12 | Testing strategy | planned | Scripted raw RESP frame tests |
+| 12 | Testing strategy | in_progress | Added scripted raw RESP frame tests at `Connection.Runtime` for fragmented replies and disconnect-during-reply handling |
 | 13 | Non-functional requirements | planned | Performance, determinism, testability |
 
 ## How To Use This File
