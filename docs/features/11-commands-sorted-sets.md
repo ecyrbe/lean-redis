@@ -61,8 +61,8 @@ Final naming should follow Redis command names while adapting to Lean style.
 
 Examples:
 
-- `zscore` -> `Option Float`
-- `zrank` -> `Option Nat`
+- `zscore` -> `Option String`
+- `zrank` -> `Option Int`
 - `zrange` -> collection of members or member-score pairs depending on options
 - `zadd` -> count or typed response depending on selected options
 
@@ -85,7 +85,7 @@ Sorted sets are one of the richest command families in v1, so this area will lik
 ## Example
 
 ```lean
-let _ <- client.zAdd "scores" #[({ score := 10.0, member := "alice" })]
+let _ <- client.zAdd "scores" #[({ score := "10", member := "alice" })]
 let top <- client.zRange "scores" 0 (-1)
 let score <- client.zScore "scores" "alice"
 ```

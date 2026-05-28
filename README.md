@@ -43,6 +43,30 @@ The plan is:
 - pure protocol and state-machine tests in `Test/`
 - future runtime `IO` tests once the async client and TCP transport exist
 
+## Module Layout
+
+The public import surface remains:
+
+- `LeanRedis.Command`
+- `LeanRedis.Client`
+
+Internally, the command and client implementations are now split by command family for easier review:
+
+- `LeanRedis/Command/Base.lean`
+- `LeanRedis/Command/Connection.lean`
+- `LeanRedis/Command/String.lean`
+- `LeanRedis/Command/Hash.lean`
+- `LeanRedis/Command/List.lean`
+- `LeanRedis/Command/Set.lean`
+- `LeanRedis/Command/SortedSet.lean`
+- `LeanRedis/Client/Internal.lean`
+- `LeanRedis/Client/Connection.lean`
+- `LeanRedis/Client/String.lean`
+- `LeanRedis/Client/Hash.lean`
+- `LeanRedis/Client/List.lean`
+- `LeanRedis/Client/Set.lean`
+- `LeanRedis/Client/SortedSet.lean`
+
 Current tests cover:
 
 - RESP parser basic values
