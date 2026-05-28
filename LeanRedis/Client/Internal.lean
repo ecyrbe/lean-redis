@@ -242,34 +242,92 @@ def execute [Transport.Transport τ]
 
 end Client
 
+/--
+Create a new client value for the given transport type without opening a connection.
+
+Example:
+```lean
+let client : LeanRedis.Client MyTransport <- LeanRedis.Client.new cfg
+```
+-/
 def Client.new [Transport.Transport τ] (config : Config) : Async (Client τ) := do
   let manager <- Client.liftIO <| Std.Mutex.new (Connection.Manager.new config : Connection.Manager τ)
   pure { manager }
 
+/--
+Create a new client using the default TCP transport without opening a connection.
+
+Example:
+```lean
+let client <- LeanRedis.Client.newDefault {
+  endpoint := { host := "127.0.0.1", port := 6379 }
+}
+```
+-/
 def Client.newDefault (config : Config) : Async (Client Transport.TCP) :=
   Client.new config
 
+/--
+Open the transport and run Redis bootstrap for an existing client.
+
+Example:
+```lean
+let _ <- client.connect
+```
+-/
 def Client.connect (client : Client τ) [Transport.Transport τ] : Async Unit := do
   let _ <- Client.withManager client fun manager => do
     let manager <- manager.connect
     pure ((), manager)
   pure ()
 
+/--
+Close the current connection and mark the client as disconnected.
+
+Example:
+```lean
+let _ <- client.disconnect
+```
+-/
 def Client.disconnect [Transport.Transport τ] (client : Client τ) : Async Unit := do
   let _ <- Client.withManager client fun manager => do
     let manager <- manager.disconnect
     pure ((), manager)
   pure ()
 
+/--
+Return `true` when the client currently has a ready runtime.
+
+Example:
+```lean
+let connected <- client.isConnected
+```
+-/
 def Client.isConnected (client : Client τ) : Async Bool := do
   Client.liftIO <| client.manager.atomically fun ref => do
     let manager <- ref.get
     pure manager.isConnected
 
+/--
+Fail with an `unavailable` error unless the client is connected.
+
+Example:
+```lean
+let _ <- client.requireConnected
+```
+-/
 def Client.requireConnected [Transport.Transport τ] (client : Client τ) : Async Unit := do
   unless (← Client.isConnected client) do
     Error.raise <| .unavailable "client is not connected"
 
+/--
+Read the current internal connection state tracked by the client.
+
+Example:
+```lean
+let state <- client.currentState
+```
+-/
 def Client.currentState (client : Client τ) : Async Engine.State := do
   Client.liftIO <| client.manager.atomically fun ref => do
     let manager <- ref.get

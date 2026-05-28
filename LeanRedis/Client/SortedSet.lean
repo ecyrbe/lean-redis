@@ -4,6 +4,13 @@ namespace LeanRedis
 
 open Std.Internal.IO.Async
 
+/-- Add scored members to a sorted set.
+
+Example:
+```lean
+let added <- client.zAdd "scores" #[{ score := "10", member := "alice" }]
+```
+-/
 def Client.zAdd [Transport.Transport τ]
     (client : Client τ)
     (key : String)
@@ -12,6 +19,13 @@ def Client.zAdd [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.zAdd key entries
   Client.expectInteger "ZADD" reply
 
+/-- Remove members from a sorted set.
+
+Example:
+```lean
+let removed <- client.zRem "scores" #["alice"]
+```
+-/
 def Client.zRem [Transport.Transport τ]
     (client : Client τ)
     (key : String)
@@ -20,6 +34,13 @@ def Client.zRem [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.zRem key members
   Client.expectInteger "ZREM" reply
 
+/-- Return the cardinality of a sorted set.
+
+Example:
+```lean
+let size <- client.zCard "scores"
+```
+-/
 def Client.zCard [Transport.Transport τ]
     (client : Client τ)
     (key : String)
@@ -27,6 +48,13 @@ def Client.zCard [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.zCard key
   Client.expectInteger "ZCARD" reply
 
+/-- Return the score of a sorted-set member.
+
+Example:
+```lean
+let score <- client.zScore "scores" "alice"
+```
+-/
 def Client.zScore [Transport.Transport τ]
     (client : Client τ)
     (key member : String)
@@ -34,6 +62,13 @@ def Client.zScore [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.zScore key member
   Client.expectOptionalString "ZSCORE" reply
 
+/-- Return the scores for multiple sorted-set members.
+
+Example:
+```lean
+let scores <- client.zMScore "scores" #["alice", "bob"]
+```
+-/
 def Client.zMScore [Transport.Transport τ]
     (client : Client τ)
     (key : String)
@@ -42,6 +77,13 @@ def Client.zMScore [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.zMScore key members
   Client.expectStringArray "ZMSCORE" reply
 
+/-- Return the rank of a sorted-set member.
+
+Example:
+```lean
+let rank <- client.zRank "scores" "alice"
+```
+-/
 def Client.zRank [Transport.Transport τ]
     (client : Client τ)
     (key member : String)
@@ -53,6 +95,13 @@ def Client.zRank [Transport.Transport τ]
   | .simpleError message => Error.raise <| .server message
   | _ => Error.raise <| .decode "unexpected ZRANK reply"
 
+/-- Return the reverse rank of a sorted-set member.
+
+Example:
+```lean
+let rank <- client.zRevRank "scores" "alice"
+```
+-/
 def Client.zRevRank [Transport.Transport τ]
     (client : Client τ)
     (key member : String)
@@ -64,6 +113,13 @@ def Client.zRevRank [Transport.Transport τ]
   | .simpleError message => Error.raise <| .server message
   | _ => Error.raise <| .decode "unexpected ZREVRANK reply"
 
+/-- Return sorted-set members in score order by rank range.
+
+Example:
+```lean
+let members <- client.zRange "scores" 0 (-1)
+```
+-/
 def Client.zRange [Transport.Transport τ]
     (client : Client τ)
     (key : String)
@@ -72,6 +128,13 @@ def Client.zRange [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.zRange key start stop
   Client.expectPlainStringArray "ZRANGE" reply
 
+/-- Return sorted-set members with scores by rank range.
+
+Example:
+```lean
+let entries <- client.zRangeWithScores "scores" 0 (-1)
+```
+-/
 def Client.zRangeWithScores [Transport.Transport τ]
     (client : Client τ)
     (key : String)
@@ -80,6 +143,13 @@ def Client.zRangeWithScores [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.zRangeWithScores key start stop
   Client.expectSortedSetEntries "ZRANGE" reply
 
+/-- Return sorted-set members in reverse score order by rank range.
+
+Example:
+```lean
+let members <- client.zRevRange "scores" 0 (-1)
+```
+-/
 def Client.zRevRange [Transport.Transport τ]
     (client : Client τ)
     (key : String)
@@ -88,6 +158,13 @@ def Client.zRevRange [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.zRevRange key start stop
   Client.expectPlainStringArray "ZREVRANGE" reply
 
+/-- Return sorted-set members with scores in reverse score order.
+
+Example:
+```lean
+let entries <- client.zRevRangeWithScores "scores" 0 (-1)
+```
+-/
 def Client.zRevRangeWithScores [Transport.Transport τ]
     (client : Client τ)
     (key : String)
@@ -96,6 +173,13 @@ def Client.zRevRangeWithScores [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.zRevRangeWithScores key start stop
   Client.expectSortedSetEntries "ZREVRANGE" reply
 
+/-- Return sorted-set members within a score range.
+
+Example:
+```lean
+let members <- client.zRangeByScore "scores" "0" "100"
+```
+-/
 def Client.zRangeByScore [Transport.Transport τ]
     (client : Client τ)
     (key min max : String)
@@ -103,6 +187,13 @@ def Client.zRangeByScore [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.zRangeByScore key min max
   Client.expectPlainStringArray "ZRANGEBYSCORE" reply
 
+/-- Return sorted-set members with scores within a score range.
+
+Example:
+```lean
+let entries <- client.zRangeByScoreWithScores "scores" "0" "100"
+```
+-/
 def Client.zRangeByScoreWithScores [Transport.Transport τ]
     (client : Client τ)
     (key min max : String)
@@ -110,6 +201,13 @@ def Client.zRangeByScoreWithScores [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.zRangeByScoreWithScores key min max
   Client.expectSortedSetEntries "ZRANGEBYSCORE" reply
 
+/-- Return sorted-set members within a reverse score range.
+
+Example:
+```lean
+let members <- client.zRevRangeByScore "scores" "100" "0"
+```
+-/
 def Client.zRevRangeByScore [Transport.Transport τ]
     (client : Client τ)
     (key max min : String)
@@ -117,6 +215,13 @@ def Client.zRevRangeByScore [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.zRevRangeByScore key max min
   Client.expectPlainStringArray "ZREVRANGEBYSCORE" reply
 
+/-- Return sorted-set members with scores within a reverse score range.
+
+Example:
+```lean
+let entries <- client.zRevRangeByScoreWithScores "scores" "100" "0"
+```
+-/
 def Client.zRevRangeByScoreWithScores [Transport.Transport τ]
     (client : Client τ)
     (key max min : String)
@@ -124,6 +229,13 @@ def Client.zRevRangeByScoreWithScores [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.zRevRangeByScoreWithScores key max min
   Client.expectSortedSetEntries "ZREVRANGEBYSCORE" reply
 
+/-- Return sorted-set members within a lexicographic range.
+
+Example:
+```lean
+let members <- client.zRangeByLex "names" "-" "+"
+```
+-/
 def Client.zRangeByLex [Transport.Transport τ]
     (client : Client τ)
     (key min max : String)
@@ -131,6 +243,13 @@ def Client.zRangeByLex [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.zRangeByLex key min max
   Client.expectPlainStringArray "ZRANGEBYLEX" reply
 
+/-- Return sorted-set members within a reverse lexicographic range.
+
+Example:
+```lean
+let members <- client.zRevRangeByLex "names" "+" "-"
+```
+-/
 def Client.zRevRangeByLex [Transport.Transport τ]
     (client : Client τ)
     (key max min : String)
@@ -138,6 +257,13 @@ def Client.zRevRangeByLex [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.zRevRangeByLex key max min
   Client.expectPlainStringArray "ZREVRANGEBYLEX" reply
 
+/-- Count members within a score range.
+
+Example:
+```lean
+let count <- client.zCount "scores" "0" "100"
+```
+-/
 def Client.zCount [Transport.Transport τ]
     (client : Client τ)
     (key min max : String)
@@ -145,6 +271,13 @@ def Client.zCount [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.zCount key min max
   Client.expectInteger "ZCOUNT" reply
 
+/-- Count members within a lexicographic range.
+
+Example:
+```lean
+let count <- client.zLexCount "names" "-" "+"
+```
+-/
 def Client.zLexCount [Transport.Transport τ]
     (client : Client τ)
     (key min max : String)
@@ -152,6 +285,13 @@ def Client.zLexCount [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.zLexCount key min max
   Client.expectInteger "ZLEXCOUNT" reply
 
+/-- Remove members by rank range.
+
+Example:
+```lean
+let removed <- client.zRemRangeByRank "scores" 0 1
+```
+-/
 def Client.zRemRangeByRank [Transport.Transport τ]
     (client : Client τ)
     (key : String)
@@ -160,6 +300,13 @@ def Client.zRemRangeByRank [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.zRemRangeByRank key start stop
   Client.expectInteger "ZREMRANGEBYRANK" reply
 
+/-- Remove members by score range.
+
+Example:
+```lean
+let removed <- client.zRemRangeByScore "scores" "0" "10"
+```
+-/
 def Client.zRemRangeByScore [Transport.Transport τ]
     (client : Client τ)
     (key min max : String)
@@ -167,6 +314,13 @@ def Client.zRemRangeByScore [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.zRemRangeByScore key min max
   Client.expectInteger "ZREMRANGEBYSCORE" reply
 
+/-- Remove members by lexicographic range.
+
+Example:
+```lean
+let removed <- client.zRemRangeByLex "names" "-" "+"
+```
+-/
 def Client.zRemRangeByLex [Transport.Transport τ]
     (client : Client τ)
     (key min max : String)
@@ -174,6 +328,13 @@ def Client.zRemRangeByLex [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.zRemRangeByLex key min max
   Client.expectInteger "ZREMRANGEBYLEX" reply
 
+/-- Increment a sorted-set member score.
+
+Example:
+```lean
+let score <- client.zIncrBy "scores" "1.5" "alice"
+```
+-/
 def Client.zIncrBy [Transport.Transport τ]
     (client : Client τ)
     (key increment member : String)
@@ -181,6 +342,13 @@ def Client.zIncrBy [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.zIncrBy key increment member
   Client.expectString "ZINCRBY" reply
 
+/-- Return one random sorted-set member without removing it.
+
+Example:
+```lean
+let member <- client.zRandMember "scores"
+```
+-/
 def Client.zRandMember [Transport.Transport τ]
     (client : Client τ)
     (key : String)
@@ -188,6 +356,13 @@ def Client.zRandMember [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.zRandMember key
   Client.expectOptionalString "ZRANDMEMBER" reply
 
+/-- Return random sorted-set members without removing them.
+
+Example:
+```lean
+let members <- client.zRandMembers "scores" 2
+```
+-/
 def Client.zRandMembers [Transport.Transport τ]
     (client : Client τ)
     (key : String)
@@ -199,6 +374,13 @@ def Client.zRandMembers [Transport.Transport τ]
   | .inl (some value) => pure #[value]
   | .inr values => pure values
 
+/-- Return random sorted-set members with scores.
+
+Example:
+```lean
+let entries <- client.zRandMembersWithScores "scores" 2
+```
+-/
 def Client.zRandMembersWithScores [Transport.Transport τ]
     (client : Client τ)
     (key : String)
@@ -207,6 +389,13 @@ def Client.zRandMembersWithScores [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.zRandMembersWithScores key count
   Client.expectSortedSetEntries "ZRANDMEMBER" reply
 
+/-- Return the difference of multiple sorted sets.
+
+Example:
+```lean
+let members <- client.zDiff #["a", "b"]
+```
+-/
 def Client.zDiff [Transport.Transport τ]
     (client : Client τ)
     (keys : Array String)
@@ -214,6 +403,13 @@ def Client.zDiff [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.zDiff keys
   Client.expectPlainStringArray "ZDIFF" reply
 
+/-- Store the difference of multiple sorted sets into a destination key.
+
+Example:
+```lean
+let size <- client.zDiffStore "result" #["a", "b"]
+```
+-/
 def Client.zDiffStore [Transport.Transport τ]
     (client : Client τ)
     (destination : String)
@@ -222,6 +418,13 @@ def Client.zDiffStore [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.zDiffStore destination keys
   Client.expectInteger "ZDIFFSTORE" reply
 
+/-- Return the intersection of multiple sorted sets.
+
+Example:
+```lean
+let members <- client.zInter #["a", "b"]
+```
+-/
 def Client.zInter [Transport.Transport τ]
     (client : Client τ)
     (keys : Array String)
@@ -229,6 +432,13 @@ def Client.zInter [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.zInter keys
   Client.expectPlainStringArray "ZINTER" reply
 
+/-- Return the intersection cardinality of multiple sorted sets.
+
+Example:
+```lean
+let size <- client.zInterCard #["a", "b"]
+```
+-/
 def Client.zInterCard [Transport.Transport τ]
     (client : Client τ)
     (keys : Array String)
@@ -236,6 +446,13 @@ def Client.zInterCard [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.zInterCard keys
   Client.expectInteger "ZINTERCARD" reply
 
+/-- Store the intersection of multiple sorted sets into a destination key.
+
+Example:
+```lean
+let size <- client.zInterStore "result" #["a", "b"]
+```
+-/
 def Client.zInterStore [Transport.Transport τ]
     (client : Client τ)
     (destination : String)
@@ -244,6 +461,13 @@ def Client.zInterStore [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.zInterStore destination keys
   Client.expectInteger "ZINTERSTORE" reply
 
+/-- Return the union of multiple sorted sets.
+
+Example:
+```lean
+let members <- client.zUnion #["a", "b"]
+```
+-/
 def Client.zUnion [Transport.Transport τ]
     (client : Client τ)
     (keys : Array String)
@@ -251,6 +475,13 @@ def Client.zUnion [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.zUnion keys
   Client.expectPlainStringArray "ZUNION" reply
 
+/-- Store the union of multiple sorted sets into a destination key.
+
+Example:
+```lean
+let size <- client.zUnionStore "result" #["a", "b"]
+```
+-/
 def Client.zUnionStore [Transport.Transport τ]
     (client : Client τ)
     (destination : String)
@@ -259,6 +490,13 @@ def Client.zUnionStore [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.zUnionStore destination keys
   Client.expectInteger "ZUNIONSTORE" reply
 
+/-- Scan a sorted set incrementally.
+
+Example:
+```lean
+let page <- client.zScan "scores" 0
+```
+-/
 def Client.zScan [Transport.Transport τ]
     (client : Client τ)
     (key : String)
