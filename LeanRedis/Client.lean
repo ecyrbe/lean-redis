@@ -6,8 +6,6 @@ import LeanRedis.Transport.Tcp
 
 namespace LeanRedis
 
-open Std.Internal.IO.Async
-
 abbrev Async := Std.Internal.IO.Async.Async
 
 structure Client (τ : Type) where

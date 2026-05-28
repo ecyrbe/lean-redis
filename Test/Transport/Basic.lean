@@ -4,6 +4,9 @@ open LeanRedis
 
 namespace LeanRedisTest.Transport.Basic
 
+abbrev Async := Std.Internal.IO.Async.Async
+
+
 def testBytes : ByteArray := "%2\r\n+server\r\n+redis\r\n+proto\r\n:3\r\n".toUTF8
 
 structure FakeTransport where
@@ -22,22 +25,22 @@ def testManagerStartsDisconnected : Bool :=
   }
   manager.runtime?.isNone
 
-def testManagerConnectsToReady : Std.Internal.IO.Async.Async LeanRedis.Engine.SessionPhase := do
+def testManagerConnectsToReady : Async LeanRedis.Engine.SessionPhase := do
   let manager <- ((Connection.Manager.new {
     endpoint := { host := "127.0.0.1", port := 6379 }
   } : Connection.Manager FakeTransport).connect)
   pure manager.session.state.phase
 
-def testDefaultClientStartsDisconnected : Std.Internal.IO.Async.Async Bool := do
+def testDefaultClientStartsDisconnected : Async Bool := do
   let client <- (Client.connect {
     endpoint := { host := "127.0.0.1", port := 6379 }
-  } : Std.Internal.IO.Async.Async (Client Transport.TCP))
+  } : Async (Client Transport.TCP))
   Client.isConnected client
 
-def testCustomClientConnectNow : Std.Internal.IO.Async.Async Bool := do
+def testCustomClientConnectNow : Async Bool := do
   let client <- (Client.connectWith {
     endpoint := { host := "127.0.0.1", port := 6379 }
-  } : Std.Internal.IO.Async.Async (Client FakeTransport))
+  } : Async (Client FakeTransport))
   let _ <- Client.connectNow client
   Client.isConnected client
 
