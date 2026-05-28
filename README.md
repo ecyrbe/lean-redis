@@ -55,3 +55,4 @@ Current tests cover:
 - reconnect-policy and disconnect-state behavior
 - async client constructors and connection state
 - typed async `AUTH`, `PING`, and `SELECT` client methods
+- string command request encoding, option encoding, and typed async string command decoding

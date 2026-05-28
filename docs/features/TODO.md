@@ -25,7 +25,7 @@ Status values:
 | ID | Feature | Status | Notes |
 | --- | --- | --- | --- |
 | 06 | Connection commands | done | Shared AUTH command construction plus public async AUTH, PING, and SELECT methods verified across RESP2/RESP3 bootstrap flows |
-| 07 | String commands | planned | Mainstream non-blocking Redis 6/7/8 coverage |
+| 07 | String commands | done | Mainstream string command builders plus typed async GET/SET/MGET/MSET/MSETNX/GETDEL/GETEX/GETRANGE/GETSET/SETRANGE/STRLEN/APPEND/INCR/INCRBY/INCRBYFLOAT/DECR/DECRBY/SETNX/SETEX/PSETEX verified |
 | 08 | Hash commands | planned | Includes HSCAN |
 | 09 | List commands | planned | Blocking commands out of scope |
 | 10 | Set commands | planned | Includes SSCAN |
