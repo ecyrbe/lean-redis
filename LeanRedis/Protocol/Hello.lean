@@ -39,19 +39,7 @@ def helloCommand : CommandRequest :=
   }
 
 def authCommand (auth : AuthConfig) : CommandRequest :=
-  match auth.username? with
-  | some username =>
-      {
-        name := "AUTH"
-        args := #[username.toUTF8, auth.password.value.toUTF8]
-        allowRetry := true
-      }
-  | none =>
-      {
-        name := "AUTH"
-        args := #[auth.password.value.toUTF8]
-        allowRetry := true
-      }
+  CommandRequest.auth auth
 
 def selectCommand (database : UInt32) : CommandRequest :=
   {

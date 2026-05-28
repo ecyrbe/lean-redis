@@ -24,7 +24,7 @@ Status values:
 
 | ID | Feature | Status | Notes |
 | --- | --- | --- | --- |
-| 06 | Connection commands | planned | AUTH, HELLO bootstrap, PING, SELECT, QUIT-like behavior if needed |
+| 06 | Connection commands | done | Shared AUTH command construction plus public async AUTH, PING, and SELECT methods verified across RESP2/RESP3 bootstrap flows |
 | 07 | String commands | planned | Mainstream non-blocking Redis 6/7/8 coverage |
 | 08 | Hash commands | planned | Includes HSCAN |
 | 09 | List commands | planned | Blocking commands out of scope |

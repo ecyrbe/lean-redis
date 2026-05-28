@@ -46,33 +46,21 @@ def renderProtocol (version? : Option Protocol.Version) : String :=
   | some .resp3 => "resp3"
   | none => "none"
 
-/--
-info: "true|resp3|2"
--/
-#guard_msgs in
-#eval do
-  let manager <- Std.Internal.IO.Async.Async.block <| ((Connection.Manager.new {
+def testBootstrapConnectWithDatabase : Async String := do
+  let manager <- ((Connection.Manager.new {
     endpoint := { host := "resp3-db", port := 6379 }
     database? := some 2
     reconnectPolicy := .retryForever
   } : Connection.Manager FakeTransport).connect)
   pure s!"{manager.isConnected}|{renderProtocol manager.session.state.protocol?}|{manager.session.state.selectedDb?.getD 0}"
 
-/--
-info: 0
--/
-#guard_msgs in
-#eval
+def testResp2PlanWithoutHello : Nat :=
   (Protocol.bootstrapPlan {
     endpoint := { host := "127.0.0.1", port := 6379 }
     protocolPreference := .resp2
   }).size
 
-/--
-info: 2
--/
-#guard_msgs in
-#eval
+def testResp2PlanWithAuthAndSelect : Nat :=
   (Protocol.bootstrapPlan {
     endpoint := { host := "127.0.0.1", port := 6379 }
     protocolPreference := .resp2
@@ -80,11 +68,7 @@ info: 2
     database? := some 4
   }).size
 
-/--
-info: "failed|0"
--/
-#guard_msgs in
-#eval
+def testDisconnectDropsPendingWhenPolicyFails : String :=
   let manager : Connection.Manager FakeTransport := Connection.Manager.new {
     endpoint := { host := "127.0.0.1", port := 6379 }
     retryPolicy := .failPendingRequests
@@ -93,30 +77,58 @@ info: "failed|0"
   let manager := manager.recordDisconnect .closedByPeer
   s!"{match manager.session.state.phase with | .failed => "failed" | _ => "other"}|{manager.session.state.pending.size}"
 
-/--
-info: true
--/
-#guard_msgs in
-#eval do
+def testReconnectAllowedByPolicy : Async Bool := do
   let manager : Connection.Manager FakeTransport := Connection.Manager.new {
     endpoint := { host := "resp3", port := 6379 }
     reconnectPolicy := .retryForever
   }
   let failed := manager.recordDisconnect .closedByPeer
-  let some reconnected <- Std.Internal.IO.Async.Async.block <| failed.reconnect?
+  let some reconnected <- failed.reconnect?
     | pure false
   pure reconnected.isConnected
+
+def testEnsureConnectedUsesReconnectPolicy : Async Bool := do
+  let manager : Connection.Manager FakeTransport := Connection.Manager.new {
+    endpoint := { host := "resp3", port := 6379 }
+    reconnectPolicy := .retryForever
+  }
+  let connected <- manager.ensureConnected
+  pure connected.isConnected
+
+/--
+info: "true|resp3|2"
+-/
+#guard_msgs in
+#eval testBootstrapConnectWithDatabase |>.block
+
+/--
+info: 0
+-/
+#guard_msgs in
+#eval testResp2PlanWithoutHello
+
+/--
+info: 2
+-/
+#guard_msgs in
+#eval testResp2PlanWithAuthAndSelect
+
+/--
+info: "failed|0"
+-/
+#guard_msgs in
+#eval testDisconnectDropsPendingWhenPolicyFails
 
 /--
 info: true
 -/
 #guard_msgs in
-#eval do
-  let manager : Connection.Manager FakeTransport := Connection.Manager.new {
-    endpoint := { host := "resp3", port := 6379 }
-    reconnectPolicy := .retryForever
-  }
-  let connected <- Std.Internal.IO.Async.Async.block manager.ensureConnected
-  pure connected.isConnected
+#eval testReconnectAllowedByPolicy |>.block
+
+/--
+info: true
+-/
+#guard_msgs in
+#eval testEnsureConnectedUsesReconnectPolicy |>.block
 
 end LeanRedisTest.Connection.Manager

@@ -1,3 +1,5 @@
+import LeanRedis.Config
+
 namespace LeanRedis
 
 structure CommandRequest where
@@ -14,6 +16,21 @@ def CommandRequest.ping (message? : Option String := none) : CommandRequest :=
       | none => #[]
     allowRetry := true
   }
+
+def CommandRequest.auth (auth : AuthConfig) : CommandRequest :=
+  match auth.username? with
+  | some username =>
+      {
+        name := "AUTH"
+        args := #[username.toUTF8, auth.password.value.toUTF8]
+        allowRetry := true
+      }
+  | none =>
+      {
+        name := "AUTH"
+        args := #[auth.password.value.toUTF8]
+        allowRetry := true
+      }
 
 def CommandRequest.select (database : UInt32) : CommandRequest :=
   {

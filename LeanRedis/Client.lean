@@ -114,6 +114,13 @@ def Client.ping [Transport.Transport τ]
   let reply <- execute client <| CommandRequest.ping message?
   expectPong reply
 
+def Client.auth [Transport.Transport τ]
+    (client : Client τ)
+    (auth : AuthConfig)
+    : Async Unit := do
+  let reply <- execute client <| CommandRequest.auth auth
+  expectOk reply
+
 def Client.select [Transport.Transport τ]
     (client : Client τ)
     (database : UInt32)

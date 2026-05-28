@@ -16,52 +16,62 @@ instance : Transport.Transport FakeTransport where
   send _ _ := pure ()
   close _ := pure ()
 
-/--
-info: true
--/
-#guard_msgs in
-#eval
+def testManagerStartsDisconnected : Bool :=
   let manager : Connection.Manager FakeTransport := Connection.Manager.new {
     endpoint := { host := "127.0.0.1", port := 6379 }
   }
   manager.runtime?.isNone
 
-/--
-info: LeanRedis.Engine.SessionPhase.ready
--/
-#guard_msgs in
-#eval do
-  let manager <- Std.Internal.IO.Async.Async.block <| ((Connection.Manager.new {
+def testManagerConnectsToReady : Std.Internal.IO.Async.Async LeanRedis.Engine.SessionPhase := do
+  let manager <- ((Connection.Manager.new {
     endpoint := { host := "127.0.0.1", port := 6379 }
   } : Connection.Manager FakeTransport).connect)
   pure manager.session.state.phase
 
-/--
-info: false
--/
-#guard_msgs in
-#eval do
-  let client <- Std.Internal.IO.Async.Async.block <| (Client.connect {
+def testDefaultClientStartsDisconnected : Std.Internal.IO.Async.Async Bool := do
+  let client <- (Client.connect {
     endpoint := { host := "127.0.0.1", port := 6379 }
   } : Std.Internal.IO.Async.Async (Client Transport.TCP))
-  Std.Internal.IO.Async.Async.block <| Client.isConnected client
+  Client.isConnected client
+
+def testCustomClientConnectNow : Std.Internal.IO.Async.Async Bool := do
+  let client <- (Client.connectWith {
+    endpoint := { host := "127.0.0.1", port := 6379 }
+  } : Std.Internal.IO.Async.Async (Client FakeTransport))
+  let _ <- Client.connectNow client
+  Client.isConnected client
+
+def testClosedByPeerReadResult : Option Transport.DisconnectReason :=
+  ({ bytes := ByteArray.empty, disconnect? := some .closedByPeer } : Transport.ReadResult).disconnect?
 
 /--
 info: true
 -/
 #guard_msgs in
-#eval do
-  let client <- Std.Internal.IO.Async.Async.block <| (Client.connectWith {
-    endpoint := { host := "127.0.0.1", port := 6379 }
-  } : Std.Internal.IO.Async.Async (Client FakeTransport))
-  let _ <- Std.Internal.IO.Async.Async.block <| Client.connectNow client
-  Std.Internal.IO.Async.Async.block <| Client.isConnected client
+#eval testManagerStartsDisconnected
+
+/--
+info: LeanRedis.Engine.SessionPhase.ready
+-/
+#guard_msgs in
+#eval testManagerConnectsToReady |>.block
+
+/--
+info: false
+-/
+#guard_msgs in
+#eval testDefaultClientStartsDisconnected |>.block
+
+/--
+info: true
+-/
+#guard_msgs in
+#eval testCustomClientConnectNow |>.block
 
 /--
 info: some (LeanRedis.Transport.DisconnectReason.closedByPeer)
 -/
 #guard_msgs in
-#eval
-  ({ bytes := ByteArray.empty, disconnect? := some .closedByPeer } : Transport.ReadResult).disconnect?
+#eval testClosedByPeerReadResult
 
 end LeanRedisTest.Transport.Basic

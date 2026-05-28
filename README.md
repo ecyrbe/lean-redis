@@ -54,4 +54,4 @@ Current tests cover:
 - connection bootstrap execution over scripted transports
 - reconnect-policy and disconnect-state behavior
 - async client constructors and connection state
-- typed async `PING` and `SELECT` client methods
+- typed async `AUTH`, `PING`, and `SELECT` client methods
