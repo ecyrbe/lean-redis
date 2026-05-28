@@ -4,7 +4,7 @@ open LeanRedis
 
 namespace LeanRedisTest.Connection.Manager
 
-abbrev Async := Std.Internal.IO.Async.Async
+open Std.Internal.IO.Async
 
 structure FakeTransport where
   replies : IO.Ref (Array ByteArray)

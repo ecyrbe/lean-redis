@@ -10,8 +10,7 @@ namespace LeanRedis.Connection
 
 open LeanRedis
 open LeanRedis.Transport
-
-abbrev Async := Std.Internal.IO.Async.Async
+open Std.Internal.IO.Async
 
 def readSize : UInt64 := 4096
 

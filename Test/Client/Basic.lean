@@ -2,6 +2,7 @@ import LeanRedis
 import Std.Sync.Mutex
 
 open LeanRedis
+open Std.Internal.IO.Async
 
 namespace LeanRedisTest.Client.Basic
 

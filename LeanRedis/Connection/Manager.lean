@@ -15,6 +15,7 @@ namespace LeanRedis.Connection
 open LeanRedis
 open LeanRedis.Engine
 open LeanRedis.Transport
+open Std.Internal.IO.Async
 
 structure Manager (τ : Type) where
   config : Config
