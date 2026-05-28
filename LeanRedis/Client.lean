@@ -12,7 +12,7 @@ structure Client (τ : Type) where
   manager : Std.Mutex (Connection.Manager τ)
 
 private def liftIO {α : Type} (action : IO α) : Async α :=
-  Std.Internal.IO.Async.EAsync.lift action
+  EAsync.lift action
 
 private def withManager [Transport.Transport τ]
     (client : Client τ)

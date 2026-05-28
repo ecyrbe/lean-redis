@@ -57,12 +57,12 @@ instance : Transport.Transport FakeTransport where
     pure { replies, writes }
 
   recv transport _ := do
-    match ← Std.Internal.IO.Async.EAsync.lift <| shiftReplies transport.replies with
+    match ← EAsync.lift <| shiftReplies transport.replies with
     | some bytes => pure { bytes }
     | none => pure { bytes := ByteArray.empty, disconnect? := some .closedByPeer }
 
   send transport bytes := do
-    Std.Internal.IO.Async.EAsync.lift <| transport.writes.modify fun writes => writes.push bytes
+    EAsync.lift <| transport.writes.modify fun writes => writes.push bytes
 
   close _ := pure ()
 
@@ -107,7 +107,7 @@ def testPasswordAuth : Async Nat := do
     endpoint := { host := "client-auth", port := 6379 }
   }
   client.auth { password := "secret" }
-  let writes <- Std.Internal.IO.Async.EAsync.lift <| writesOf client
+  let writes <- EAsync.lift <| writesOf client
   pure writes.size
 
 /--
@@ -121,7 +121,7 @@ def testUsernameAuth : Async String := do
     endpoint := { host := "client-auth-user", port := 6379 }
   }
   client.auth { username? := some "default", password := "secret" }
-  let writes <- Std.Internal.IO.Async.EAsync.lift <| writesOf client
+  let writes <- EAsync.lift <| writesOf client
   pure <| renderBytes <| writes[1]?.getD ByteArray.empty
 
 def testSelectUpdatesClientState : Async String := do
@@ -137,7 +137,7 @@ def testPingWritesTwoFrames : Async Nat := do
     endpoint := { host := "client-ping", port := 6379 }
   }
   let _ <- Client.ping client
-  let writes <- Std.Internal.IO.Async.EAsync.lift <| writesOf client
+  let writes <- EAsync.lift <| writesOf client
   pure writes.size
 
 /--

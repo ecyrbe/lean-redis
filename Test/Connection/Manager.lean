@@ -31,12 +31,12 @@ instance : Transport.Transport FakeTransport where
     pure { replies, writes }
 
   recv transport _ := do
-    match ← Std.Internal.IO.Async.EAsync.lift <| shiftReplies transport.replies with
+    match ← EAsync.lift <| shiftReplies transport.replies with
     | some bytes => pure { bytes }
     | none => pure { bytes := ByteArray.empty, disconnect? := some .closedByPeer }
 
   send transport bytes := do
-    Std.Internal.IO.Async.EAsync.lift <| transport.writes.modify fun writes => writes.push bytes
+    EAsync.lift <| transport.writes.modify fun writes => writes.push bytes
 
   close _ := pure ()
 
