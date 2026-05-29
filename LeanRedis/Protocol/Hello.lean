@@ -35,7 +35,6 @@ def helloCommand : CommandRequest :=
   {
     name := "HELLO"
     args := #["3".toUTF8]
-    allowRetry := true
   }
 
 def authCommand (auth : AuthConfig) : CommandRequest :=
@@ -45,7 +44,6 @@ def selectCommand (database : UInt32) : CommandRequest :=
   {
     name := "SELECT"
     args := #[toString database |>.toUTF8]
-    allowRetry := true
   }
 
 def bootstrapPlan (config : Config) : Array BootstrapStep :=

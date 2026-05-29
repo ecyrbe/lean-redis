@@ -58,7 +58,6 @@ def testEncodePingCommand : String :=
   renderBytes <| LeanRedis.Protocol.Resp.Encode.encodeCommand {
     name := "PING"
     args := #["hello".toUTF8]
-    allowRetry := true
   }
 
 def testEncodeSimpleString : String :=

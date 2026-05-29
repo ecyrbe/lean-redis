@@ -59,7 +59,6 @@ def CommandRequest.get (key : String) : CommandRequest :=
   {
     name := "GET"
     args := CommandRequest.utf8Args #[key]
-    allowRetry := true
   }
 
 def CommandRequest.set (key value : String) (options : SetOptions := {}) : CommandRequest :=
@@ -73,35 +72,30 @@ def CommandRequest.set (key value : String) (options : SetOptions := {}) : Comma
         ++ (match options.condition? with
           | some condition => CommandRequest.conditionArgs condition
           | none => #[])
-    allowRetry := true
   }
 
 def CommandRequest.mGet (keys : Array String) : CommandRequest :=
   {
     name := "MGET"
     args := CommandRequest.utf8Args keys
-    allowRetry := true
   }
 
 def CommandRequest.mSet (entries : Array (String × String)) : CommandRequest :=
   {
     name := "MSET"
     args := entries.foldl (fun acc (key, value) => acc ++ CommandRequest.utf8Args #[key, value]) #[]
-    allowRetry := true
   }
 
 def CommandRequest.mSetNx (entries : Array (String × String)) : CommandRequest :=
   {
     name := "MSETNX"
     args := entries.foldl (fun acc (key, value) => acc ++ CommandRequest.utf8Args #[key, value]) #[]
-    allowRetry := true
   }
 
 def CommandRequest.getDel (key : String) : CommandRequest :=
   {
     name := "GETDEL"
     args := CommandRequest.utf8Args #[key]
-    allowRetry := true
   }
 
 def CommandRequest.getEx (key : String) (mode? : Option GetExMode := none) : CommandRequest :=
@@ -111,98 +105,84 @@ def CommandRequest.getEx (key : String) (mode? : Option GetExMode := none) : Com
       ++ (match mode? with
         | some mode => CommandRequest.getExModeArgs mode
         | none => #[])
-    allowRetry := true
   }
 
 def CommandRequest.getRange (key : String) (start stop : Int) : CommandRequest :=
   {
     name := "GETRANGE"
     args := CommandRequest.utf8Args #[key, toString start, toString stop]
-    allowRetry := true
   }
 
 def CommandRequest.getSet (key value : String) : CommandRequest :=
   {
     name := "GETSET"
     args := CommandRequest.utf8Args #[key, value]
-    allowRetry := true
   }
 
 def CommandRequest.setRange (key : String) (offset : UInt64) (value : String) : CommandRequest :=
   {
     name := "SETRANGE"
     args := CommandRequest.utf8Args #[key, toString offset, value]
-    allowRetry := true
   }
 
 def CommandRequest.strLen (key : String) : CommandRequest :=
   {
     name := "STRLEN"
     args := CommandRequest.utf8Args #[key]
-    allowRetry := true
   }
 
 def CommandRequest.append (key value : String) : CommandRequest :=
   {
     name := "APPEND"
     args := CommandRequest.utf8Args #[key, value]
-    allowRetry := true
   }
 
 def CommandRequest.incr (key : String) : CommandRequest :=
   {
     name := "INCR"
     args := CommandRequest.utf8Args #[key]
-    allowRetry := true
   }
 
 def CommandRequest.incrBy (key : String) (amount : Int) : CommandRequest :=
   {
     name := "INCRBY"
     args := CommandRequest.utf8Args #[key, toString amount]
-    allowRetry := true
   }
 
 def CommandRequest.incrByFloat (key amount : String) : CommandRequest :=
   {
     name := "INCRBYFLOAT"
     args := CommandRequest.utf8Args #[key, amount]
-    allowRetry := true
   }
 
 def CommandRequest.decr (key : String) : CommandRequest :=
   {
     name := "DECR"
     args := CommandRequest.utf8Args #[key]
-    allowRetry := true
   }
 
 def CommandRequest.decrBy (key : String) (amount : Int) : CommandRequest :=
   {
     name := "DECRBY"
     args := CommandRequest.utf8Args #[key, toString amount]
-    allowRetry := true
   }
 
 def CommandRequest.setNx (key value : String) : CommandRequest :=
   {
     name := "SETNX"
     args := CommandRequest.utf8Args #[key, value]
-    allowRetry := true
   }
 
 def CommandRequest.setEx (key : String) (seconds : UInt64) (value : String) : CommandRequest :=
   {
     name := "SETEX"
     args := CommandRequest.utf8Args #[key, toString seconds, value]
-    allowRetry := true
   }
 
 def CommandRequest.pSetEx (key : String) (milliseconds : UInt64) (value : String) : CommandRequest :=
   {
     name := "PSETEX"
     args := CommandRequest.utf8Args #[key, toString milliseconds, value]
-    allowRetry := true
   }
 
 end LeanRedis
