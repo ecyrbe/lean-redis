@@ -59,12 +59,12 @@ instance : Transport.Transport FakeTransport where
     pure { replies, writes }
 
   recv transport _ := do
-    match ← EAsync.lift <| shiftReplies transport.replies with
+    match ← shiftReplies transport.replies with
     | some bytes => pure { bytes }
     | none => pure { bytes := ByteArray.empty, disconnect? := some .closedByPeer }
 
   send transport bytes := do
-    EAsync.lift <| transport.writes.modify fun writes => writes.push bytes
+    transport.writes.modify fun writes => writes.push bytes
 
   close _ := pure ()
 
@@ -137,7 +137,7 @@ def testSetExWritesTwoFrames : Async String := do
   }
   client.connect
   let _ <- client.setEx "name" 10 "alice"
-  let writes <- EAsync.lift <| writesOf client
+  let writes <- writesOf client
   pure <| renderBytes <| writes[1]?.getD ByteArray.empty
 
 /--

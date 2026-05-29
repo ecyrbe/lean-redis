@@ -23,7 +23,7 @@ The public API should be optimized for ordinary application usage.
 
 It should provide:
 
-- a configuration type for endpoint, credentials, database, timeouts, and policies
+- a configuration type for endpoint, credentials, database, timeouts, and reconnect strategy
 - a client constructor using TCP by default
 - typed async command methods grouped by Redis command families
 - integration with Lean's async and custom IO error capabilities
@@ -34,11 +34,11 @@ Internally, request execution should not be owned directly by the connection man
 
 Recommended split:
 
-- `Connection.Manager` owns session lifecycle, reconnect policy, bootstrap, and live-connection replacement
+- `Connection.Manager` owns bootstrap and one live connection runtime
 - `Connection.Runtime` owns one live transport plus parser state for that connection
-- `Client` and command-facing helpers build requests, execute them through a ready runtime, and decode typed replies
+- `Client` owns lifecycle state, background reconnect, event callbacks, request execution, and typed reply decoding
 
-This keeps reconnect logic above request execution while still allowing the client to recover cleanly from disconnects.
+This keeps reconnect logic above request execution while still allowing commands to fail fast during reconnect windows.
 
 ## API Direction
 
@@ -48,7 +48,8 @@ Examples of desired capabilities:
 
 - construct client from host/port or a config record
 - await typed command results directly
-- let configuration control auth, database selection, reconnect policy, and protocol preferences
+- let configuration control auth, database selection, reconnect strategy, and protocol preferences
+- let users subscribe callbacks for disconnect and reconnect events
 
 The API can still be modular internally, but the external experience should look like a coherent Redis client rather than a protocol toolkit.
 
@@ -81,7 +82,9 @@ This is the main user-facing deliverable of the library, so clarity matters more
 - the public API is async-only
 - a default TCP-based constructor exists
 - command methods return typed results where practical
-- users configure auth, protocol preference, reconnect policy, and initial DB through client configuration
+- users configure auth, protocol preference, reconnect strategy, and initial DB through client configuration
+- users can inspect both `isConnected` and richer lifecycle status
+- users can register event callbacks without entering `Async`
 - public methods surface structured errors through Lean-compatible IO error facilities
 
 ## Example
@@ -92,6 +95,12 @@ let client <- LeanRedis.Client.newDefault cfg
 let _ <- LeanRedis.Client.connect client
 let _ <- client.set "key" "value"
 let value <- client.get "key"
+```
+
+Constructor calls can be used directly in `Async` code through Lean's ordinary monadic lifting:
+
+```lean
+let client <- LeanRedis.Client.newDefault cfg
 ```
 
 ## Diagram

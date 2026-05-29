@@ -12,6 +12,14 @@ structure FakeTransport where
   replies : IO.Ref (Array ByteArray)
   writes : IO.Ref (Array ByteArray)
 
+structure ReconnectingTransport where
+  replies : IO.Ref (Array ByteArray)
+  writes : IO.Ref (Array ByteArray)
+
+structure FailingReconnectTransport where
+  replies : IO.Ref (Array ByteArray)
+  writes : IO.Ref (Array ByteArray)
+
 private def shiftReplies (ref : IO.Ref (Array ByteArray)) : IO (Option ByteArray) := do
   let replies <- ref.get
   match replies[0]? with
@@ -46,12 +54,70 @@ instance : Transport.Transport FakeTransport where
     pure { replies, writes }
 
   recv transport _ := do
-    match ← EAsync.lift <| shiftReplies transport.replies with
+    match ← shiftReplies transport.replies with
     | some bytes => pure { bytes }
     | none => pure { bytes := ByteArray.empty, disconnect? := some .closedByPeer }
 
   send transport bytes := do
-    EAsync.lift <| transport.writes.modify fun writes => writes.push bytes
+    transport.writes.modify fun writes => writes.push bytes
+
+  close _ := pure ()
+
+private def reconnectReplies (attempt : Nat) : Array ByteArray :=
+  if attempt == 0 then
+    #[
+      "%2\r\n+server\r\n+redis\r\n+proto\r\n:3\r\n".toUTF8,
+      ByteArray.empty
+    ]
+  else
+    #[
+      "%2\r\n+server\r\n+redis\r\n+proto\r\n:3\r\n".toUTF8,
+      "+PONG\r\n".toUTF8
+    ]
+
+instance : Transport.Transport ReconnectingTransport where
+  connect _ := do
+    let attempt <- reconnectAttemptsRef.modifyGet fun value => (value, value + 1)
+    let replies <- IO.mkRef <| reconnectReplies attempt
+    let writes <- IO.mkRef #[]
+    pure { replies, writes }
+
+  recv transport _ := do
+    match ← shiftReplies transport.replies with
+    | some bytes =>
+        if bytes.isEmpty then
+          pure { bytes, disconnect? := some .closedByPeer }
+        else
+          pure { bytes }
+    | none => pure { bytes := ByteArray.empty, disconnect? := some .closedByPeer }
+
+  send transport bytes := do
+    transport.writes.modify fun writes => writes.push bytes
+
+  close _ := pure ()
+
+instance : Transport.Transport FailingReconnectTransport where
+  connect _ := do
+    let attempt <- reconnectAttemptsRef.modifyGet fun value => (value, value + 1)
+    let replies <- IO.mkRef <|
+      if attempt == 0 then
+        #["%2\r\n+server\r\n+redis\r\n+proto\r\n:3\r\n".toUTF8, ByteArray.empty]
+      else
+        #[]
+    let writes <- IO.mkRef #[]
+    pure { replies, writes }
+
+  recv transport _ := do
+    match ← shiftReplies transport.replies with
+    | some bytes =>
+        if bytes.isEmpty then
+          pure { bytes, disconnect? := some .closedByPeer }
+        else
+          pure { bytes }
+    | none => pure { bytes := ByteArray.empty, disconnect? := some .closedByPeer }
+
+  send transport bytes := do
+    transport.writes.modify fun writes => writes.push bytes
 
   close _ := pure ()
 
@@ -100,7 +166,7 @@ def testPasswordAuth : Async Nat := do
   }
   client.connect
   client.auth { password := "secret" }
-  let writes <- EAsync.lift <| writesOf client
+  let writes <- writesOf client
   pure writes.size
 
 /--
@@ -115,7 +181,7 @@ def testUsernameAuth : Async String := do
   }
   client.connect
   client.auth { username? := some "default", password := "secret" }
-  let writes <- EAsync.lift <| writesOf client
+  let writes <- writesOf client
   pure <| renderBytes <| writes[1]?.getD ByteArray.empty
 
 def testSelectUpdatesClientState : Async String := do
@@ -133,7 +199,7 @@ def testPingWritesTwoFrames : Async Nat := do
   }
   client.connect
   let _ <- client.ping
-  let writes <- EAsync.lift <| writesOf client
+  let writes <- writesOf client
   pure writes.size
 
 def testServerErrorsStayServerErrors : Async String := do
@@ -146,6 +212,78 @@ def testServerErrorsStayServerErrors : Async String := do
     pure "unexpected success"
   catch err =>
     pure err.toString
+
+def testRequireConnectedUsesRichStatus : Async String := do
+  try
+    let client : Client FakeTransport <- Client.new {
+      endpoint := { host := "client-ping", port := 6379 }
+    }
+    let _ <- client.requireConnected
+    pure "unexpected success"
+  catch err =>
+    pure err.toString
+
+def testDisconnectUpdatesStatus : Async String := do
+  let client : Client FakeTransport <- Client.new {
+    endpoint := { host := "client-ping", port := 6379 }
+  }
+  client.connect
+  client.disconnect
+  let status <- client.connectionStatus
+  pure s!"{repr status}"
+
+def testReconnectEventsAndRecovery : Async String := do
+  reconnectAttemptsRef.set 0
+  let events <- IO.mkRef (#[] : Array String)
+  let client : Client ReconnectingTransport <- Client.new {
+    endpoint := { host := "client-reconnect", port := 6379 }
+    reconnectStrategy := .fixedInterval 1 (some 3)
+  }
+  let _ <- client.onEvent fun event => do
+    let label := match event with
+      | .remoteDisconnected _ _ => "remote-disconnected"
+      | .reconnectAttemptStarted _ => "reconnect-started"
+      | .reconnectAttemptFailed _ => "reconnect-failed"
+      | .reconnectScheduled _ _ => "reconnect-scheduled"
+      | .reconnected _ => "reconnected"
+      | _ => "other"
+    events.modify fun xs => xs.push label
+  client.connect
+  try
+    let _ <- client.ping
+    pure ()
+  catch _ =>
+    pure ()
+  IO.sleep 30
+  let pong <- client.ping
+  let seen <- events.get
+  pure s!"{pong.isNone}|{String.intercalate "," seen.toList}"
+
+def testReconnectStopsAfterMaxAttempts : Async String := do
+  reconnectAttemptsRef.set 0
+  let events <- IO.mkRef (#[] : Array String)
+  let client : Client FailingReconnectTransport <- Client.new {
+    endpoint := { host := "client-reconnect-stop", port := 6379 }
+    reconnectStrategy := .fixedInterval 1 (some 1)
+  }
+  let _ <- client.onEvent fun event => do
+    let label := match event with
+      | .remoteDisconnected _ _ => "remote-disconnected"
+      | .reconnectAttemptStarted _ => "reconnect-started"
+      | .reconnectAttemptFailed _ => "reconnect-failed"
+      | .reconnectStopped _ => "reconnect-stopped"
+      | _ => "other"
+    events.modify fun xs => xs.push label
+  client.connect
+  try
+    let _ <- client.ping
+    pure ()
+  catch _ =>
+    pure ()
+  IO.sleep 30
+  let status <- client.connectionStatus
+  let seen <- events.get
+  pure s!"{repr status}|{String.intercalate "," seen.toList}"
 
 /--
 info: "\"*3\\r\\n$4\\r\\nAUTH\\r\\n$7\\r\\ndefault\\r\\n$6\\r\\nsecret\\r\\n\""
@@ -170,5 +308,29 @@ info: "server error: ERR no such key"
 -/
 #guard_msgs in
 #eval testServerErrorsStayServerErrors |>.block
+
+/--
+info: "unavailable: client is not connected"
+-/
+#guard_msgs in
+#eval testRequireConnectedUsesRichStatus |>.block
+
+/--
+info: "LeanRedis.ClientConnectionStatus.closed"
+-/
+#guard_msgs in
+#eval testDisconnectUpdatesStatus |>.block
+
+/--
+info: "true|remote-disconnected,reconnect-started,reconnected"
+-/
+#guard_msgs in
+#eval testReconnectEventsAndRecovery |>.block
+
+/--
+info: "LeanRedis.ClientConnectionStatus.disconnected|remote-disconnected,reconnect-started,reconnect-failed,reconnect-stopped"
+-/
+#guard_msgs in
+#eval testReconnectStopsAfterMaxAttempts |>.block
 
 end LeanRedisTest.Client.Basic

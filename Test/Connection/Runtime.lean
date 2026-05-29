@@ -29,21 +29,21 @@ instance : Transport.Transport ScriptedTransport where
   connect _ := mkTransport #[]
 
   recv transport _ := do
-    EAsync.lift <| shiftReads transport.reads
+    shiftReads transport.reads
 
   send transport bytes := do
-    EAsync.lift <| transport.writes.modify fun writes => writes.push bytes
+    transport.writes.modify fun writes => writes.push bytes
 
   close _ := pure ()
 
 def testRuntimeExecuteReadsFragmentedReply : Async String := do
-  let transport <- EAsync.lift <| mkTransport #[
+  let transport <- mkTransport #[
     { bytes := "$5\r\nhe".toUTF8 },
     { bytes := "llo\r\n".toUTF8 }
   ]
   let runtime : Connection.Runtime ScriptedTransport := { transport }
   let (reply, runtime) <- Connection.Runtime.execute runtime <| CommandRequest.ping
-  let writes <- EAsync.lift <| runtime.transport.writes.get
+  let writes <- runtime.transport.writes.get
   let payload <- match reply with
     | .blobString bytes => pure <| renderBytes bytes
     | _ => pure "unexpected"
@@ -51,7 +51,7 @@ def testRuntimeExecuteReadsFragmentedReply : Async String := do
 
 def testRuntimeExecuteFailsWhenReplyDisconnects : Async String := do
   try
-    let transport <- EAsync.lift <| mkTransport #[
+    let transport <- mkTransport #[
       { bytes := "$5\r\nhe".toUTF8 },
       { bytes := ByteArray.empty, disconnect? := some .closedByPeer }
     ]
@@ -72,5 +72,21 @@ info: "transport error: connection closed while waiting for reply"
 -/
 #guard_msgs in
 #eval testRuntimeExecuteFailsWhenReplyDisconnects |>.block
+
+def testRuntimeTryExecuteReportsRemoteDisconnect : Async String := do
+  let transport <- mkTransport #[
+    { bytes := ByteArray.empty, disconnect? := some .closedByPeer }
+  ]
+  let runtime : Connection.Runtime ScriptedTransport := { transport }
+  match ← Connection.Runtime.tryExecute runtime <| CommandRequest.ping with
+  | .ok _ => pure "unexpected success"
+  | .error (.remoteDisconnect reason err) => pure s!"{repr reason}|{err.message}"
+  | .error (.commandError err) => pure err.message
+
+/--
+info: "LeanRedis.Transport.DisconnectReason.closedByPeer|transport error: connection closed while waiting for reply"
+-/
+#guard_msgs in
+#eval testRuntimeTryExecuteReportsRemoteDisconnect |>.block
 
 end LeanRedisTest.Connection.Runtime

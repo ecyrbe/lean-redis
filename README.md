@@ -20,6 +20,8 @@ Typed commands, RESP2/RESP3 support, native async TCP, and a design built for ex
 - 🔌 Native Lean TCP transport built on `Std.Internal.IO.Async`
 - 🧠 RESP2 and RESP3 parsing, encoding, and protocol fallback
 - 🧱 Clear layering: `Client` -> `Connection.Manager` -> `Connection.Runtime` -> RESP codec
+- 🔄 Opt-in background reconnect with fixed-interval or exponential backoff strategies
+- 📣 Async connection lifecycle event callbacks for disconnect and reconnect logging
 - 🧪 Transport abstraction makes mocked and scripted transports easy to use in tests
 - 🗂️ Typed command families for strings, hashes, lists, sets, and sorted sets
 - 🧪 Scripted tests for protocol, transport, connection, and typed command decoding
@@ -31,8 +33,8 @@ Core:
 - RESP parser and encoder
 - RESP2 / RESP3 bootstrap negotiation
 - default TCP transport
-- connection bootstrap and reconnect policy hooks
-- async client lifecycle and connection state inspection
+- connection bootstrap and opt-in background reconnect
+- async client lifecycle, reconnect events, and connection state inspection
 
 Command families:
 - 🔐 Connection: `AUTH`, `PING`, `SELECT`
@@ -60,7 +62,8 @@ Current non-goals for v1:
 | Native TCP transport | Yes | built on `Std.Internal.IO.Async` |
 | Mockable custom transports | Yes | transport is a typeclass over the concrete handle type |
 | Connection bootstrap | Yes | auth, HELLO negotiation, DB select |
-| Reconnect hooks | Yes | policy-driven manager behavior |
+| Background reconnect | Yes | opt-in client-owned reconnect worker with pluggable strategies |
+| Connection event callbacks | Yes | async handlers, fire-and-forget delivery |
 | String commands | Yes | mainstream v1 coverage |
 | Hash commands | Yes | includes `HSCAN` |
 | List commands | Yes | non-blocking mainstream coverage |
@@ -107,6 +110,7 @@ open Std.Internal.IO.Async
 def example : Async (Option String) := do
   let client <- Client.newDefault {
     endpoint := { host := "127.0.0.1", port := 6379 }
+    reconnectStrategy := .exponentialBackoff {}
   }
   let _ <- client.connect
   let _ <- client.set "greeting" "hello"
@@ -124,6 +128,24 @@ def pingExample : Async (Option String) := do
   }
   let _ <- client.connect
   client.ping
+```
+
+Reconnect and event callbacks:
+
+```lean
+def reconnectingExample : Async Unit := do
+  let client <- LeanRedis.Client.newDefault {
+    endpoint := { host := "127.0.0.1", port := 6379 }
+    reconnectStrategy := .exponentialBackoff {
+      baseDelayMs := 100
+      maxDelayMs := 5_000
+      jitter := true
+    }
+  }
+  let _sub <- client.onEvent fun event => do
+    IO.println s!"redis event: {repr event}"
+  let _ <- client.connect
+  pure ()
 ```
 
 String operations:
@@ -192,7 +214,7 @@ instance : Transport.Transport FakeTransport where
     pure { replies }
 
   recv transport _ := do
-    let bytes <- EAsync.lift <| popReply transport.replies
+    let bytes <- popReply transport.replies
     if bytes.isEmpty then
       pure { bytes := ByteArray.empty, disconnect? := some .closedByPeer }
     else
@@ -220,12 +242,19 @@ Main public entry points:
 - `Client.connect`
 - `Client.disconnect`
 - `Client.isConnected`
+- `Client.connectionStatus`
+- `Client.onEvent`
+- `Client.offEvent`
 - `Client.currentState`
 
 Design notes:
 
 - `new*` allocates client state only
+- `new*` is `IO` because it allocates mutable client state, but it does not open a connection
 - `connect` performs transport setup and Redis bootstrap
+- commands fail fast while disconnected or reconnecting
+- remote disconnects trigger background reconnect only when `reconnectStrategy` is enabled
+- `onEvent` and `offEvent` are lightweight `IO` registration calls; callback delivery is fire-and-forget
 - command methods are typed and async
 - command families are split into dedicated modules internally
 

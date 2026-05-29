@@ -32,7 +32,11 @@ def Client.auth [Transport.Transport τ]
     (client : Client τ)
     (auth : AuthConfig)
     : Async Unit := do
-  let reply <- Client.execute client <| CommandRequest.auth auth
+  let reply <- Client.executeWithManagerUpdate client (CommandRequest.auth auth) fun manager _ =>
+    pure {
+      manager with
+      config := { manager.config with auth? := some auth }
+    }
   Client.expectOk reply
 
 /--
@@ -47,7 +51,11 @@ def Client.select [Transport.Transport τ]
     (client : Client τ)
     (database : UInt32)
     : Async Unit := do
-  let reply <- Client.execute client <| CommandRequest.select database
+  let reply <- Client.executeWithManagerUpdate client (CommandRequest.select database) fun manager _ =>
+    pure {
+      manager with
+      config := { manager.config with database? := some database }
+    }
   Client.expectOk reply
 
 end LeanRedis

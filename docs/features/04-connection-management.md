@@ -1,15 +1,16 @@
-# 04 - Connection Management and Reconnect Policies
+# 04 - Connection Management and Background Reconnect
 
 ## Goal
 
-Provide integrated connection management that detects disconnects, reconnects using pluggable policies, and coordinates request execution across connection loss.
+Provide integrated connection management that detects remote disconnects, reconnects in the background using pluggable strategies, and surfaces connection lifecycle events.
 
 ## Scope
 
 - session lifecycle management
 - disconnect detection
 - reconnect initiation
-- retry policy hooks
+- reconnect scheduling
+- event publication
 - clean separation between session state and transport lifecycle
 
 ## Non-Goals
@@ -22,45 +23,63 @@ Provide integrated connection management that detects disconnects, reconnects us
 
 Connection management should sit above transport and below the public async API.
 
-It should own:
+The client-facing connection layer should own:
 
-- session lifecycle
+- lifecycle status
 - bootstrap on new connections
 - detection of broken sessions
-- reconnect attempts after disconnect
-- coordination of retry behavior according to policy
+- background reconnect attempts after remote disconnect
+- event callbacks for disconnect and reconnect transitions
 
-It should not own ordinary request execution or typed command decoding directly.
+It should not automatically retry user commands.
 
-Instead, the manager should own a live connection runtime abstraction that contains the current transport and parser state. Request execution can then run against that runtime while the manager remains responsible for replacing it after disconnect.
+The implemented split is:
 
-Retry should only begin after a disconnect is detected. It should not speculate on transient failures while the session is still considered connected.
+- `Connection.Manager` owns bootstrap and the current runtime handle
+- `Connection.Runtime` owns one live transport plus parser state
+- `Client` owns serialized request execution, richer lifecycle state, event fanout, and the reconnect worker
 
-## Policies
+Reconnect only begins after a remote disconnect is detected. Initial connect failures do not start background reconnect because they may be caused by invalid user configuration.
 
-The design should support pluggable policies from the start.
+## Reconnect Strategy
 
-Minimum policy shapes needed in v1:
+Reconnect is configured through `Config.reconnectStrategy`.
 
-- reconnect policy: decides when to attempt the next connection
-- retry policy: decides what happens to requests affected by disconnect
+Built-in strategies:
 
-Useful built-in policy directions to document even if only one is implemented first:
+- `disabled`
+- `fixedInterval delayMs maxAttempts?`
+- `exponentialBackoff config maxAttempts?`
 
-- fail immediately
-- reconnect and retry automatically
+Exponential backoff supports:
 
-Because you explicitly want later policy flexibility, the connection manager should treat policy as a first-class dependency rather than hard-coded behavior.
+- base delay
+- max delay
+- optional jitter
 
 ## Request Handling Across Disconnect
 
-The connection manager should define clear rules for:
+The implemented rules are:
 
-- requests not yet written when disconnect happens
-- requests written but not yet answered
-- requests issued after disconnect but before reconnect succeeds
+- in-flight commands fail immediately on remote disconnect
+- commands issued while disconnected or reconnecting fail immediately with `unavailable`
+- user commands are never auto-retried
+- successful `AUTH` and `SELECT` update reconnect-safe bootstrap state for future reconnects
 
-The exact semantics can be refined during implementation, but the design must reserve explicit handling points for these states.
+## Events
+
+Users can register async callbacks through `client.onEvent` and remove them with `client.offEvent`.
+
+Supported events include:
+
+- initial connect failed
+- remote disconnected
+- reconnect attempt started
+- reconnect attempt failed
+- reconnect scheduled
+- reconnected
+- reconnect stopped
+- explicitly disconnected
 
 ## Public API Impact
 
@@ -76,14 +95,16 @@ Users should be able to configure reconnect behavior through client configuratio
 ## Acceptance Criteria
 
 - disconnects are detected and transition the session out of ready state
-- reconnect attempts are policy-driven
+- reconnect attempts are strategy-driven
 - bootstrap reruns on each fresh session
-- retry behavior is policy-driven rather than embedded in command modules
+- commands fail fast while reconnect is in progress
+- no automatic command replay occurs
+- event callbacks surface disconnect and reconnect transitions
 - command code does not own reconnect logic
 
 ## Example
 
-If a TCP socket closes between two commands, the connection manager should create a new transport, rerun bootstrap, and resume serving commands according to the configured retry policy.
+If a TCP socket closes between two commands, the client should mark itself reconnecting, notify subscribers, create a new transport in the background according to the configured reconnect strategy, rerun bootstrap, and return to ready state when that succeeds.
 
 ## Diagram
 
@@ -93,10 +114,10 @@ Ready
   +--> disconnect detected
           |
           v
-      Session failed
+      Reconnecting
           |
           v
-      Reconnect policy
+      Reconnect strategy
           |
           v
       New transport

@@ -27,8 +27,7 @@ structure Config where
   protocolPreference : ProtocolPreference := .auto
   clientName? : Option String := none
   timeouts : TimeoutConfig := {}
-  reconnectPolicy : Connection.ReconnectPolicy := .failImmediately
-  retryPolicy : Connection.RetryPolicy := .retryAfterReconnect
+  reconnectStrategy : Connection.ReconnectStrategy := .disabled
   deriving BEq, Repr
 
 end LeanRedis

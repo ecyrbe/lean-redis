@@ -1,14 +1,8 @@
-import LeanRedis.Command
 import LeanRedis.Config
-import LeanRedis.Connection.Policy
 import LeanRedis.Connection.Runtime
 import LeanRedis.Engine.Session
 import LeanRedis.Protocol.Hello
-import LeanRedis.Protocol.Resp.Encode
-import LeanRedis.Protocol.Resp.Parse
-import LeanRedis.Protocol.Resp.Value
 import LeanRedis.Transport.Types
-import LeanRedis.Transport.Tcp
 
 namespace LeanRedis.Connection
 
@@ -16,22 +10,6 @@ open LeanRedis
 open LeanRedis.Engine
 open LeanRedis.Transport
 open Std.Internal.IO.Async
-
-private def classifyRuntimeFailure (message : String) : Error :=
-  if message.startsWith "server error: " then
-    .server <| (message.drop "server error: ".length).toString
-  else if message.startsWith "decode error: " then
-    .decode <| (message.drop "decode error: ".length).toString
-  else if message.startsWith "protocol error: " then
-    .protocol <| (message.drop "protocol error: ".length).toString
-  else if message.startsWith "bootstrap error: " then
-    .bootstrap <| (message.drop "bootstrap error: ".length).toString
-  else if message.startsWith "unavailable: " then
-    .unavailable <| (message.drop "unavailable: ".length).toString
-  else if message.startsWith "transport error: " then
-    .transport <| (message.drop "transport error: ".length).toString
-  else
-    .transport message
 
 structure Manager (τ : Type) where
   config : Config
@@ -47,28 +25,6 @@ def Manager.new (config : Config) : Manager τ :=
 
 def Manager.isConnected (manager : Manager τ) : Bool :=
   manager.runtime?.isSome && manager.session.isReady
-
-private def disconnectedState
-    (manager : Manager τ)
-    (phase : SessionPhase)
-    : Manager τ :=
-  let pending :=
-    if manager.config.retryPolicy.keepsRequests then
-      manager.session.state.pending
-    else
-      #[]
-  {
-    manager with
-    runtime? := none
-    session := {
-      state := {
-        manager.session.state with
-        phase := phase
-        pending := pending
-        outbox := #[]
-      }
-    }
-  }
 
 private partial def readBootstrapReplies
     [Transport τ]
@@ -122,66 +78,6 @@ def Manager.connect [Transport τ] (manager : Manager τ) : Async (Manager τ) :
   else
     let (runtime, session) <- connectRuntime manager
     pure { manager with runtime? := some runtime, session }
-
-def Manager.recordDisconnect (manager : Manager τ) (_reason : DisconnectReason) : Manager τ :=
-  disconnectedState manager .failed
-
-def Manager.reconnect? [Transport τ] (manager : Manager τ) (attempt : Nat := 0) : Async (Option (Manager τ)) := do
-  if manager.config.reconnectPolicy.allowsAttempt attempt then
-    some <$> (Manager.connect <| disconnectedState manager .bootstrapping)
-  else
-    pure none
-
-def Manager.ensureConnected [Transport τ] (manager : Manager τ) : Async (Manager τ) := do
-  if manager.isConnected then
-    pure manager
-  else
-    match manager.runtime? with
-    | some _ => Manager.connect manager
-    | none =>
-        match ← manager.reconnect? with
-        | some connected => pure connected
-        | none => Error.raise <| .unavailable "connection is not ready and reconnect policy disallows reconnect"
-
-def Manager.notePending (manager : Manager τ) (request : CommandRequest) : Manager τ :=
-  {
-    manager with
-    session := {
-      state := {
-        manager.session.state with
-        pending := manager.session.state.pending.push { request := request }
-      }
-    }
-  }
-
-def Manager.clearPending (manager : Manager τ) : Manager τ :=
-  {
-    manager with
-    session := {
-      state := {
-        manager.session.state with
-        pending := #[]
-      }
-    }
-  }
-
-def Manager.withRuntime [Transport τ]
-    (manager : Manager τ)
-    (action : Runtime τ -> Async (α × Runtime τ × Engine.State))
-    : Async (α × Manager τ) := do
-  let manager <- manager.ensureConnected
-  let some runtime := manager.runtime?
-    | Error.raise <| .unavailable "connection is not ready"
-  try
-    let (result, runtime, state) <- action runtime
-    let manager := {
-      manager.clearPending with
-      runtime? := some runtime
-      session := { state := state }
-    }
-    pure (result, manager)
-  catch err =>
-    Error.raise <| classifyRuntimeFailure err.toString
 
 def Manager.disconnect [Transport τ] (manager : Manager τ) : Async (Manager τ) := do
   match manager.runtime? with

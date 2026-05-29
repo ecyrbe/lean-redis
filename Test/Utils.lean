@@ -2,6 +2,8 @@ import LeanRedis
 
 namespace LeanRedisTest.Utils
 
+initialize reconnectAttemptsRef : IO.Ref Nat ← IO.mkRef 0
+
 def escapeText (text : String) : String :=
   text.toList.foldl (fun acc ch =>
     acc ++

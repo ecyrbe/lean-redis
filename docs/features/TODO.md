@@ -17,8 +17,8 @@ Status values:
 | 01 | Architecture and module boundaries | done | Core module scaffold compiles |
 | 02 | RESP2/RESP3 protocol support | done | Value model, parser, encoder, fallback logic, and protocol tests implemented |
 | 03 | Transport abstraction and default TCP transport | done | Byte-oriented transport, default Std.Internal TCP, and custom factory wiring verified |
-| 04 | Connection management and reconnect policies | done | Bootstrap execution, disconnect state transitions, and policy-driven reconnect hooks verified |
-| 05 | Async public client API | done | Async client constructors, typed ping/select methods, and non-blocking state access verified |
+| 04 | Connection management and background reconnect | done | Bootstrap execution, client-owned background reconnect strategies, fail-fast disconnect semantics, and event callbacks verified |
+| 05 | Async public client API | done | Async client constructors, typed command methods, richer lifecycle status, and synchronous event registration verified |
 
 ## Commands
 
