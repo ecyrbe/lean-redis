@@ -36,30 +36,34 @@ namespace LeanRedis.CLI
       match value with
       | some v => IO.println v
       | none => IO.println "(nil)"
-    catch err =>
-      IO.println s!"error: {err}"
+    catch
+      | err => IO.println s!"error: {err}"
 
   def handleSet (client : Client Transport.TCP) (key value : String) : IO Unit := do
     try
       let ok ← client.set key value |>.block
       IO.println (if ok then "OK" else "(not stored)")
-    catch err =>
-      IO.println s!"error: {err}"
+    catch
+      | err => IO.println s!"error: {err}"
 
   partial def repl (client : Client Transport.TCP) : IO Unit := do
-    IO.print "> "
-    let line ← (← IO.getStdin).getLine
-    let parts := line.split Char.isWhitespace |>.toList |>.filter (·.isEmpty |> not) |>.map toString
-    match parts with
-      | ["get", key] =>
-        handleGet client key
-        repl client
-      | ["set", key, value] =>
-        handleSet client key value
-        repl client
-      | _ =>
-        IO.println "Unknown command. Usage: get <key> | set <key> <value>"
-        repl client
+    while !(← IO.checkCanceled) do
+      IO.print "> "
+      let stdin ← IO.getStdin
+      if (← IO.checkCanceled) then
+        IO.println "Exiting REPL..."
+        return
+      let line ← stdin.getLine
+      let parts := line.split Char.isWhitespace |>.toList |>.filter (·.isEmpty |> not) |>.map toString
+      match parts with
+        | ["get", key] =>
+          handleGet client key
+        | ["set", key, value] =>
+          handleSet client key value
+        | _ =>
+          if line ≠ "" then
+            IO.println "Unknown command. Usage: get <key> | set <key> <value>"
+    IO.println "Exiting REPL..."
 
 end LeanRedis.CLI
 
@@ -69,12 +73,23 @@ def main : IO Unit := do
     endpoint := { host := "127.0.0.1", port := 6379 }
     reconnectStrategy := .exponentialBackoff ({}) (some 10)
   }
-  let client : Client Transport.TCP ← Client.newDefault config
-  _ ← client.onEvent CLI.eventHandler
+  let client ← Client.newDefault config
+  let subId ← client.onEvent CLI.eventHandler
   try
     client.connect |>.block
   catch err =>
+    client.offEvent subId
     IO.println s!"connect failed: {err}"
     return
+
   IO.println "LeanRedis CLI — type get <key> or set <key> <value>. Ctrl+C to exit."
-  CLI.repl client
+
+  let waiter ← Signal.Waiter.mk Signal.sigint true
+  let worker ← IO.asTask (CLI.repl client)
+
+  let signalWaiter ← waiter.wait
+  let _  ← IO.ofExcept <| signalWaiter.get
+  IO.cancel worker
+  try client.offEvent subId catch _ => pure ()
+  try client.disconnect |>.block catch _ => pure ()
+  --waiter.stop
