@@ -37,8 +37,8 @@ instance instTransportTCP : Transport TCP where
   recv socket size := do
     try
       match ← socket.recv? size with
-      | some bytes => pure { bytes }
-      | none => pure { bytes := ByteArray.empty, disconnect? := some .closedByPeer }
+      | some bytes => pure bytes
+      | none => Error.raise <| .transport "remote disconnect: closedByPeer"
     catch err =>
       Error.raise <| .transport s!"tcp read failed: {err}"
 

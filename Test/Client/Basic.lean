@@ -55,8 +55,8 @@ instance : Transport.Transport FakeTransport where
 
   recv transport _ := do
     match ← shiftReplies transport.replies with
-    | some bytes => pure { bytes }
-    | none => pure { bytes := ByteArray.empty, disconnect? := some .closedByPeer }
+    | some bytes => pure bytes
+    | none => pure ByteArray.empty
 
   send transport bytes := do
     transport.writes.modify fun writes => writes.push bytes
@@ -84,12 +84,8 @@ instance : Transport.Transport ReconnectingTransport where
 
   recv transport _ := do
     match ← shiftReplies transport.replies with
-    | some bytes =>
-        if bytes.isEmpty then
-          pure { bytes, disconnect? := some .closedByPeer }
-        else
-          pure { bytes }
-    | none => pure { bytes := ByteArray.empty, disconnect? := some .closedByPeer }
+    | some bytes => pure bytes
+    | none => pure ByteArray.empty
 
   send transport bytes := do
     transport.writes.modify fun writes => writes.push bytes
@@ -109,12 +105,8 @@ instance : Transport.Transport FailingReconnectTransport where
 
   recv transport _ := do
     match ← shiftReplies transport.replies with
-    | some bytes =>
-        if bytes.isEmpty then
-          pure { bytes, disconnect? := some .closedByPeer }
-        else
-          pure { bytes }
-    | none => pure { bytes := ByteArray.empty, disconnect? := some .closedByPeer }
+    | some bytes => pure bytes
+    | none => pure ByteArray.empty
 
   send transport bytes := do
     transport.writes.modify fun writes => writes.push bytes

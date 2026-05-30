@@ -22,55 +22,48 @@ structure Runtime (τ : Type) where
   transport : τ
   parser : Protocol.Resp.Parse.ParserState := {}
 
-private partial def readReply
-    [Transport τ]
-    (runtime : Runtime τ)
-    : Async (Protocol.Resp.Value × Runtime τ) := do
-  match Protocol.Resp.Parse.parseOne runtime.parser with
-  | .done (value, parser) _ => pure (value, { runtime with parser })
-  | .error message => Error.raise <| .protocol message
-  | .needMore =>
-      let read <- Transport.recv runtime.transport readSize
-      match read.disconnect? with
-      | some reason => Error.raise <| .transport s!"remote disconnect: {repr reason}"
-      | none =>
-          if read.bytes.isEmpty then
-            Error.raise <| .transport "remote disconnect: closedByPeer"
-          else
-            readReply { runtime with parser := Protocol.Resp.Parse.feed runtime.parser read.bytes }
+abbrev RuntimeM (τ : Type) := StateRefT (Runtime τ) Async
 
-private def parseRemoteDisconnect? (err : IO.Error) : Option DisconnectReason :=
-  let text := err.toString
-  if text == "transport error: remote disconnect: LeanRedis.Transport.DisconnectReason.closedByPeer" then
-    some .closedByPeer
-  else if text == "transport error: remote disconnect: LeanRedis.Transport.DisconnectReason.closedByClient" then
-    some .closedByClient
-  else
-    none
+private def readReply
+    [Transport τ]
+    : RuntimeM τ (Except Error Protocol.Resp.Value) := do
+ while true do
+    let runtime ← get
+    match Protocol.Resp.Parse.parseOne runtime.parser with
+    | .done (value, parser) _ =>
+        modify fun runtime => { runtime with parser }
+        return (.ok value)
+    | .error message =>
+        return (.error <| .protocol message)
+    | .needMore =>
+        let bytes <- Transport.recv runtime.transport readSize
+        if bytes.isEmpty then
+          Error.raise <| .transport "remote disconnect: closedByPeer"
+        else
+          modify fun runtime =>
+            { runtime with
+              parser := Protocol.Resp.Parse.feed runtime.parser bytes }
+  unreachable!
 
 def Runtime.tryExecute
     [Transport τ]
-    (runtime : Runtime τ)
     (request : CommandRequest)
-    : Async (Except ExecuteError (Protocol.Resp.Value × Runtime τ)) := do
+    : RuntimeM τ (Except ExecuteError Protocol.Resp.Value) := do
+  let runtime ← get
   try
     Transport.send runtime.transport <| Protocol.Resp.Encode.encodeCommand request
-    let result <- readReply runtime
-    pure <| .ok result
-  catch err =>
-    match parseRemoteDisconnect? err with
-    | some reason =>
-        pure <| .error <| .remoteDisconnect reason (.transport "connection closed while waiting for reply")
-    | none =>
-        pure <| .error <| .commandError (.transport err.toString)
+    match ← readReply with
+    | .ok value => return .ok value
+    | .error err => return .error <| .commandError err
+  catch _ =>
+    return .error <| .remoteDisconnect .closedByPeer (.transport "connection closed while waiting for reply")
 
 def Runtime.execute
     [Transport τ]
-    (runtime : Runtime τ)
     (request : CommandRequest)
-    : Async (Protocol.Resp.Value × Runtime τ) := do
-  match ← Runtime.tryExecute runtime request with
-  | .ok result => pure result
+    : RuntimeM τ Protocol.Resp.Value := do
+  match ← Runtime.tryExecute request with
+  | .ok result => return result
   | .error (.remoteDisconnect _ err) => Error.raise err
   | .error (.commandError err) => Error.raise err
 

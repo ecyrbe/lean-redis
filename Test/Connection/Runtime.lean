@@ -8,19 +8,19 @@ open Std.Internal.IO.Async
 namespace LeanRedisTest.Connection.Runtime
 
 structure ScriptedTransport where
-  reads : IO.Ref (Array Transport.ReadResult)
+  reads : IO.Ref (Array ByteArray)
   writes : IO.Ref (Array ByteArray)
 
-private def shiftReads (ref : IO.Ref (Array Transport.ReadResult)) : IO Transport.ReadResult := do
+private def shiftReads (ref : IO.Ref (Array ByteArray)) : IO ByteArray := do
   let reads <- ref.get
   match reads[0]? with
-  | some read =>
+  | some bytes =>
       ref.set (reads.extract 1 reads.size)
-      pure read
+      pure bytes
   | none =>
-      pure { bytes := ByteArray.empty, disconnect? := some .closedByPeer }
+      pure ByteArray.empty
 
-private def mkTransport (reads : Array Transport.ReadResult) : IO ScriptedTransport := do
+private def mkTransport (reads : Array ByteArray) : IO ScriptedTransport := do
   let reads <- IO.mkRef reads
   let writes <- IO.mkRef #[]
   pure { reads, writes }
@@ -38,11 +38,11 @@ instance : Transport.Transport ScriptedTransport where
 
 def testRuntimeExecuteReadsFragmentedReply : Async String := do
   let transport <- mkTransport #[
-    { bytes := "$5\r\nhe".toUTF8 },
-    { bytes := "llo\r\n".toUTF8 }
+    "$5\r\nhe".toUTF8,
+    "llo\r\n".toUTF8
   ]
   let runtime : Connection.Runtime ScriptedTransport := { transport }
-  let (reply, runtime) <- Connection.Runtime.execute runtime <| CommandRequest.ping
+  let (reply, runtime) ← (Connection.Runtime.execute (CommandRequest.ping)).run runtime
   let writes <- runtime.transport.writes.get
   let payload <- match reply with
     | .blobString bytes => pure <| renderBytes bytes
@@ -52,11 +52,11 @@ def testRuntimeExecuteReadsFragmentedReply : Async String := do
 def testRuntimeExecuteFailsWhenReplyDisconnects : Async String := do
   try
     let transport <- mkTransport #[
-      { bytes := "$5\r\nhe".toUTF8 },
-      { bytes := ByteArray.empty, disconnect? := some .closedByPeer }
+      "$5\r\nhe".toUTF8,
+      ByteArray.empty
     ]
     let runtime : Connection.Runtime ScriptedTransport := { transport }
-    let _ <- Connection.Runtime.execute runtime <| CommandRequest.ping
+    let _ ← (Connection.Runtime.execute (CommandRequest.ping)).run runtime
     pure "unexpected success"
   catch err =>
     pure err.toString
@@ -74,11 +74,10 @@ info: "transport error: connection closed while waiting for reply"
 #eval testRuntimeExecuteFailsWhenReplyDisconnects |>.block
 
 def testRuntimeTryExecuteReportsRemoteDisconnect : Async String := do
-  let transport <- mkTransport #[
-    { bytes := ByteArray.empty, disconnect? := some .closedByPeer }
-  ]
+  let transport <- mkTransport #[ByteArray.empty]
   let runtime : Connection.Runtime ScriptedTransport := { transport }
-  match ← Connection.Runtime.tryExecute runtime <| CommandRequest.ping with
+  let (result, _) ← (Connection.Runtime.tryExecute (CommandRequest.ping)).run runtime
+  match result with
   | .ok _ => pure "unexpected success"
   | .error (.remoteDisconnect reason err) => pure s!"{repr reason}|{err.message}"
   | .error (.commandError err) => pure err.message

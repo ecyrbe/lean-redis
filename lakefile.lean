@@ -12,3 +12,6 @@ lean_lib LeanRedisTest where
 @[default_target]
 lean_exe "lean-redis" where
   root := `Main
+
+lean_exe "lean-redis-cli" where
+  root := `Cli

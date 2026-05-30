@@ -16,14 +16,9 @@ inductive DisconnectReason where
   | writeFailure (message : String)
   deriving BEq, Inhabited, Repr
 
-structure ReadResult where
-  bytes : ByteArray
-  disconnect? : Option DisconnectReason := none
-  deriving Inhabited
-
 class Transport (α : Type) where
   connect : Endpoint -> Async α
-  recv : α -> UInt64 -> Async ReadResult
+  recv : α -> UInt64 -> Async ByteArray
   send : α -> ByteArray -> Async Unit
   close : α -> Async Unit
 

@@ -43,7 +43,7 @@ private def eventMetadata
     (attempt? : Option Nat := none)
     : Async Client.EventMetadata := do
   pure {
-    timestamp := ← Std.Time.Timestamp.now
+    timestamp := ← Std.Time.PlainDateTime.now
     error?
     attempt?
   }
@@ -403,8 +403,9 @@ def executeWithManagerUpdate [Transport.Transport τ]
       | do
           setStatus client .disconnected
           Error.raise <| .unavailable "client is not connected"
-    match ← Connection.Runtime.tryExecute runtime request with
-    | .ok (reply, runtime) =>
+    let (result, runtime) ← (Connection.Runtime.tryExecute request).run runtime
+    match result with
+    | .ok reply =>
         let manager := {
           manager with
           runtime? := some runtime

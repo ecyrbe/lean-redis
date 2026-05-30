@@ -5,7 +5,7 @@ import Std.Time
 namespace LeanRedis.Client
 
 structure EventMetadata where
-  timestamp : Std.Time.Timestamp
+  timestamp : Std.Time.PlainDateTime
   error? : Option LeanRedis.Error := none
   attempt? : Option Nat := none
   deriving Repr

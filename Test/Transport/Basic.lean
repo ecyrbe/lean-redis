@@ -15,7 +15,7 @@ structure FakeTransport where
 
 instance : Transport.Transport FakeTransport where
   connect _ := pure { connected := true }
-  recv _ _ := pure { bytes := testBytes }
+  recv _ _ := pure testBytes
   send _ _ := pure ()
   close _ := pure ()
 
@@ -44,9 +44,6 @@ def testCustomClientConnectNow : Async Bool := do
   let _ <- Client.connect client
   Client.isConnected client
 
-def testClosedByPeerReadResult : Option Transport.DisconnectReason :=
-  ({ bytes := ByteArray.empty, disconnect? := some .closedByPeer } : Transport.ReadResult).disconnect?
-
 /--
 info: true
 -/
@@ -70,11 +67,5 @@ info: true
 -/
 #guard_msgs in
 #eval testCustomClientConnectNow |>.block
-
-/--
-info: some (LeanRedis.Transport.DisconnectReason.closedByPeer)
--/
-#guard_msgs in
-#eval testClosedByPeerReadResult
 
 end LeanRedisTest.Transport.Basic

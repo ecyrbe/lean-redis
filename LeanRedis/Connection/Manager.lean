@@ -40,14 +40,11 @@ private partial def readBootstrapReplies
     | .error err => Error.raise err
     | .ok (values, nextParser) =>
         if values.isEmpty then
-          let read <- Transport.recv transport readSize
-          match read.disconnect? with
-          | some _ => Error.raise <| .bootstrap "connection closed while waiting for bootstrap reply"
-          | none =>
-              if read.bytes.isEmpty then
-                Error.raise <| .bootstrap "connection closed while waiting for bootstrap reply"
-              else
-                readBootstrapReplies transport remaining (Protocol.Resp.Parse.feed nextParser read.bytes) acc
+          let bytes <- Transport.recv transport readSize
+          if bytes.isEmpty then
+            Error.raise <| .bootstrap "connection closed while waiting for bootstrap reply"
+          else
+            readBootstrapReplies transport remaining (Protocol.Resp.Parse.feed nextParser bytes) acc
         else
           let takeCount := Nat.min remaining values.size
           let consumed := values.extract 0 takeCount
