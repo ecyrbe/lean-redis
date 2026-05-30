@@ -1,0 +1,3 @@
+import LeanRedis
+
+open LeanRedis

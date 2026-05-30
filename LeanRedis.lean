@@ -15,3 +15,4 @@ import LeanRedis.Engine.Session
 import LeanRedis.Connection.Runtime
 import LeanRedis.Connection.Manager
 import LeanRedis.Client
+import LeanRedis.Cache

@@ -32,11 +32,14 @@ namespace Cache
 
   @[inline, specialize]
   def get [Transport.Transport τ] (cache : Cache τ) (key : String) (cb : Unit → (Async String)) (options: SetOptions := {}) : Async String := do
-    try
-      let value <- cache.redis.get key
-      match value with
-      | some v => return v
-      | none => cache.cacheCallback key cb options
-    catch err =>
-      IO.println s!"Error fetching key {key} from Redis: {err}"
-      cache.cacheCallback key cb options
+    let value ← (
+        try
+          cache.redis.get key
+        catch err =>
+          IO.println s!"Error fetching key {key} from Redis: {err}"
+          pure none)
+    match value with
+    | some v => return v
+    | none => cache.cacheCallback key cb options
+
+end Cache
