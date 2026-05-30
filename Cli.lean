@@ -63,17 +63,18 @@ namespace LeanRedis.CLI
 
 end LeanRedis.CLI
 
+open LeanRedis in
 def main : IO Unit := do
-  let config : LeanRedis.Config := {
+  let config : Config := {
     endpoint := { host := "127.0.0.1", port := 6379 }
     reconnectStrategy := .exponentialBackoff ({}) (some 10)
   }
-  let client : LeanRedis.Client LeanRedis.Transport.TCP ← LeanRedis.Client.newDefault config
-  _ ← client.onEvent LeanRedis.CLI.eventHandler
+  let client : Client Transport.TCP ← Client.newDefault config
+  _ ← client.onEvent CLI.eventHandler
   try
     client.connect |>.block
   catch err =>
     IO.println s!"connect failed: {err}"
     return
   IO.println "LeanRedis CLI — type get <key> or set <key> <value>. Ctrl+C to exit."
-  LeanRedis.CLI.repl client
+  CLI.repl client
