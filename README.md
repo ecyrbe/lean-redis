@@ -23,7 +23,7 @@ Typed commands, RESP2/RESP3 support, native async TCP, and a design built for ex
 - 🔄 Opt-in background reconnect with fixed-interval or exponential backoff strategies
 - 📣 Async connection lifecycle event callbacks for disconnect and reconnect logging
 - 🧪 Transport abstraction makes mocked and scripted transports easy to use in tests
-- 🗂️ Typed command families for strings, hashes, lists, sets, and sorted sets
+- 🗂️ Typed command families for generic, strings, hashes, lists, sets, and sorted sets
 - 🧪 Scripted tests for protocol, transport, connection, and typed command decoding
 - 🛠️ Modular internal layout split by command family for easier review and maintenance
 
@@ -43,6 +43,7 @@ Command families:
 - 📚 Lists: `LPUSH`, `RPUSH`, `LPOP`, `RPOP`, `LRANGE`, `LPOS`, and related commands
 - 🧩 Sets: `SADD`, `SREM`, `SMEMBERS`, `SINTER`, `SUNION`, `SSCAN`, and related commands
 - 📈 Sorted sets: `ZADD`, `ZSCORE`, `ZRANGE`, `ZINTER`, `ZUNION`, `ZSCAN`, and related commands
+- 🔑 Generic: `DEL`, `EXISTS`, `EXPIRE`, `TTL`, `KEYS`, `TYPE`, `SCAN`, `SORT`, `RENAME`, `COPY`, and related commands
 
 Current non-goals for v1:
 - sync API
@@ -64,6 +65,7 @@ Current non-goals for v1:
 | Connection bootstrap | Yes | auth, HELLO negotiation, DB select |
 | Background reconnect | Yes | opt-in client-owned reconnect worker with pluggable strategies |
 | Connection event callbacks | Yes | async handlers, fire-and-forget delivery |
+| Generic commands | Yes | key lifecycle, lookup, and server-side operations |
 | String commands | Yes | mainstream v1 coverage |
 | Hash commands | Yes | includes `HSCAN` |
 | List commands | Yes | non-blocking mainstream coverage |
@@ -296,6 +298,7 @@ Internal command layout:
 - `LeanRedis/Command/List.lean`
 - `LeanRedis/Command/Set.lean`
 - `LeanRedis/Command/SortedSet.lean`
+- `LeanRedis/Command/Generic.lean`
 
 Internal client layout:
 
@@ -306,6 +309,7 @@ Internal client layout:
 - `LeanRedis/Client/List.lean`
 - `LeanRedis/Client/Set.lean`
 - `LeanRedis/Client/SortedSet.lean`
+- `LeanRedis/Client/Generic.lean`
 
 ## Status
 
@@ -316,7 +320,7 @@ Implemented and verified:
 - transport abstraction and default TCP transport
 - connection management
 - async public client API
-- connection, string, hash, list, set, and sorted-set command families
+- connection, generic, string, hash, list, set, and sorted-set command families
 
 Tracking details live in `docs/features/TODO.md`.
 
