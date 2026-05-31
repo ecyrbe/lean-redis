@@ -102,6 +102,5 @@ def main : IO Unit := do
 
   IO.println "Exiting..."
   waiter.stop
-  IO.cancel worker
   try client.offEvent subId catch _ => pure ()
   try client.disconnect |>.block catch _ => pure ()
