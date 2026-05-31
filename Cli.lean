@@ -51,7 +51,7 @@ namespace LeanRedis.CLI
       IO.print "> "
       let stdin ← IO.getStdin
       if (← IO.checkCanceled) then
-        IO.println "Exiting REPL..."
+        IO.println "Interrupted..."
         return
       let line ← stdin.getLine
       let parts := line.split Char.isWhitespace |>.toList |>.filter (·.isEmpty |> not) |>.map toString
@@ -60,10 +60,12 @@ namespace LeanRedis.CLI
           handleGet client key
         | ["set", key, value] =>
           handleSet client key value
+        | ["/exit"] =>
+          return
         | _ =>
           if line ≠ "" then
-            IO.println "Unknown command. Usage: get <key> | set <key> <value>"
-    IO.println "Exiting REPL..."
+            IO.println "Unknown command. Usage: get <key> | set <key> <value> | /exit"
+    IO.println "Interrupted..."
 
 end LeanRedis.CLI
 
@@ -82,14 +84,24 @@ def main : IO Unit := do
     IO.println s!"connect failed: {err}"
     return
 
-  IO.println "LeanRedis CLI — type get <key> or set <key> <value>. Ctrl+C to exit."
+  IO.println "LeanRedis CLI — type get <key> or set <key> <value>. Ctrl+C or /exit to exit."
 
   let waiter ← Signal.Waiter.mk Signal.sigint true
   let worker ← IO.asTask (CLI.repl client)
 
-  let signalWaiter ← waiter.wait
-  let _  ← IO.ofExcept <| signalWaiter.get
-  IO.cancel worker
+  -- On SIGINT, cancel the REPL task
+  let _ ← IO.asTask do
+    let signalWaiter ← waiter.wait
+    let _ : Int ← IO.ofExcept signalWaiter.get
+    IO.cancel worker
+
+  -- Wait for REPL to complete (via /exit or cancellation)
+  try
+    IO.ofExcept worker.get
+  catch _ => pure ()
+
+  IO.println "Exiting..."
   waiter.stop
+  IO.cancel worker
   try client.offEvent subId catch _ => pure ()
   try client.disconnect |>.block catch _ => pure ()
