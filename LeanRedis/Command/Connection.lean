@@ -2,6 +2,9 @@ import LeanRedis.Command.Base
 
 namespace LeanRedis
 
+/--
+PING [message]
+-/
 def CommandRequest.ping (message? : Option String := none) : CommandRequest :=
   {
     name := "PING"
@@ -10,6 +13,9 @@ def CommandRequest.ping (message? : Option String := none) : CommandRequest :=
       | none => #[]
   }
 
+/--
+AUTH [username] password
+-/
 def CommandRequest.auth (auth : AuthConfig) : CommandRequest :=
   match auth.username? with
   | some username =>
@@ -23,6 +29,9 @@ def CommandRequest.auth (auth : AuthConfig) : CommandRequest :=
         args := #[auth.password.value.toUTF8]
       }
 
+/--
+SELECT index
+-/
 def CommandRequest.select (database : UInt32) : CommandRequest :=
   {
     name := "SELECT"

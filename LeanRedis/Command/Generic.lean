@@ -41,6 +41,9 @@ structure CopyOptions where
   replace : Bool := false
   deriving BEq, Inhabited, Repr
 
+/--
+COPY source destination [DB db] [REPLACE]
+-/
 def CommandRequest.copy (source destination : String) (options : CopyOptions := {}) : CommandRequest :=
   {
     name := "COPY"
@@ -51,24 +54,36 @@ def CommandRequest.copy (source destination : String) (options : CopyOptions := 
       ++ (if options.replace then #["REPLACE"] else #[])
   }
 
+/--
+DEL key [key ...]
+-/
 def CommandRequest.del (keys : Array String) : CommandRequest :=
   {
     name := "DEL"
     args := CommandRequest.utf8Args keys
   }
 
+/--
+DUMP key
+-/
 def CommandRequest.dump (key : String) : CommandRequest :=
   {
     name := "DUMP"
     args := CommandRequest.utf8Args #[key]
   }
 
+/--
+TTL key
+-/
 def CommandRequest.ttl (key : String) : CommandRequest :=
   {
     name := "TTL"
     args := CommandRequest.utf8Args #[key]
   }
 
+/--
+EXISTS key [key ...]
+-/
 def CommandRequest.exists (keys : Array String) : CommandRequest :=
   {
     name := "EXISTS"
@@ -89,6 +104,9 @@ instance : ToString ExpireOption where
     | ExpireOption.GT => "GT"
     | ExpireOption.LT => "LT"
 
+/--
+EXPIRE key seconds [NX | XX | GT | LT]
+-/
 def CommandRequest.expire (key : String) (seconds : UInt64) (option : Option ExpireOption := none) : CommandRequest :=
   {
     name := "EXPIRE"
@@ -98,6 +116,9 @@ def CommandRequest.expire (key : String) (seconds : UInt64) (option : Option Exp
          | none => #[]
   }
 
+/--
+EXPIREAT key unix-time-seconds [NX | XX | GT | LT]
+-/
 def CommandRequest.expireAt (key : String) (timestamp : Std.Time.Timestamp) (option : Option ExpireOption := none): CommandRequest :=
   {
     name := "EXPIREAT"
@@ -107,12 +128,18 @@ def CommandRequest.expireAt (key : String) (timestamp : Std.Time.Timestamp) (opt
          | none => #[]
   }
 
+/--
+EXPIRETIME key
+-/
 def CommandRequest.expireTime (key : String) : CommandRequest :=
   {
     name := "EXPIRETIME"
     args := CommandRequest.utf8Args #[key]
   }
 
+/--
+KEYS pattern
+-/
 def CommandRequest.keys (pattern : String) : CommandRequest :=
   {
     name := "KEYS"
@@ -124,6 +151,9 @@ structure MigrateOptions where
   replace : Bool := false
   auth: Option AuthConfig := none
 
+/--
+MIGRATE host port key|"" destination-db timeout [COPY] [REPLACE] [AUTH password] [AUTH2 username password] [KEYS key [key ...]]
+-/
 def CommandRequest.migrate (host : String) (port : UInt16) (keys : Array String)
     (destinationDb : UInt32 := 0) (timeout : UInt64 := 5000) (options : MigrateOptions := {}) : CommandRequest :=
   {
@@ -140,42 +170,63 @@ def CommandRequest.migrate (host : String) (port : UInt16) (keys : Array String)
       ++ (if h: keys.size > 1 then #["KEYS"] ++ keys else #[])
   }
 
+/--
+MOVE key db
+-/
 def CommandRequest.move (key : String) (destinationDb : UInt32) : CommandRequest :=
   {
     name := "MOVE"
     args := CommandRequest.utf8Args #[key, toString destinationDb]
   }
 
+/--
+OBJECT ENCODING key
+-/
 def CommandRequest.objectEncoding (key : String) : CommandRequest :=
   {
     name := "OBJECT ENCODING"
     args := CommandRequest.utf8Args #[key]
   }
 
+/--
+OBJECT FREQ key
+-/
 def CommandRequest.objectFreq (key : String) : CommandRequest :=
   {
     name := "OBJECT FREQ"
     args := CommandRequest.utf8Args #[key]
   }
 
+/--
+OBJECT IDLETIME key
+-/
 def CommandRequest.objectIdleTime (key : String) : CommandRequest :=
   {
     name := "OBJECT IDLETIME"
     args := CommandRequest.utf8Args #[key]
   }
 
+/--
+OBJECT REFCOUNT key
+-/
 def CommandRequest.objectRefCount (key : String) : CommandRequest :=
   {
     name := "OBJECT REFCOUNT"
     args := CommandRequest.utf8Args #[key]
   }
 
+/--
+PERSIST key
+-/
 def CommandRequest.persist (key : String) : CommandRequest :=
   {
     name := "PERSIST"
     args := CommandRequest.utf8Args #[key]
   }
 
+/--
+PEXPIRE key milliseconds [NX | XX | GT | LT]
+-/
 def CommandRequest.pexpire (key : String) (milliseconds : UInt64) (option : Option ExpireOption := none) : CommandRequest :=
   {
     name := "PEXPIRE"
@@ -185,6 +236,9 @@ def CommandRequest.pexpire (key : String) (milliseconds : UInt64) (option : Opti
          | none => #[]
   }
 
+/--
+PEXPIREAT key unix-time-milliseconds [NX | XX | GT | LT]
+-/
 def CommandRequest.pexpireAt (key : String) (timestamp : Std.Time.Timestamp) (option : Option ExpireOption := none) : CommandRequest :=
   {
     name := "PEXPIREAT"
@@ -194,24 +248,36 @@ def CommandRequest.pexpireAt (key : String) (timestamp : Std.Time.Timestamp) (op
          | none => #[]
   }
 
+/--
+PTTL key
+-/
 def CommandRequest.pttl (key : String) : CommandRequest :=
   {
     name := "PTTL"
     args := CommandRequest.utf8Args #[key]
   }
 
+/--
+RANDOMKEY
+-/
 def CommandRequest.randomKey : CommandRequest :=
   {
     name := "RANDOMKEY"
     args := #[]
   }
 
+/--
+RENAME key newkey
+-/
 def CommandRequest.rename (key newKey : String) : CommandRequest :=
   {
     name := "RENAME"
     args := CommandRequest.utf8Args #[key, newKey]
   }
 
+/--
+RENAMENX key newkey
+-/
 def CommandRequest.renameNx (key newKey : String) : CommandRequest :=
   {
     name := "RENAMENX"
@@ -224,6 +290,9 @@ structure RestoreOptions where
   idleTime? : Option UInt64 := none
   frequency? : Option UInt64 := none
 
+/--
+RESTORE key ttl serialized-value [REPLACE] [ABSTTL] [IDLETIME time] [FREQ freq]
+-/
 def CommandRequest.restore (key : String) (ttl : UInt64) (serializedValue : String) (options : RestoreOptions := {}) : CommandRequest :=
   {
     name := "RESTORE"
@@ -248,6 +317,9 @@ structure ScanResult where
   keys : Array String
   deriving BEq, Inhabited, Repr
 
+/--
+SCAN cursor [MATCH pattern] [COUNT count] [TYPE type]
+-/
 def CommandRequest.scan (cursor : UInt64) (options : ScanOptions := {}) : CommandRequest :=
   {
     name := "SCAN"
@@ -271,6 +343,9 @@ structure SortOptions where
   alpha : Bool := false
   store? : Option String := none
 
+/--
+SORT key [BY pattern] [LIMIT offset count] [GET pattern [GET pattern ...]] [ASC | DESC] [ALPHA] [STORE destination]
+-/
 def CommandRequest.sort (key : String) (options : SortOptions := {}) : CommandRequest :=
   {
     name := "SORT"
@@ -299,6 +374,9 @@ structure SortRoOptions where
   asc? : Option Bool := none
   alpha : Bool := false
 
+/--
+SORT_RO key [BY pattern] [LIMIT offset count] [GET pattern [GET pattern ...]] [ASC | DESC] [ALPHA]
+-/
 def CommandRequest.sortRo (key : String) (options : SortRoOptions := {}) : CommandRequest :=
   {
     name := "SORT_RO"
@@ -317,24 +395,36 @@ def CommandRequest.sortRo (key : String) (options : SortRoOptions := {}) : Comma
       ++ (if options.alpha then #["ALPHA"] else #[])
   }
 
+/--
+TOUCH key [key ...]
+-/
 def CommandRequest.touch (keys : Array String) : CommandRequest :=
   {
     name := "TOUCH"
     args := CommandRequest.utf8Args keys
   }
 
+/--
+TTL key
+-/
 def CommandRequest.TTL (key : String) : CommandRequest :=
   {
     name := "TTL"
     args := CommandRequest.utf8Args #[key]
   }
 
+/--
+TYPE key
+-/
 def CommandRequest.type (key : String) : CommandRequest :=
   {
     name := "TYPE"
     args := CommandRequest.utf8Args #[key]
   }
 
+/--
+UNLINK key [key ...]
+-/
 def CommandRequest.unlink (keys : Array String) : CommandRequest :=
   {
     name := "UNLINK"

@@ -55,12 +55,18 @@ def getExModeArgs (mode : GetExMode) : Array ByteArray :=
 
 end CommandRequest
 
+/--
+GET key
+-/
 def CommandRequest.get (key : String) : CommandRequest :=
   {
     name := "GET"
     args := CommandRequest.utf8Args #[key]
   }
 
+/--
+SET key value [NX | XX] [EX seconds | PX milliseconds | EXAT unix-time-seconds | PXAT unix-time-milliseconds | KEEPTTL]
+-/
 def CommandRequest.set (key value : String) (options : SetOptions := {}) : CommandRequest :=
   {
     name := "SET"
@@ -74,30 +80,45 @@ def CommandRequest.set (key value : String) (options : SetOptions := {}) : Comma
           | none => #[])
   }
 
+/--
+MGET key [key ...]
+-/
 def CommandRequest.mGet (keys : Array String) : CommandRequest :=
   {
     name := "MGET"
     args := CommandRequest.utf8Args keys
   }
 
+/--
+MSET key value [key value ...]
+-/
 def CommandRequest.mSet (entries : Array (String × String)) : CommandRequest :=
   {
     name := "MSET"
     args := entries.foldl (fun acc (key, value) => acc ++ CommandRequest.utf8Args #[key, value]) #[]
   }
 
+/--
+MSETNX key value [key value ...]
+-/
 def CommandRequest.mSetNx (entries : Array (String × String)) : CommandRequest :=
   {
     name := "MSETNX"
     args := entries.foldl (fun acc (key, value) => acc ++ CommandRequest.utf8Args #[key, value]) #[]
   }
 
+/--
+GETDEL key
+-/
 def CommandRequest.getDel (key : String) : CommandRequest :=
   {
     name := "GETDEL"
     args := CommandRequest.utf8Args #[key]
   }
 
+/--
+GETEX key [EX seconds | PX milliseconds | EXAT unix-time-seconds | PXAT unix-time-milliseconds | PERSIST]
+-/
 def CommandRequest.getEx (key : String) (mode? : Option GetExMode := none) : CommandRequest :=
   {
     name := "GETEX"
@@ -107,78 +128,117 @@ def CommandRequest.getEx (key : String) (mode? : Option GetExMode := none) : Com
         | none => #[])
   }
 
+/--
+GETRANGE key start end
+-/
 def CommandRequest.getRange (key : String) (start stop : Int) : CommandRequest :=
   {
     name := "GETRANGE"
     args := CommandRequest.utf8Args #[key, toString start, toString stop]
   }
 
+/--
+GETSET key value
+-/
 def CommandRequest.getSet (key value : String) : CommandRequest :=
   {
     name := "GETSET"
     args := CommandRequest.utf8Args #[key, value]
   }
 
+/--
+SETRANGE key offset value
+-/
 def CommandRequest.setRange (key : String) (offset : UInt64) (value : String) : CommandRequest :=
   {
     name := "SETRANGE"
     args := CommandRequest.utf8Args #[key, toString offset, value]
   }
 
+/--
+STRLEN key
+-/
 def CommandRequest.strLen (key : String) : CommandRequest :=
   {
     name := "STRLEN"
     args := CommandRequest.utf8Args #[key]
   }
 
+/--
+APPEND key value
+-/
 def CommandRequest.append (key value : String) : CommandRequest :=
   {
     name := "APPEND"
     args := CommandRequest.utf8Args #[key, value]
   }
 
+/--
+INCR key
+-/
 def CommandRequest.incr (key : String) : CommandRequest :=
   {
     name := "INCR"
     args := CommandRequest.utf8Args #[key]
   }
 
+/--
+INCRBY key increment
+-/
 def CommandRequest.incrBy (key : String) (amount : Int) : CommandRequest :=
   {
     name := "INCRBY"
     args := CommandRequest.utf8Args #[key, toString amount]
   }
 
+/--
+INCRBYFLOAT key increment
+-/
 def CommandRequest.incrByFloat (key amount : String) : CommandRequest :=
   {
     name := "INCRBYFLOAT"
     args := CommandRequest.utf8Args #[key, amount]
   }
 
+/--
+DECR key
+-/
 def CommandRequest.decr (key : String) : CommandRequest :=
   {
     name := "DECR"
     args := CommandRequest.utf8Args #[key]
   }
 
+/--
+DECRBY key decrement
+-/
 def CommandRequest.decrBy (key : String) (amount : Int) : CommandRequest :=
   {
     name := "DECRBY"
     args := CommandRequest.utf8Args #[key, toString amount]
   }
 
+/--
+SETNX key value
+-/
 def CommandRequest.setNx (key value : String) : CommandRequest :=
   {
     name := "SETNX"
     args := CommandRequest.utf8Args #[key, value]
   }
 
+/--
+SETEX key seconds value
+-/
 def CommandRequest.setEx (key : String) (seconds : UInt64) (value : String) : CommandRequest :=
   {
     name := "SETEX"
     args := CommandRequest.utf8Args #[key, toString seconds, value]
   }
 
+/--
+PSETEX key milliseconds value
+-/
 def CommandRequest.pSetEx (key : String) (milliseconds : UInt64) (value : String) : CommandRequest :=
   {
     name := "PSETEX"
