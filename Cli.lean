@@ -90,14 +90,14 @@ def main : IO Unit := do
   let worker ← IO.asTask (CLI.repl client)
 
   -- On SIGINT, cancel the REPL task
-  let _ ← IO.asTask do
+  discard <| IO.asTask do
     let signalWaiter ← waiter.wait
-    let _ : Int ← IO.ofExcept signalWaiter.get
+    discard <| IO.ofExcept signalWaiter.get
     IO.cancel worker
 
   -- Wait for REPL to complete (via /exit or cancellation)
   try
-    IO.ofExcept worker.get
+    discard <| IO.ofExcept worker.get
   catch _ => pure ()
 
   IO.println "Exiting..."
