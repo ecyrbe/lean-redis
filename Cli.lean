@@ -76,7 +76,7 @@ def main : IO Unit := do
   let client ← Client.newDefault config
   let subId ← client.onEvent CLI.eventHandler
   try
-    client.connect |>.block
+    client.connect.wait
   catch err =>
     client.offEvent subId
     IO.println s!"connect failed: {err}"
@@ -90,6 +90,6 @@ def main : IO Unit := do
   let signalWaiter ← waiter.wait
   let _  ← IO.ofExcept <| signalWaiter.get
   IO.cancel worker
+  waiter.stop
   try client.offEvent subId catch _ => pure ()
   try client.disconnect |>.block catch _ => pure ()
-  --waiter.stop
