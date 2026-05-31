@@ -6,3 +6,4 @@ import LeanRedis.Client.Hash
 import LeanRedis.Client.List
 import LeanRedis.Client.Set
 import LeanRedis.Client.SortedSet
+import LeanRedis.Client.Generic

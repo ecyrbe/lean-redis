@@ -1,4 +1,5 @@
 import LeanRedis.Client.Internal
+import LeanRedis.Tools.ExpectResult
 
 namespace LeanRedis
 
@@ -16,7 +17,7 @@ def Client.hGet [Transport.Transport τ]
     (key field : String)
     : Async (Option String) := do
   let reply <- Client.execute client <| CommandRequest.hGet key field
-  Client.expectOptionalString "HGET" reply
+  expectOptionalString "HGET" reply
 
 /-- Set one or more hash fields.
 
@@ -31,7 +32,7 @@ def Client.hSet [Transport.Transport τ]
     (entries : Array (String × String))
     : Async Int := do
   let reply <- Client.execute client <| CommandRequest.hSet key entries
-  Client.expectInteger "HSET" reply
+  expectInteger "HSET" reply
 
 /-- Get multiple hash fields.
 
@@ -46,7 +47,7 @@ def Client.hMGet [Transport.Transport τ]
     (fields : Array String)
     : Async (Array (Option String)) := do
   let reply <- Client.execute client <| CommandRequest.hMGet key fields
-  Client.expectStringArray "HMGET" reply
+  expectStringArray "HMGET" reply
 
 /-- Set multiple hash fields with `HMSET`.
 
@@ -61,7 +62,7 @@ def Client.hMSet [Transport.Transport τ]
     (entries : Array (String × String))
     : Async Unit := do
   let reply <- Client.execute client <| CommandRequest.hMSet key entries
-  Client.expectOk reply
+  expectOk reply
 
 /-- Get all hash fields and values.
 
@@ -75,7 +76,7 @@ def Client.hGetAll [Transport.Transport τ]
     (key : String)
     : Async (Array (String × String)) := do
   let reply <- Client.execute client <| CommandRequest.hGetAll key
-  Client.expectStringPairs "HGETALL" reply
+  expectStringPairs "HGETALL" reply
 
 /-- Delete one or more hash fields.
 
@@ -90,7 +91,7 @@ def Client.hDel [Transport.Transport τ]
     (fields : Array String)
     : Async Int := do
   let reply <- Client.execute client <| CommandRequest.hDel key fields
-  Client.expectInteger "HDEL" reply
+  expectInteger "HDEL" reply
 
 /-- Check whether a hash field exists.
 
@@ -104,7 +105,7 @@ def Client.hExists [Transport.Transport τ]
     (key field : String)
     : Async Bool := do
   let reply <- Client.execute client <| CommandRequest.hExists key field
-  Client.expectBoolean "HEXISTS" reply
+  expectBoolean "HEXISTS" reply
 
 /-- Return the number of fields in a hash.
 
@@ -118,7 +119,7 @@ def Client.hLen [Transport.Transport τ]
     (key : String)
     : Async Int := do
   let reply <- Client.execute client <| CommandRequest.hLen key
-  Client.expectInteger "HLEN" reply
+  expectInteger "HLEN" reply
 
 /-- Return all hash field names.
 
@@ -132,7 +133,7 @@ def Client.hKeys [Transport.Transport τ]
     (key : String)
     : Async (Array String) := do
   let reply <- Client.execute client <| CommandRequest.hKeys key
-  Client.expectPlainStringArray "HKEYS" reply
+  expectPlainStringArray "HKEYS" reply
 
 /-- Return all hash values.
 
@@ -146,7 +147,7 @@ def Client.hVals [Transport.Transport τ]
     (key : String)
     : Async (Array String) := do
   let reply <- Client.execute client <| CommandRequest.hVals key
-  Client.expectPlainStringArray "HVALS" reply
+  expectPlainStringArray "HVALS" reply
 
 /-- Return the string length of a hash field value.
 
@@ -160,7 +161,7 @@ def Client.hStrLen [Transport.Transport τ]
     (key field : String)
     : Async Int := do
   let reply <- Client.execute client <| CommandRequest.hStrLen key field
-  Client.expectInteger "HSTRLEN" reply
+  expectInteger "HSTRLEN" reply
 
 /-- Increment a hash integer field.
 
@@ -175,7 +176,7 @@ def Client.hIncrBy [Transport.Transport τ]
     (amount : Int)
     : Async Int := do
   let reply <- Client.execute client <| CommandRequest.hIncrBy key field amount
-  Client.expectInteger "HINCRBY" reply
+  expectInteger "HINCRBY" reply
 
 /-- Increment a hash numeric field by a decimal amount.
 
@@ -189,7 +190,7 @@ def Client.hIncrByFloat [Transport.Transport τ]
     (key field amount : String)
     : Async String := do
   let reply <- Client.execute client <| CommandRequest.hIncrByFloat key field amount
-  Client.expectString "HINCRBYFLOAT" reply
+  expectString "HINCRBYFLOAT" reply
 
 /-- Set a hash field only if it does not exist.
 
@@ -203,7 +204,7 @@ def Client.hSetNx [Transport.Transport τ]
     (key field value : String)
     : Async Bool := do
   let reply <- Client.execute client <| CommandRequest.hSetNx key field value
-  Client.expectBoolean "HSETNX" reply
+  expectBoolean "HSETNX" reply
 
 /-- Return one random hash field.
 
@@ -217,7 +218,7 @@ def Client.hRandField [Transport.Transport τ]
     (key : String)
     : Async (Option String) := do
   let reply <- Client.execute client <| CommandRequest.hRandField key
-  Client.expectOptionalString "HRANDFIELD" reply
+  expectOptionalString "HRANDFIELD" reply
 
 /-- Return random hash fields.
 
@@ -232,7 +233,7 @@ def Client.hRandFields [Transport.Transport τ]
     (count : Int)
     : Async (Array String) := do
   let reply <- Client.execute client <| CommandRequest.hRandFields key count
-  Client.expectPlainStringArray "HRANDFIELD" reply
+  expectPlainStringArray "HRANDFIELD" reply
 
 /-- Return random hash fields with values.
 
@@ -247,7 +248,7 @@ def Client.hRandFieldsWithValues [Transport.Transport τ]
     (count : Int)
     : Async (Array (String × String)) := do
   let reply <- Client.execute client <| CommandRequest.hRandFieldsWithValues key count
-  Client.expectStringPairs "HRANDFIELD" reply
+  expectStringPairs "HRANDFIELD" reply
 
 /-- Scan a hash incrementally.
 
@@ -263,6 +264,6 @@ def Client.hScan [Transport.Transport τ]
     (options : HScanOptions := {})
     : Async HashScanResult := do
   let reply <- Client.execute client <| CommandRequest.hScan key cursor options
-  Client.expectHScanResult reply
+  expectHScanResult reply
 
 end LeanRedis

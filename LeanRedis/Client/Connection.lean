@@ -1,4 +1,5 @@
 import LeanRedis.Client.Internal
+import LeanRedis.Tools.ExpectResult
 
 namespace LeanRedis
 
@@ -18,7 +19,7 @@ def Client.ping [Transport.Transport τ]
     (message? : Option String := none)
     : Async (Option String) := do
   let reply <- Client.execute client <| CommandRequest.ping message?
-  Client.expectPong reply
+  expectPong reply
 
 /--
 Send `AUTH` using the provided credentials.
@@ -37,7 +38,7 @@ def Client.auth [Transport.Transport τ]
       manager with
       config := { manager.config with auth? := some auth }
     }
-  Client.expectOk reply
+  expectOk reply
 
 /--
 Send `SELECT` and update the tracked selected database on success.
@@ -56,6 +57,6 @@ def Client.select [Transport.Transport τ]
       manager with
       config := { manager.config with database? := some database }
     }
-  Client.expectOk reply
+  expectOk reply
 
 end LeanRedis

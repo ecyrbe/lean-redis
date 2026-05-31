@@ -1,4 +1,5 @@
 import LeanRedis.Client.Internal
+import LeanRedis.Tools.ExpectResult
 
 namespace LeanRedis
 
@@ -17,7 +18,7 @@ def Client.get [Transport.Transport τ]
     (key : String)
     : Async (Option String) := do
   let reply <- Client.execute client <| CommandRequest.get key
-  Client.expectOptionalString "GET" reply
+  expectOptionalString "GET" reply
 
 /--
 Set a string key with optional `SET` modifiers.
@@ -34,7 +35,7 @@ def Client.set [Transport.Transport τ]
     (options : SetOptions := {})
     : Async Bool := do
   let reply <- Client.execute client <| CommandRequest.set key value options
-  Client.expectStored reply
+  expectStored reply
 
 /--
 Get multiple string keys with nullable results.
@@ -49,7 +50,7 @@ def Client.mGet [Transport.Transport τ]
     (keys : Array String)
     : Async (Array (Option String)) := do
   let reply <- Client.execute client <| CommandRequest.mGet keys
-  Client.expectStringArray "MGET" reply
+  expectStringArray "MGET" reply
 
 /--
 Set multiple string entries with `MSET`.
@@ -64,7 +65,7 @@ def Client.mSet [Transport.Transport τ]
     (entries : Array (String × String))
     : Async Unit := do
   let reply <- Client.execute client <| CommandRequest.mSet entries
-  Client.expectOk reply
+  expectOk reply
 
 /--
 Set multiple string entries only if all keys are absent.
@@ -79,7 +80,7 @@ def Client.mSetNx [Transport.Transport τ]
     (entries : Array (String × String))
     : Async Bool := do
   let reply <- Client.execute client <| CommandRequest.mSetNx entries
-  Client.expectBoolean "MSETNX" reply
+  expectBoolean "MSETNX" reply
 
 /--
 Get and delete a string key.
@@ -94,7 +95,7 @@ def Client.getDel [Transport.Transport τ]
     (key : String)
     : Async (Option String) := do
   let reply <- Client.execute client <| CommandRequest.getDel key
-  Client.expectOptionalString "GETDEL" reply
+  expectOptionalString "GETDEL" reply
 
 /--
 Get a string key and optionally update its expiration.
@@ -110,7 +111,7 @@ def Client.getEx [Transport.Transport τ]
     (mode? : Option GetExMode := none)
     : Async (Option String) := do
   let reply <- Client.execute client <| CommandRequest.getEx key mode?
-  Client.expectOptionalString "GETEX" reply
+  expectOptionalString "GETEX" reply
 
 /--
 Read a substring from a string value.
@@ -126,7 +127,7 @@ def Client.getRange [Transport.Transport τ]
     (start stop : Int)
     : Async String := do
   let reply <- Client.execute client <| CommandRequest.getRange key start stop
-  Client.expectString "GETRANGE" reply
+  expectString "GETRANGE" reply
 
 /--
 Replace a string value and return the previous one.
@@ -141,7 +142,7 @@ def Client.getSet [Transport.Transport τ]
     (key value : String)
     : Async (Option String) := do
   let reply <- Client.execute client <| CommandRequest.getSet key value
-  Client.expectOptionalString "GETSET" reply
+  expectOptionalString "GETSET" reply
 
 /--
 Overwrite part of a string starting at the given offset.
@@ -158,7 +159,7 @@ def Client.setRange [Transport.Transport τ]
     (value : String)
     : Async Int := do
   let reply <- Client.execute client <| CommandRequest.setRange key offset value
-  Client.expectInteger "SETRANGE" reply
+  expectInteger "SETRANGE" reply
 
 /--
 Return the length of a string value.
@@ -173,7 +174,7 @@ def Client.strLen [Transport.Transport τ]
     (key : String)
     : Async Int := do
   let reply <- Client.execute client <| CommandRequest.strLen key
-  Client.expectInteger "STRLEN" reply
+  expectInteger "STRLEN" reply
 
 /--
 Append text to a string value.
@@ -188,7 +189,7 @@ def Client.append [Transport.Transport τ]
     (key value : String)
     : Async Int := do
   let reply <- Client.execute client <| CommandRequest.append key value
-  Client.expectInteger "APPEND" reply
+  expectInteger "APPEND" reply
 
 /--
 Increment a string integer value by one.
@@ -203,7 +204,7 @@ def Client.incr [Transport.Transport τ]
     (key : String)
     : Async Int := do
   let reply <- Client.execute client <| CommandRequest.incr key
-  Client.expectInteger "INCR" reply
+  expectInteger "INCR" reply
 
 /--
 Increment a string integer value by the given amount.
@@ -219,7 +220,7 @@ def Client.incrBy [Transport.Transport τ]
     (amount : Int)
     : Async Int := do
   let reply <- Client.execute client <| CommandRequest.incrBy key amount
-  Client.expectInteger "INCRBY" reply
+  expectInteger "INCRBY" reply
 
 /--
 Increment a string numeric value by a decimal amount.
@@ -234,7 +235,7 @@ def Client.incrByFloat [Transport.Transport τ]
     (key amount : String)
     : Async String := do
   let reply <- Client.execute client <| CommandRequest.incrByFloat key amount
-  Client.expectString "INCRBYFLOAT" reply
+  expectString "INCRBYFLOAT" reply
 
 /--
 Decrement a string integer value by one.
@@ -249,7 +250,7 @@ def Client.decr [Transport.Transport τ]
     (key : String)
     : Async Int := do
   let reply <- Client.execute client <| CommandRequest.decr key
-  Client.expectInteger "DECR" reply
+  expectInteger "DECR" reply
 
 /--
 Decrement a string integer value by the given amount.
@@ -265,7 +266,7 @@ def Client.decrBy [Transport.Transport τ]
     (amount : Int)
     : Async Int := do
   let reply <- Client.execute client <| CommandRequest.decrBy key amount
-  Client.expectInteger "DECRBY" reply
+  expectInteger "DECRBY" reply
 
 /--
 Set a string value only if the key does not exist.
@@ -280,7 +281,7 @@ def Client.setNx [Transport.Transport τ]
     (key value : String)
     : Async Bool := do
   let reply <- Client.execute client <| CommandRequest.setNx key value
-  Client.expectBoolean "SETNX" reply
+  expectBoolean "SETNX" reply
 
 /--
 Set a string value with a TTL in seconds.
@@ -297,7 +298,7 @@ def Client.setEx [Transport.Transport τ]
     (value : String)
     : Async Unit := do
   let reply <- Client.execute client <| CommandRequest.setEx key seconds value
-  Client.expectOk reply
+  expectOk reply
 
 /--
 Set a string value with a TTL in milliseconds.
@@ -314,6 +315,6 @@ def Client.pSetEx [Transport.Transport τ]
     (value : String)
     : Async Unit := do
   let reply <- Client.execute client <| CommandRequest.pSetEx key milliseconds value
-  Client.expectOk reply
+  expectOk reply
 
 end LeanRedis

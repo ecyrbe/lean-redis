@@ -1,4 +1,5 @@
 import LeanRedis.Client.Internal
+import LeanRedis.Tools.ExpectResult
 
 namespace LeanRedis
 
@@ -17,7 +18,7 @@ def Client.lPush [Transport.Transport τ]
     (values : Array String)
     : Async Int := do
   let reply <- Client.execute client <| CommandRequest.lPush key values
-  Client.expectInteger "LPUSH" reply
+  expectInteger "LPUSH" reply
 
 /-- Push values to the right side of a list.
 
@@ -32,7 +33,7 @@ def Client.rPush [Transport.Transport τ]
     (values : Array String)
     : Async Int := do
   let reply <- Client.execute client <| CommandRequest.rPush key values
-  Client.expectInteger "RPUSH" reply
+  expectInteger "RPUSH" reply
 
 /-- Push a value to the left only if the list already exists.
 
@@ -46,7 +47,7 @@ def Client.lPushX [Transport.Transport τ]
     (key value : String)
     : Async Int := do
   let reply <- Client.execute client <| CommandRequest.lPushX key value
-  Client.expectInteger "LPUSHX" reply
+  expectInteger "LPUSHX" reply
 
 /-- Push a value to the right only if the list already exists.
 
@@ -60,7 +61,7 @@ def Client.rPushX [Transport.Transport τ]
     (key value : String)
     : Async Int := do
   let reply <- Client.execute client <| CommandRequest.rPushX key value
-  Client.expectInteger "RPUSHX" reply
+  expectInteger "RPUSHX" reply
 
 /-- Pop one value from the left side of a list.
 
@@ -74,7 +75,7 @@ def Client.lPop [Transport.Transport τ]
     (key : String)
     : Async (Option String) := do
   let reply <- Client.execute client <| CommandRequest.lPop key
-  Client.expectOptionalString "LPOP" reply
+  expectOptionalString "LPOP" reply
 
 /-- Pop one value from the right side of a list.
 
@@ -88,7 +89,7 @@ def Client.rPop [Transport.Transport τ]
     (key : String)
     : Async (Option String) := do
   let reply <- Client.execute client <| CommandRequest.rPop key
-  Client.expectOptionalString "RPOP" reply
+  expectOptionalString "RPOP" reply
 
 /-- Return the current length of a list.
 
@@ -102,7 +103,7 @@ def Client.lLen [Transport.Transport τ]
     (key : String)
     : Async Int := do
   let reply <- Client.execute client <| CommandRequest.lLen key
-  Client.expectInteger "LLEN" reply
+  expectInteger "LLEN" reply
 
 /-- Return the value at a list index.
 
@@ -117,7 +118,7 @@ def Client.lIndex [Transport.Transport τ]
     (index : Int)
     : Async (Option String) := do
   let reply <- Client.execute client <| CommandRequest.lIndex key index
-  Client.expectOptionalString "LINDEX" reply
+  expectOptionalString "LINDEX" reply
 
 /-- Return a range of list elements.
 
@@ -132,7 +133,7 @@ def Client.lRange [Transport.Transport τ]
     (start stop : Int)
     : Async (Array String) := do
   let reply <- Client.execute client <| CommandRequest.lRange key start stop
-  Client.expectPlainStringArray "LRANGE" reply
+  expectPlainStringArray "LRANGE" reply
 
 /-- Replace the value at a list index.
 
@@ -148,7 +149,7 @@ def Client.lSet [Transport.Transport τ]
     (value : String)
     : Async Unit := do
   let reply <- Client.execute client <| CommandRequest.lSet key index value
-  Client.expectOk reply
+  expectOk reply
 
 /-- Trim a list to the given inclusive range.
 
@@ -163,7 +164,7 @@ def Client.lTrim [Transport.Transport τ]
     (start stop : Int)
     : Async Unit := do
   let reply <- Client.execute client <| CommandRequest.lTrim key start stop
-  Client.expectOk reply
+  expectOk reply
 
 /-- Remove matching elements from a list.
 
@@ -179,7 +180,7 @@ def Client.lRem [Transport.Transport τ]
     (value : String)
     : Async Int := do
   let reply <- Client.execute client <| CommandRequest.lRem key count value
-  Client.expectInteger "LREM" reply
+  expectInteger "LREM" reply
 
 /-- Insert a value before or after a pivot element.
 
@@ -195,7 +196,7 @@ def Client.lInsert [Transport.Transport τ]
     (pivot value : String)
     : Async Int := do
   let reply <- Client.execute client <| CommandRequest.lInsert key position pivot value
-  Client.expectInteger "LINSERT" reply
+  expectInteger "LINSERT" reply
 
 /-- Move one element between lists.
 
@@ -210,7 +211,7 @@ def Client.lMove [Transport.Transport τ]
     (fromWhere toWhere : LMoveWhere)
     : Async (Option String) := do
   let reply <- Client.execute client <| CommandRequest.lMove source destination fromWhere toWhere
-  Client.expectOptionalString "LMOVE" reply
+  expectOptionalString "LMOVE" reply
 
 /-- Return a single matching position from `LPOS`.
 
@@ -249,6 +250,6 @@ def Client.lPosMany [Transport.Transport τ]
   | none => Error.raise <| .decode "lPosMany requires COUNT"
   | some _ =>
       let reply <- Client.execute client <| CommandRequest.lPos key element options
-      Client.expectIntegerArray "LPOS" reply
+      expectIntegerArray "LPOS" reply
 
 end LeanRedis

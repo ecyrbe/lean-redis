@@ -1,4 +1,5 @@
 import LeanRedis.Client.Internal
+import LeanRedis.Tools.ExpectResult
 
 namespace LeanRedis
 
@@ -17,7 +18,7 @@ def Client.zAdd [Transport.Transport τ]
     (entries : Array SortedSetEntry)
     : Async Int := do
   let reply <- Client.execute client <| CommandRequest.zAdd key entries
-  Client.expectInteger "ZADD" reply
+  expectInteger "ZADD" reply
 
 /-- Remove members from a sorted set.
 
@@ -32,7 +33,7 @@ def Client.zRem [Transport.Transport τ]
     (members : Array String)
     : Async Int := do
   let reply <- Client.execute client <| CommandRequest.zRem key members
-  Client.expectInteger "ZREM" reply
+  expectInteger "ZREM" reply
 
 /-- Return the cardinality of a sorted set.
 
@@ -46,7 +47,7 @@ def Client.zCard [Transport.Transport τ]
     (key : String)
     : Async Int := do
   let reply <- Client.execute client <| CommandRequest.zCard key
-  Client.expectInteger "ZCARD" reply
+  expectInteger "ZCARD" reply
 
 /-- Return the score of a sorted-set member.
 
@@ -60,7 +61,7 @@ def Client.zScore [Transport.Transport τ]
     (key member : String)
     : Async (Option String) := do
   let reply <- Client.execute client <| CommandRequest.zScore key member
-  Client.expectOptionalString "ZSCORE" reply
+  expectOptionalString "ZSCORE" reply
 
 /-- Return the scores for multiple sorted-set members.
 
@@ -75,7 +76,7 @@ def Client.zMScore [Transport.Transport τ]
     (members : Array String)
     : Async (Array (Option String)) := do
   let reply <- Client.execute client <| CommandRequest.zMScore key members
-  Client.expectStringArray "ZMSCORE" reply
+  expectStringArray "ZMSCORE" reply
 
 /-- Return the rank of a sorted-set member.
 
@@ -126,7 +127,7 @@ def Client.zRange [Transport.Transport τ]
     (start stop : Int)
     : Async (Array String) := do
   let reply <- Client.execute client <| CommandRequest.zRange key start stop
-  Client.expectPlainStringArray "ZRANGE" reply
+  expectPlainStringArray "ZRANGE" reply
 
 /-- Return sorted-set members with scores by rank range.
 
@@ -141,7 +142,7 @@ def Client.zRangeWithScores [Transport.Transport τ]
     (start stop : Int)
     : Async (Array SortedSetEntry) := do
   let reply <- Client.execute client <| CommandRequest.zRangeWithScores key start stop
-  Client.expectSortedSetEntries "ZRANGE" reply
+  expectSortedSetEntries "ZRANGE" reply
 
 /-- Return sorted-set members in reverse score order by rank range.
 
@@ -156,7 +157,7 @@ def Client.zRevRange [Transport.Transport τ]
     (start stop : Int)
     : Async (Array String) := do
   let reply <- Client.execute client <| CommandRequest.zRevRange key start stop
-  Client.expectPlainStringArray "ZREVRANGE" reply
+  expectPlainStringArray "ZREVRANGE" reply
 
 /-- Return sorted-set members with scores in reverse score order.
 
@@ -171,7 +172,7 @@ def Client.zRevRangeWithScores [Transport.Transport τ]
     (start stop : Int)
     : Async (Array SortedSetEntry) := do
   let reply <- Client.execute client <| CommandRequest.zRevRangeWithScores key start stop
-  Client.expectSortedSetEntries "ZREVRANGE" reply
+  expectSortedSetEntries "ZREVRANGE" reply
 
 /-- Return sorted-set members within a score range.
 
@@ -185,7 +186,7 @@ def Client.zRangeByScore [Transport.Transport τ]
     (key min max : String)
     : Async (Array String) := do
   let reply <- Client.execute client <| CommandRequest.zRangeByScore key min max
-  Client.expectPlainStringArray "ZRANGEBYSCORE" reply
+  expectPlainStringArray "ZRANGEBYSCORE" reply
 
 /-- Return sorted-set members with scores within a score range.
 
@@ -199,7 +200,7 @@ def Client.zRangeByScoreWithScores [Transport.Transport τ]
     (key min max : String)
     : Async (Array SortedSetEntry) := do
   let reply <- Client.execute client <| CommandRequest.zRangeByScoreWithScores key min max
-  Client.expectSortedSetEntries "ZRANGEBYSCORE" reply
+  expectSortedSetEntries "ZRANGEBYSCORE" reply
 
 /-- Return sorted-set members within a reverse score range.
 
@@ -213,7 +214,7 @@ def Client.zRevRangeByScore [Transport.Transport τ]
     (key max min : String)
     : Async (Array String) := do
   let reply <- Client.execute client <| CommandRequest.zRevRangeByScore key max min
-  Client.expectPlainStringArray "ZREVRANGEBYSCORE" reply
+  expectPlainStringArray "ZREVRANGEBYSCORE" reply
 
 /-- Return sorted-set members with scores within a reverse score range.
 
@@ -227,7 +228,7 @@ def Client.zRevRangeByScoreWithScores [Transport.Transport τ]
     (key max min : String)
     : Async (Array SortedSetEntry) := do
   let reply <- Client.execute client <| CommandRequest.zRevRangeByScoreWithScores key max min
-  Client.expectSortedSetEntries "ZREVRANGEBYSCORE" reply
+  expectSortedSetEntries "ZREVRANGEBYSCORE" reply
 
 /-- Return sorted-set members within a lexicographic range.
 
@@ -241,7 +242,7 @@ def Client.zRangeByLex [Transport.Transport τ]
     (key min max : String)
     : Async (Array String) := do
   let reply <- Client.execute client <| CommandRequest.zRangeByLex key min max
-  Client.expectPlainStringArray "ZRANGEBYLEX" reply
+  expectPlainStringArray "ZRANGEBYLEX" reply
 
 /-- Return sorted-set members within a reverse lexicographic range.
 
@@ -255,7 +256,7 @@ def Client.zRevRangeByLex [Transport.Transport τ]
     (key max min : String)
     : Async (Array String) := do
   let reply <- Client.execute client <| CommandRequest.zRevRangeByLex key max min
-  Client.expectPlainStringArray "ZREVRANGEBYLEX" reply
+  expectPlainStringArray "ZREVRANGEBYLEX" reply
 
 /-- Count members within a score range.
 
@@ -269,7 +270,7 @@ def Client.zCount [Transport.Transport τ]
     (key min max : String)
     : Async Int := do
   let reply <- Client.execute client <| CommandRequest.zCount key min max
-  Client.expectInteger "ZCOUNT" reply
+  expectInteger "ZCOUNT" reply
 
 /-- Count members within a lexicographic range.
 
@@ -283,7 +284,7 @@ def Client.zLexCount [Transport.Transport τ]
     (key min max : String)
     : Async Int := do
   let reply <- Client.execute client <| CommandRequest.zLexCount key min max
-  Client.expectInteger "ZLEXCOUNT" reply
+  expectInteger "ZLEXCOUNT" reply
 
 /-- Remove members by rank range.
 
@@ -298,7 +299,7 @@ def Client.zRemRangeByRank [Transport.Transport τ]
     (start stop : Int)
     : Async Int := do
   let reply <- Client.execute client <| CommandRequest.zRemRangeByRank key start stop
-  Client.expectInteger "ZREMRANGEBYRANK" reply
+  expectInteger "ZREMRANGEBYRANK" reply
 
 /-- Remove members by score range.
 
@@ -312,7 +313,7 @@ def Client.zRemRangeByScore [Transport.Transport τ]
     (key min max : String)
     : Async Int := do
   let reply <- Client.execute client <| CommandRequest.zRemRangeByScore key min max
-  Client.expectInteger "ZREMRANGEBYSCORE" reply
+  expectInteger "ZREMRANGEBYSCORE" reply
 
 /-- Remove members by lexicographic range.
 
@@ -326,7 +327,7 @@ def Client.zRemRangeByLex [Transport.Transport τ]
     (key min max : String)
     : Async Int := do
   let reply <- Client.execute client <| CommandRequest.zRemRangeByLex key min max
-  Client.expectInteger "ZREMRANGEBYLEX" reply
+  expectInteger "ZREMRANGEBYLEX" reply
 
 /-- Increment a sorted-set member score.
 
@@ -340,7 +341,7 @@ def Client.zIncrBy [Transport.Transport τ]
     (key increment member : String)
     : Async String := do
   let reply <- Client.execute client <| CommandRequest.zIncrBy key increment member
-  Client.expectString "ZINCRBY" reply
+  expectString "ZINCRBY" reply
 
 /-- Return one random sorted-set member without removing it.
 
@@ -354,7 +355,7 @@ def Client.zRandMember [Transport.Transport τ]
     (key : String)
     : Async (Option String) := do
   let reply <- Client.execute client <| CommandRequest.zRandMember key
-  Client.expectOptionalString "ZRANDMEMBER" reply
+  expectOptionalString "ZRANDMEMBER" reply
 
 /-- Return random sorted-set members without removing them.
 
@@ -369,7 +370,7 @@ def Client.zRandMembers [Transport.Transport τ]
     (count : Int)
     : Async (Array String) := do
   let reply <- Client.execute client <| CommandRequest.zRandMembers key count
-  match (← Client.expectOptionalStringOrArray "ZRANDMEMBER" reply) with
+  match (← expectOptionalStringOrArray "ZRANDMEMBER" reply) with
   | .inl none => pure #[]
   | .inl (some value) => pure #[value]
   | .inr values => pure values
@@ -387,7 +388,7 @@ def Client.zRandMembersWithScores [Transport.Transport τ]
     (count : Int)
     : Async (Array SortedSetEntry) := do
   let reply <- Client.execute client <| CommandRequest.zRandMembersWithScores key count
-  Client.expectSortedSetEntries "ZRANDMEMBER" reply
+  expectSortedSetEntries "ZRANDMEMBER" reply
 
 /-- Return the difference of multiple sorted sets.
 
@@ -401,7 +402,7 @@ def Client.zDiff [Transport.Transport τ]
     (keys : Array String)
     : Async (Array String) := do
   let reply <- Client.execute client <| CommandRequest.zDiff keys
-  Client.expectPlainStringArray "ZDIFF" reply
+  expectPlainStringArray "ZDIFF" reply
 
 /-- Store the difference of multiple sorted sets into a destination key.
 
@@ -416,7 +417,7 @@ def Client.zDiffStore [Transport.Transport τ]
     (keys : Array String)
     : Async Int := do
   let reply <- Client.execute client <| CommandRequest.zDiffStore destination keys
-  Client.expectInteger "ZDIFFSTORE" reply
+  expectInteger "ZDIFFSTORE" reply
 
 /-- Return the intersection of multiple sorted sets.
 
@@ -430,7 +431,7 @@ def Client.zInter [Transport.Transport τ]
     (keys : Array String)
     : Async (Array String) := do
   let reply <- Client.execute client <| CommandRequest.zInter keys
-  Client.expectPlainStringArray "ZINTER" reply
+  expectPlainStringArray "ZINTER" reply
 
 /-- Return the intersection cardinality of multiple sorted sets.
 
@@ -444,7 +445,7 @@ def Client.zInterCard [Transport.Transport τ]
     (keys : Array String)
     : Async Int := do
   let reply <- Client.execute client <| CommandRequest.zInterCard keys
-  Client.expectInteger "ZINTERCARD" reply
+  expectInteger "ZINTERCARD" reply
 
 /-- Store the intersection of multiple sorted sets into a destination key.
 
@@ -459,7 +460,7 @@ def Client.zInterStore [Transport.Transport τ]
     (keys : Array String)
     : Async Int := do
   let reply <- Client.execute client <| CommandRequest.zInterStore destination keys
-  Client.expectInteger "ZINTERSTORE" reply
+  expectInteger "ZINTERSTORE" reply
 
 /-- Return the union of multiple sorted sets.
 
@@ -473,7 +474,7 @@ def Client.zUnion [Transport.Transport τ]
     (keys : Array String)
     : Async (Array String) := do
   let reply <- Client.execute client <| CommandRequest.zUnion keys
-  Client.expectPlainStringArray "ZUNION" reply
+  expectPlainStringArray "ZUNION" reply
 
 /-- Store the union of multiple sorted sets into a destination key.
 
@@ -488,7 +489,7 @@ def Client.zUnionStore [Transport.Transport τ]
     (keys : Array String)
     : Async Int := do
   let reply <- Client.execute client <| CommandRequest.zUnionStore destination keys
-  Client.expectInteger "ZUNIONSTORE" reply
+  expectInteger "ZUNIONSTORE" reply
 
 /-- Scan a sorted set incrementally.
 
@@ -504,6 +505,6 @@ def Client.zScan [Transport.Transport τ]
     (options : ZScanOptions := {})
     : Async SortedSetScanResult := do
   let reply <- Client.execute client <| CommandRequest.zScan key cursor options
-  Client.expectSortedSetScanResult reply
+  expectSortedSetScanResult reply
 
 end LeanRedis
