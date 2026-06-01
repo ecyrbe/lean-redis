@@ -5,7 +5,8 @@ namespace LeanRedis
 
 open Std.Internal.IO.Async
 
-/-- Add members to a set.
+/--
+Add members to a set.
 
 Example:
 ```lean
@@ -20,7 +21,8 @@ def Client.sAdd [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.sAdd key members
   expectInteger "SADD" reply
 
-/-- Remove members from a set.
+/--
+Remove members from a set.
 
 Example:
 ```lean
@@ -35,7 +37,8 @@ def Client.sRem [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.sRem key members
   expectInteger "SREM" reply
 
-/-- Return the cardinality of a set.
+/--
+Return the cardinality of a set.
 
 Example:
 ```lean
@@ -49,7 +52,8 @@ def Client.sCard [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.sCard key
   expectInteger "SCARD" reply
 
-/-- Check whether a member belongs to a set.
+/--
+Check whether a member belongs to a set.
 
 Example:
 ```lean
@@ -63,7 +67,8 @@ def Client.sIsMember [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.sIsMember key member
   expectBoolean "SISMEMBER" reply
 
-/-- Check multiple members against a set.
+/--
+Check multiple members against a set.
 
 Example:
 ```lean
@@ -78,11 +83,12 @@ def Client.sMIsMember [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.sMIsMember key members
   match reply with
   | .array items =>
-      items.mapM (expectBoolean "SMISMEMBER")
-  | .simpleError message => Error.raise <| .server message
+      items.mapM (expectBoolean "SMISMEMBER" ·)
+  | .simpleError message => Error.raise <| Error.server message
   | _ => Error.raise <| .decode "unexpected SMISMEMBER reply"
 
-/-- Return all members of a set.
+/--
+Return all members of a set.
 
 Example:
 ```lean
@@ -96,7 +102,8 @@ def Client.sMembers [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.sMembers key
   expectPlainStringArray "SMEMBERS" reply
 
-/-- Pop one random member from a set.
+/--
+Pop one random member from a set.
 
 Example:
 ```lean
@@ -110,7 +117,8 @@ def Client.sPop [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.sPop key
   expectOptionalString "SPOP" reply
 
-/-- Pop multiple random members from a set.
+/--
+Pop multiple random members from a set.
 
 Example:
 ```lean
@@ -125,7 +133,8 @@ def Client.sPopMany [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.sPopCount key count
   expectPlainStringArray "SPOP" reply
 
-/-- Return one random set member without removing it.
+/--
+Return one random set member without removing it.
 
 Example:
 ```lean
@@ -139,7 +148,8 @@ def Client.sRandMember [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.sRandMember key
   expectOptionalString "SRANDMEMBER" reply
 
-/-- Return random set members without removing them.
+/--
+Return random set members without removing them.
 
 Example:
 ```lean
@@ -157,7 +167,8 @@ def Client.sRandMembers [Transport.Transport τ]
   | .inl (some value) => pure #[value]
   | .inr values => pure values
 
-/-- Move a set member to another set.
+/--
+Move a set member to another set.
 
 Example:
 ```lean
@@ -171,7 +182,8 @@ def Client.sMove [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.sMove source destination member
   expectBoolean "SMOVE" reply
 
-/-- Return the difference of multiple sets.
+/--
+Return the difference of multiple sets.
 
 Example:
 ```lean
@@ -185,7 +197,8 @@ def Client.sDiff [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.sDiff keys
   expectPlainStringArray "SDIFF" reply
 
-/-- Store the difference of multiple sets into a destination key.
+/--
+Store the difference of multiple sets into a destination key.
 
 Example:
 ```lean
@@ -200,7 +213,8 @@ def Client.sDiffStore [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.sDiffStore destination keys
   expectInteger "SDIFFSTORE" reply
 
-/-- Return the intersection of multiple sets.
+/--
+Return the intersection of multiple sets.
 
 Example:
 ```lean
@@ -214,7 +228,8 @@ def Client.sInter [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.sInter keys
   expectPlainStringArray "SINTER" reply
 
-/-- Return the intersection cardinality of multiple sets.
+/--
+Return the intersection cardinality of multiple sets.
 
 Example:
 ```lean
@@ -228,7 +243,8 @@ def Client.sInterCard [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.sInterCard keys
   expectInteger "SINTERCARD" reply
 
-/-- Store the intersection of multiple sets into a destination key.
+/--
+Store the intersection of multiple sets into a destination key.
 
 Example:
 ```lean
@@ -243,7 +259,8 @@ def Client.sInterStore [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.sInterStore destination keys
   expectInteger "SINTERSTORE" reply
 
-/-- Return the union of multiple sets.
+/--
+Return the union of multiple sets.
 
 Example:
 ```lean
@@ -257,7 +274,8 @@ def Client.sUnion [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.sUnion keys
   expectPlainStringArray "SUNION" reply
 
-/-- Store the union of multiple sets into a destination key.
+/--
+Store the union of multiple sets into a destination key.
 
 Example:
 ```lean
@@ -272,7 +290,8 @@ def Client.sUnionStore [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.sUnionStore destination keys
   expectInteger "SUNIONSTORE" reply
 
-/-- Scan a set incrementally.
+/--
+Scan a set incrementally.
 
 Example:
 ```lean

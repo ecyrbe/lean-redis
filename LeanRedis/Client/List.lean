@@ -5,7 +5,8 @@ namespace LeanRedis
 
 open Std.Internal.IO.Async
 
-/-- Push values to the left side of a list.
+/--
+Push values to the left side of a list.
 
 Example:
 ```lean
@@ -20,7 +21,8 @@ def Client.lPush [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.lPush key values
   expectInteger "LPUSH" reply
 
-/-- Push values to the right side of a list.
+/--
+Push values to the right side of a list.
 
 Example:
 ```lean
@@ -35,7 +37,8 @@ def Client.rPush [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.rPush key values
   expectInteger "RPUSH" reply
 
-/-- Push a value to the left only if the list already exists.
+/--
+Push a value to the left only if the list already exists.
 
 Example:
 ```lean
@@ -49,7 +52,8 @@ def Client.lPushX [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.lPushX key value
   expectInteger "LPUSHX" reply
 
-/-- Push a value to the right only if the list already exists.
+/--
+Push a value to the right only if the list already exists.
 
 Example:
 ```lean
@@ -63,7 +67,8 @@ def Client.rPushX [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.rPushX key value
   expectInteger "RPUSHX" reply
 
-/-- Pop one value from the left side of a list.
+/--
+Pop one value from the left side of a list.
 
 Example:
 ```lean
@@ -77,7 +82,8 @@ def Client.lPop [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.lPop key
   expectOptionalString "LPOP" reply
 
-/-- Pop one value from the right side of a list.
+/--
+Pop one value from the right side of a list.
 
 Example:
 ```lean
@@ -91,7 +97,8 @@ def Client.rPop [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.rPop key
   expectOptionalString "RPOP" reply
 
-/-- Return the current length of a list.
+/--
+Return the current length of a list.
 
 Example:
 ```lean
@@ -105,7 +112,8 @@ def Client.lLen [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.lLen key
   expectInteger "LLEN" reply
 
-/-- Return the value at a list index.
+/--
+Return the value at a list index.
 
 Example:
 ```lean
@@ -120,7 +128,8 @@ def Client.lIndex [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.lIndex key index
   expectOptionalString "LINDEX" reply
 
-/-- Return a range of list elements.
+/--
+Return a range of list elements.
 
 Example:
 ```lean
@@ -135,7 +144,8 @@ def Client.lRange [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.lRange key start stop
   expectPlainStringArray "LRANGE" reply
 
-/-- Replace the value at a list index.
+/--
+Replace the value at a list index.
 
 Example:
 ```lean
@@ -151,7 +161,8 @@ def Client.lSet [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.lSet key index value
   expectOk reply
 
-/-- Trim a list to the given inclusive range.
+/--
+Trim a list to the given inclusive range.
 
 Example:
 ```lean
@@ -166,7 +177,8 @@ def Client.lTrim [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.lTrim key start stop
   expectOk reply
 
-/-- Remove matching elements from a list.
+/--
+Remove matching elements from a list.
 
 Example:
 ```lean
@@ -182,7 +194,8 @@ def Client.lRem [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.lRem key count value
   expectInteger "LREM" reply
 
-/-- Insert a value before or after a pivot element.
+/--
+Insert a value before or after a pivot element.
 
 Example:
 ```lean
@@ -198,7 +211,8 @@ def Client.lInsert [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.lInsert key position pivot value
   expectInteger "LINSERT" reply
 
-/-- Move one element between lists.
+/--
+Move one element between lists.
 
 Example:
 ```lean
@@ -213,7 +227,8 @@ def Client.lMove [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.lMove source destination fromWhere toWhere
   expectOptionalString "LMOVE" reply
 
-/-- Return a single matching position from `LPOS`.
+/--
+Return a single matching position from `LPOS`.
 
 Example:
 ```lean
@@ -234,7 +249,8 @@ def Client.lPos [Transport.Transport τ]
   | .simpleError message => Error.raise <| .server message
   | _ => Error.raise <| .decode "unexpected LPOS reply"
 
-/-- Return multiple matching positions from `LPOS`.
+/--
+Return multiple matching positions from `LPOS`.
 
 Example:
 ```lean

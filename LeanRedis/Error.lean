@@ -17,6 +17,12 @@ def Error.message : Error -> String
   | .bootstrap message => s!"bootstrap error: {message}"
   | .unavailable message => s!"unavailable: {message}"
 
+instance : MonadLift (Except Error) IO where
+  monadLift x :=
+    match x with
+    | .ok a => pure a
+    | .error e => throw <| IO.userError e.message
+
 def Error.raise {α : Type} (err : Error) : IO α :=
   throw <| IO.userError err.message
 

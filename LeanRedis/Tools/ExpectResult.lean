@@ -1,4 +1,3 @@
-import Std.Internal.Async
 import LeanRedis.Protocol.Resp.Value
 import LeanRedis.Error
 import LeanRedis.Command.Hash
@@ -8,112 +7,115 @@ import LeanRedis.Command.SortedSet
 
 namespace LeanRedis
 
-open Std.Internal.IO.Async
-
-def expectOk (reply : Protocol.Resp.Value) : Async Unit := do
+def expectOk (reply : Protocol.Resp.Value) : Except Error Unit :=
   match reply with
-  | .simpleString "OK" => pure ()
+  | .simpleString "OK" => return ()
   | .blobString bytes =>
       match String.fromUTF8? bytes with
-      | some "OK" => pure ()
-      | _ => Error.raise <| .decode "expected OK reply"
-  | .simpleError message => Error.raise <| .server message
-  | _ => Error.raise <| .decode "expected OK reply"
+      | some "OK" => return ()
+      | _ => throw <| .decode "expected OK reply"
+  | .simpleError message => throw <| .server message
+  | _ => throw <| .decode "expected OK reply"
 
-def expectPong (reply : Protocol.Resp.Value) : Async (Option String) := do
+def expectPong (reply : Protocol.Resp.Value) : Except Error (Option String) :=
   match reply with
-  | .simpleString "PONG" => pure none
+  | .simpleString "PONG" => return none
   | .blobString bytes =>
       match String.fromUTF8? bytes with
-      | some text => pure (some text)
-      | none => Error.raise <| .decode "invalid UTF-8 in PING reply"
-  | .simpleString text => pure (some text)
-  | .simpleError message => Error.raise <| .server message
-  | _ => Error.raise <| .decode "unexpected PING reply"
+      | some text => return (some text)
+      | none => throw <| .decode "invalid UTF-8 in PING reply"
+  | .simpleString text => return (some text)
+  | .simpleError message => throw <| .server message
+  | _ => throw <| .decode "unexpected PING reply"
 
-def expectStored (reply : Protocol.Resp.Value) : Async Bool := do
+def expectStored (reply : Protocol.Resp.Value) : Except Error Bool :=
   match reply with
-  | .simpleString "OK" => pure true
+  | .simpleString "OK" => return true
   | .blobString bytes =>
       match String.fromUTF8? bytes with
-      | some "OK" => pure true
-      | _ => Error.raise <| .decode "expected OK reply"
-  | .null => pure false
-  | .simpleError message => Error.raise <| .server message
-  | _ => Error.raise <| .decode "unexpected SET reply"
+      | some "OK" => return true
+      | _ => throw <| .decode "expected OK reply"
+  | .null => return false
+  | .simpleError message => throw <| .server message
+  | _ => throw <| .decode "unexpected SET reply"
 
-def decodeUtf8 (context : String) (bytes : ByteArray) : Async String := do
+def decodeUtf8 (context : String) (bytes : ByteArray) : Except Error String :=
   match String.fromUTF8? bytes with
-  | some text => pure text
-  | none => Error.raise <| .decode s!"invalid UTF-8 in {context} reply"
+  | some text => return text
+  | none => throw <| .decode s!"invalid UTF-8 in {context} reply"
 
-def expectOptionalString (context : String) (reply : Protocol.Resp.Value) : Async (Option String) := do
+def expectOptionalString (context : String) (reply : Protocol.Resp.Value) : Except Error (Option String) :=
   match reply with
-  | .null => pure none
+  | .null => return none
   | .blobString bytes =>
-      let text <- decodeUtf8 context bytes
-      pure (some text)
-  | .simpleString text => pure (some text)
-  | .simpleError message => Error.raise <| .server message
-  | _ => Error.raise <| .decode s!"unexpected {context} reply"
+      match decodeUtf8 context bytes with
+      | .ok text => return (some text)
+      | .error e => throw e
+  | .simpleString text => return (some text)
+  | .simpleError message => throw <| .server message
+  | _ => throw <| .decode s!"unexpected {context} reply"
 
-def expectString (context : String) (reply : Protocol.Resp.Value) : Async String := do
-  match (← expectOptionalString context reply) with
-  | some text => pure text
-  | none => Error.raise <| .decode s!"unexpected null {context} reply"
+def expectString (context : String) (reply : Protocol.Resp.Value) : Except Error String :=
+  match expectOptionalString context reply with
+  | .ok (some text) => return text
+  | .ok none => throw <| .decode s!"unexpected null {context} reply"
+  | .error e => throw e
 
-def expectInteger (context : String) (reply : Protocol.Resp.Value) : Async Int := do
+def expectInteger (context : String) (reply : Protocol.Resp.Value) : Except Error Int :=
   match reply with
-  | .number value => pure value
-  | .simpleError message => Error.raise <| .server message
-  | _ => Error.raise <| .decode s!"unexpected {context} reply"
+  | .number value => return value
+  | .simpleError message => throw <| .server message
+  | _ => throw <| .decode s!"unexpected {context} reply"
 
-def expectBoolean (context : String) (reply : Protocol.Resp.Value) : Async Bool := do
+def expectBoolean (context : String) (reply : Protocol.Resp.Value) : Except Error Bool :=
   match reply with
-  | .bool value => pure value
-  | .number value => pure (value != 0)
-  | .simpleError message => Error.raise <| .server message
-  | _ => Error.raise <| .decode s!"unexpected {context} reply"
+  | .bool value => return value
+  | .number value => return (value != 0)
+  | .simpleError message => throw <| .server message
+  | _ => throw <| .decode s!"unexpected {context} reply"
 
-def expectStringArray (context : String) (reply : Protocol.Resp.Value) : Async (Array (Option String)) := do
+def expectStringArray (context : String) (reply : Protocol.Resp.Value) : Except Error (Array (Option String)) :=
   match reply with
   | .array items =>
       items.mapM (expectOptionalString context)
-  | .simpleError message => Error.raise <| .server message
-  | _ => Error.raise <| .decode s!"unexpected {context} reply"
+  | .simpleError message => throw <| .server message
+  | _ => throw <| .decode s!"unexpected {context} reply"
 
-def expectPlainStringArray (context : String) (reply : Protocol.Resp.Value) : Async (Array String) := do
+def expectPlainStringArray (context : String) (reply : Protocol.Resp.Value) : Except Error (Array String) :=
   match reply with
   | .array items =>
       items.mapM (expectString context)
-  | .simpleError message => Error.raise <| .server message
-  | _ => Error.raise <| .decode s!"unexpected {context} reply"
+  | .simpleError message => throw <| .server message
+  | _ => throw <| .decode s!"unexpected {context} reply"
 
-def expectIntegerArray (context : String) (reply : Protocol.Resp.Value) : Async (Array Int) := do
+def expectIntegerArray (context : String) (reply : Protocol.Resp.Value) : Except Error (Array Int) :=
   match reply with
   | .array items =>
       items.mapM (expectInteger context)
-  | .simpleError message => Error.raise <| .server message
-  | _ => Error.raise <| .decode s!"unexpected {context} reply"
+  | .simpleError message => throw <| .server message
+  | _ => throw <| .decode s!"unexpected {context} reply"
 
 def decodeStringPairsFromArray
     (context : String)
     (items : Array Protocol.Resp.Value)
-    : Async (Array (String × String)) := do
-  let rec loop (index : Nat) (acc : Array (String × String)) : Async (Array (String × String)) := do
+    : Except Error (Array (String × String)) :=
+  let rec loop (index : Nat) (acc : Array (String × String)) : Except Error (Array (String × String)) :=
     if h : index < items.size then
-      let key <- expectString context items[index]
-      let next := index + 1
-      if hNext : next < items.size then
-        let value <- expectString context items[next]
-        loop (next + 1) (acc.push (key, value))
-      else
-        Error.raise <| .decode s!"unexpected odd-sized {context} reply"
+      match expectString context items[index] with
+      | .error e => throw e
+      | .ok key =>
+        let next := index + 1
+        if hNext : next < items.size then
+          match expectString context items[next] with
+          | .error e => throw e
+          | .ok value => loop (next + 1) (acc.push (key, value))
+        else
+          throw <| .decode s!"unexpected odd-sized {context} reply"
     else
-      pure acc
+      return acc
   loop 0 #[]
 
-def expectStringPairs (context : String) (reply : Protocol.Resp.Value) : Async (Array (String × String)) := do
+def expectStringPairs (context : String) (reply : Protocol.Resp.Value) : Except Error (Array (String × String)) :=
   match reply with
   | .array items =>
       decodeStringPairsFromArray context items
@@ -121,74 +123,77 @@ def expectStringPairs (context : String) (reply : Protocol.Resp.Value) : Async (
       entries.mapM fun (key, value) => do
         let key <- expectString context key
         let value <- expectString context value
-        pure (key, value)
-  | .simpleError message => Error.raise <| .server message
-  | _ => Error.raise <| .decode s!"unexpected {context} reply"
+        return (key, value)
+  | .simpleError message => throw <| .server message
+  | _ => throw <| .decode s!"unexpected {context} reply"
 
-def expectHScanResult (reply : Protocol.Resp.Value) : Async HashScanResult := do
+def expectHScanResult (reply : Protocol.Resp.Value) : Except Error HashScanResult := do
   match reply with
   | .array #[cursor, entries] =>
       let cursorText <- expectString "HSCAN" cursor
       let some cursor := cursorText.toNat?
-        | Error.raise <| .decode "invalid HSCAN cursor"
+        | throw <| .decode "invalid HSCAN cursor"
       let entries <- match entries with
         | .array items => decodeStringPairsFromArray "HSCAN" items
         | .map kvs =>
             kvs.mapM fun (key, value) => do
               let key <- expectString "HSCAN" key
               let value <- expectString "HSCAN" value
-              pure (key, value)
-        | .simpleError message => Error.raise <| .server message
-        | _ => Error.raise <| .decode "unexpected HSCAN entries reply"
-      pure { cursor := cursor.toUInt64, entries }
-  | .simpleError message => Error.raise <| .server message
-  | _ => Error.raise <| .decode "unexpected HSCAN reply"
+              return (key, value)
+        | .simpleError message => throw <| .server message
+        | _ => throw <| .decode "unexpected HSCAN entries reply"
+      return { cursor := cursor.toUInt64, entries }
+  | .simpleError message => throw <| .server message
+  | _ => throw <| .decode "unexpected HSCAN reply"
 
-def expectSetScanResult (reply : Protocol.Resp.Value) : Async SetScanResult := do
+def expectSetScanResult (reply : Protocol.Resp.Value) : Except Error SetScanResult := do
   match reply with
   | .array #[cursor, members] =>
       let cursorText <- expectString "SSCAN" cursor
       let some cursor := cursorText.toNat?
-        | Error.raise <| .decode "invalid SSCAN cursor"
+        | throw <| .decode "invalid SSCAN cursor"
       let members <- expectPlainStringArray "SSCAN" members
-      pure { cursor := cursor.toUInt64, members }
-  | .simpleError message => Error.raise <| .server message
-  | _ => Error.raise <| .decode "unexpected SSCAN reply"
+      return { cursor := cursor.toUInt64, members }
+  | .simpleError message => throw <| .server message
+  | _ => throw <| .decode "unexpected SSCAN reply"
 
-def expectScanResult (reply : Protocol.Resp.Value) : Async ScanResult := do
+def expectScanResult (reply : Protocol.Resp.Value) : Except Error ScanResult := do
   match reply with
   | .array #[cursor, keys] =>
-      let cursorText ← expectString "SCAN" cursor
+      let cursorText <- expectString "SCAN" cursor
       let some cursor := cursorText.toNat?
-        | Error.raise <| .decode "invalid SCAN cursor"
-      let keys ← expectPlainStringArray "SCAN" keys
-      pure { cursor := cursor.toUInt64, keys }
-  | .simpleError message => Error.raise <| .server message
-  | _ => Error.raise <| .decode "unexpected SCAN reply"
+        | throw <| .decode "invalid SCAN cursor"
+      let keys <- expectPlainStringArray "SCAN" keys
+      return { cursor := cursor.toUInt64, keys }
+  | .simpleError message => throw <| .server message
+  | _ => throw <| .decode "unexpected SCAN reply"
 
 def expectOptionalStringOrArray
     (context : String)
     (reply : Protocol.Resp.Value)
-    : Async (Option String ⊕ Array String) := do
+    : Except Error (Option String ⊕ Array String) :=
   match reply with
-  | .null => pure <| .inl none
+  | .null => return .inl none
   | .blobString _ | .simpleString _ =>
-      let value <- expectOptionalString context reply
-      pure <| .inl value
+      match expectOptionalString context reply with
+      | .ok value => return .inl value
+      | .error e => throw e
   | .array _ =>
-      let values <- expectPlainStringArray context reply
-      pure <| .inr values
-  | .simpleError message => Error.raise <| .server message
-  | _ => Error.raise <| .decode s!"unexpected {context} reply"
+      match expectPlainStringArray context reply with
+      | .ok values => return .inr values
+      | .error e => throw e
+  | .simpleError message => throw <| .server message
+  | _ => throw <| .decode s!"unexpected {context} reply"
 
 def decodeSortedSetEntriesFromArray
     (context : String)
     (items : Array Protocol.Resp.Value)
-    : Async (Array SortedSetEntry) := do
-  let pairs <- decodeStringPairsFromArray context items
-  pure <| pairs.map fun (member, score) => { member, score }
+    : Except Error (Array SortedSetEntry) :=
+  match decodeStringPairsFromArray context items with
+  | .error e => throw e
+  | .ok pairs => return (pairs.map fun (member, score) => { member, score })
 
-def expectSortedSetEntries (context : String) (reply : Protocol.Resp.Value) : Async (Array SortedSetEntry) := do
+def expectSortedSetEntries (context : String) (reply : Protocol.Resp.Value) : Except Error (Array SortedSetEntry) :=
   match reply with
   | .array items =>
       decodeSortedSetEntriesFromArray context items
@@ -196,19 +201,19 @@ def expectSortedSetEntries (context : String) (reply : Protocol.Resp.Value) : As
       entries.mapM fun (member, score) => do
         let member <- expectString context member
         let score <- expectString context score
-        pure { member, score }
-  | .simpleError message => Error.raise <| .server message
-  | _ => Error.raise <| .decode s!"unexpected {context} reply"
+        return { member, score }
+  | .simpleError message => throw <| .server message
+  | _ => throw <| .decode s!"unexpected {context} reply"
 
-def expectSortedSetScanResult (reply : Protocol.Resp.Value) : Async SortedSetScanResult := do
+def expectSortedSetScanResult (reply : Protocol.Resp.Value) : Except Error SortedSetScanResult := do
   match reply with
   | .array #[cursor, entries] =>
       let cursorText <- expectString "ZSCAN" cursor
       let some cursor := cursorText.toNat?
-        | Error.raise <| .decode "invalid ZSCAN cursor"
+        | throw <| .decode "invalid ZSCAN cursor"
       let entries <- expectSortedSetEntries "ZSCAN" entries
-      pure { cursor := cursor.toUInt64, entries }
-  | .simpleError message => Error.raise <| .server message
-  | _ => Error.raise <| .decode "unexpected ZSCAN reply"
+      return { cursor := cursor.toUInt64, entries }
+  | .simpleError message => throw <| .server message
+  | _ => throw <| .decode "unexpected ZSCAN reply"
 
 end LeanRedis

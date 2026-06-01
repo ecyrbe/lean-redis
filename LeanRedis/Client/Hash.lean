@@ -5,7 +5,8 @@ namespace LeanRedis
 
 open Std.Internal.IO.Async
 
-/-- Get the value of a hash field.
+/--
+Get the value of a hash field.
 
 Example:
 ```lean
@@ -19,7 +20,8 @@ def Client.hGet [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.hGet key field
   expectOptionalString "HGET" reply
 
-/-- Set one or more hash fields.
+/--
+Set one or more hash fields.
 
 Example:
 ```lean
@@ -34,7 +36,8 @@ def Client.hSet [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.hSet key entries
   expectInteger "HSET" reply
 
-/-- Get multiple hash fields.
+/--
+Get multiple hash fields.
 
 Example:
 ```lean
@@ -49,7 +52,8 @@ def Client.hMGet [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.hMGet key fields
   expectStringArray "HMGET" reply
 
-/-- Set multiple hash fields with `HMSET`.
+/--
+Set multiple hash fields with `HMSET`.
 
 Example:
 ```lean
@@ -64,7 +68,8 @@ def Client.hMSet [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.hMSet key entries
   expectOk reply
 
-/-- Get all hash fields and values.
+/--
+Get all hash fields and values.
 
 Example:
 ```lean
@@ -78,7 +83,8 @@ def Client.hGetAll [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.hGetAll key
   expectStringPairs "HGETALL" reply
 
-/-- Delete one or more hash fields.
+/--
+Delete one or more hash fields.
 
 Example:
 ```lean
@@ -93,7 +99,8 @@ def Client.hDel [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.hDel key fields
   expectInteger "HDEL" reply
 
-/-- Check whether a hash field exists.
+/--
+Check whether a hash field exists.
 
 Example:
 ```lean
@@ -107,7 +114,8 @@ def Client.hExists [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.hExists key field
   expectBoolean "HEXISTS" reply
 
-/-- Return the number of fields in a hash.
+/--
+Return the number of fields in a hash.
 
 Example:
 ```lean
@@ -121,7 +129,8 @@ def Client.hLen [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.hLen key
   expectInteger "HLEN" reply
 
-/-- Return all hash field names.
+/--
+Return all hash field names.
 
 Example:
 ```lean
@@ -135,7 +144,8 @@ def Client.hKeys [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.hKeys key
   expectPlainStringArray "HKEYS" reply
 
-/-- Return all hash values.
+/--
+Return all hash values.
 
 Example:
 ```lean
@@ -149,7 +159,8 @@ def Client.hVals [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.hVals key
   expectPlainStringArray "HVALS" reply
 
-/-- Return the string length of a hash field value.
+/--
+Return the string length of a hash field value.
 
 Example:
 ```lean
@@ -163,7 +174,8 @@ def Client.hStrLen [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.hStrLen key field
   expectInteger "HSTRLEN" reply
 
-/-- Increment a hash integer field.
+/--
+Increment a hash integer field.
 
 Example:
 ```lean
@@ -178,7 +190,8 @@ def Client.hIncrBy [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.hIncrBy key field amount
   expectInteger "HINCRBY" reply
 
-/-- Increment a hash numeric field by a decimal amount.
+/--
+Increment a hash numeric field by a decimal amount.
 
 Example:
 ```lean
@@ -192,7 +205,8 @@ def Client.hIncrByFloat [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.hIncrByFloat key field amount
   expectString "HINCRBYFLOAT" reply
 
-/-- Set a hash field only if it does not exist.
+/--
+Set a hash field only if it does not exist.
 
 Example:
 ```lean
@@ -206,7 +220,8 @@ def Client.hSetNx [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.hSetNx key field value
   expectBoolean "HSETNX" reply
 
-/-- Return one random hash field.
+/--
+Return one random hash field.
 
 Example:
 ```lean
@@ -220,7 +235,8 @@ def Client.hRandField [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.hRandField key
   expectOptionalString "HRANDFIELD" reply
 
-/-- Return random hash fields.
+/--
+Return random hash fields.
 
 Example:
 ```lean
@@ -235,7 +251,8 @@ def Client.hRandFields [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.hRandFields key count
   expectPlainStringArray "HRANDFIELD" reply
 
-/-- Return random hash fields with values.
+/--
+Return random hash fields with values.
 
 Example:
 ```lean
@@ -250,7 +267,8 @@ def Client.hRandFieldsWithValues [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.hRandFieldsWithValues key count
   expectStringPairs "HRANDFIELD" reply
 
-/-- Scan a hash incrementally.
+/--
+Scan a hash incrementally.
 
 Example:
 ```lean
