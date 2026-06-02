@@ -1,6 +1,7 @@
 name = "lean-redis"
 version = "0.1.0"
 defaultTargets = ["LeanRedis"]
+testDriver = "LeanRedisTest"
 
 [[lean_lib]]
 name = "LeanRedis"

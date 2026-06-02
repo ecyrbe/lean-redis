@@ -1,9 +1,10 @@
-import LeanRedis.Client.Internal
+import LeanRedis.Client.Basic
 import LeanRedis.Tools.ExpectResult
 
-namespace LeanRedis
+namespace LeanRedis.Client
 
 open Std.Internal.IO.Async
+open LeanRedis
 
 /--
 Get the value of a string key.
@@ -13,7 +14,7 @@ Example:
 let value <- client.get "key"
 ```
 -/
-def Client.get [Transport.Transport τ]
+def get [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     : Async (Option String) := do
@@ -29,7 +30,7 @@ let stored <- client.set "key" "value"
 let storedNx <- client.set "key" "value" { condition? := some .nx }
 ```
 -/
-def Client.set [Transport.Transport τ]
+def set [Transport.Transport τ]
     (client : Client τ)
     (key value : String)
     (options : SetOptions := {})
@@ -45,7 +46,7 @@ Example:
 let values <- client.mGet #["a", "b"]
 ```
 -/
-def Client.mGet [Transport.Transport τ]
+def mGet [Transport.Transport τ]
     (client : Client τ)
     (keys : Array String)
     : Async (Array (Option String)) := do
@@ -60,7 +61,7 @@ Example:
 let _ <- client.mSet #[("a", "1"), ("b", "2")]
 ```
 -/
-def Client.mSet [Transport.Transport τ]
+def mSet [Transport.Transport τ]
     (client : Client τ)
     (entries : Array (String × String))
     : Async Unit := do
@@ -75,7 +76,7 @@ Example:
 let stored <- client.mSetNx #[("a", "1"), ("b", "2")]
 ```
 -/
-def Client.mSetNx [Transport.Transport τ]
+def mSetNx [Transport.Transport τ]
     (client : Client τ)
     (entries : Array (String × String))
     : Async Bool := do
@@ -90,7 +91,7 @@ Example:
 let previous <- client.getDel "key"
 ```
 -/
-def Client.getDel [Transport.Transport τ]
+def getDel [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     : Async (Option String) := do
@@ -105,7 +106,7 @@ Example:
 let value <- client.getEx "key" (some <| .persist)
 ```
 -/
-def Client.getEx [Transport.Transport τ]
+def getEx [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     (mode? : Option GetExMode := none)
@@ -121,7 +122,7 @@ Example:
 let part <- client.getRange "key" 0 4
 ```
 -/
-def Client.getRange [Transport.Transport τ]
+def getRange [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     (start stop : Int)
@@ -137,7 +138,7 @@ Example:
 let previous <- client.getSet "key" "next"
 ```
 -/
-def Client.getSet [Transport.Transport τ]
+def getSet [Transport.Transport τ]
     (client : Client τ)
     (key value : String)
     : Async (Option String) := do
@@ -152,7 +153,7 @@ Example:
 let size <- client.setRange "key" 2 "xy"
 ```
 -/
-def Client.setRange [Transport.Transport τ]
+def setRange [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     (offset : UInt64)
@@ -169,7 +170,7 @@ Example:
 let len <- client.strLen "key"
 ```
 -/
-def Client.strLen [Transport.Transport τ]
+def strLen [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     : Async Int := do
@@ -184,7 +185,7 @@ Example:
 let len <- client.append "key" "suffix"
 ```
 -/
-def Client.append [Transport.Transport τ]
+def append [Transport.Transport τ]
     (client : Client τ)
     (key value : String)
     : Async Int := do
@@ -199,7 +200,7 @@ Example:
 let value <- client.incr "counter"
 ```
 -/
-def Client.incr [Transport.Transport τ]
+def incr [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     : Async Int := do
@@ -214,7 +215,7 @@ Example:
 let value <- client.incrBy "counter" 5
 ```
 -/
-def Client.incrBy [Transport.Transport τ]
+def incrBy [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     (amount : Int)
@@ -230,7 +231,7 @@ Example:
 let value <- client.incrByFloat "score" "1.5"
 ```
 -/
-def Client.incrByFloat [Transport.Transport τ]
+def incrByFloat [Transport.Transport τ]
     (client : Client τ)
     (key amount : String)
     : Async String := do
@@ -245,7 +246,7 @@ Example:
 let value <- client.decr "counter"
 ```
 -/
-def Client.decr [Transport.Transport τ]
+def decr [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     : Async Int := do
@@ -260,7 +261,7 @@ Example:
 let value <- client.decrBy "counter" 3
 ```
 -/
-def Client.decrBy [Transport.Transport τ]
+def decrBy [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     (amount : Int)
@@ -276,7 +277,7 @@ Example:
 let stored <- client.setNx "key" "value"
 ```
 -/
-def Client.setNx [Transport.Transport τ]
+def setNx [Transport.Transport τ]
     (client : Client τ)
     (key value : String)
     : Async Bool := do
@@ -291,7 +292,7 @@ Example:
 let _ <- client.setEx "key" 30 "value"
 ```
 -/
-def Client.setEx [Transport.Transport τ]
+def setEx [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     (seconds : UInt64)
@@ -308,7 +309,7 @@ Example:
 let _ <- client.pSetEx "key" 500 "value"
 ```
 -/
-def Client.pSetEx [Transport.Transport τ]
+def pSetEx [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     (milliseconds : UInt64)
@@ -317,4 +318,4 @@ def Client.pSetEx [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.pSetEx key milliseconds value
   expectOk reply
 
-end LeanRedis
+end LeanRedis.Client

@@ -1,5 +1,6 @@
 import LeanRedis.Client.Event
 import LeanRedis.Client.Internal
+import LeanRedis.Client.Basic
 import LeanRedis.Client.Connection
 import LeanRedis.Client.String
 import LeanRedis.Client.Hash

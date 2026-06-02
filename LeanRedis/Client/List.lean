@@ -1,9 +1,10 @@
-import LeanRedis.Client.Internal
+import LeanRedis.Client.Basic
 import LeanRedis.Tools.ExpectResult
 
-namespace LeanRedis
+namespace LeanRedis.Client
 
 open Std.Internal.IO.Async
+open LeanRedis
 
 /--
 Push values to the left side of a list.
@@ -13,7 +14,7 @@ Example:
 let len <- client.lPush "jobs" #["a", "b"]
 ```
 -/
-def Client.lPush [Transport.Transport τ]
+def lPush [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     (values : Array String)
@@ -29,7 +30,7 @@ Example:
 let len <- client.rPush "jobs" #["a", "b"]
 ```
 -/
-def Client.rPush [Transport.Transport τ]
+def rPush [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     (values : Array String)
@@ -45,7 +46,7 @@ Example:
 let len <- client.lPushX "jobs" "a"
 ```
 -/
-def Client.lPushX [Transport.Transport τ]
+def lPushX [Transport.Transport τ]
     (client : Client τ)
     (key value : String)
     : Async Int := do
@@ -60,7 +61,7 @@ Example:
 let len <- client.rPushX "jobs" "a"
 ```
 -/
-def Client.rPushX [Transport.Transport τ]
+def rPushX [Transport.Transport τ]
     (client : Client τ)
     (key value : String)
     : Async Int := do
@@ -75,7 +76,7 @@ Example:
 let value <- client.lPop "jobs"
 ```
 -/
-def Client.lPop [Transport.Transport τ]
+def lPop [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     : Async (Option String) := do
@@ -90,7 +91,7 @@ Example:
 let value <- client.rPop "jobs"
 ```
 -/
-def Client.rPop [Transport.Transport τ]
+def rPop [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     : Async (Option String) := do
@@ -105,7 +106,7 @@ Example:
 let len <- client.lLen "jobs"
 ```
 -/
-def Client.lLen [Transport.Transport τ]
+def lLen [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     : Async Int := do
@@ -120,7 +121,7 @@ Example:
 let value <- client.lIndex "jobs" 0
 ```
 -/
-def Client.lIndex [Transport.Transport τ]
+def lIndex [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     (index : Int)
@@ -136,7 +137,7 @@ Example:
 let values <- client.lRange "jobs" 0 (-1)
 ```
 -/
-def Client.lRange [Transport.Transport τ]
+def lRange [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     (start stop : Int)
@@ -152,7 +153,7 @@ Example:
 let _ <- client.lSet "jobs" 0 "next"
 ```
 -/
-def Client.lSet [Transport.Transport τ]
+def lSet [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     (index : Int)
@@ -169,7 +170,7 @@ Example:
 let _ <- client.lTrim "jobs" 0 9
 ```
 -/
-def Client.lTrim [Transport.Transport τ]
+def lTrim [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     (start stop : Int)
@@ -185,7 +186,7 @@ Example:
 let removed <- client.lRem "jobs" 0 "done"
 ```
 -/
-def Client.lRem [Transport.Transport τ]
+def lRem [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     (count : Int)
@@ -202,7 +203,7 @@ Example:
 let index <- client.lInsert "jobs" .after "a" "b"
 ```
 -/
-def Client.lInsert [Transport.Transport τ]
+def lInsert [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     (position : LInsertPosition)
@@ -219,7 +220,7 @@ Example:
 let value <- client.lMove "jobs" "done" .left .right
 ```
 -/
-def Client.lMove [Transport.Transport τ]
+def lMove [Transport.Transport τ]
     (client : Client τ)
     (source destination : String)
     (fromWhere toWhere : LMoveWhere)
@@ -235,7 +236,7 @@ Example:
 let pos <- client.lPos "jobs" "a"
 ```
 -/
-def Client.lPos [Transport.Transport τ]
+def lPos [Transport.Transport τ]
     (client : Client τ)
     (key element : String)
     (options : LPosOptions := {})
@@ -257,7 +258,7 @@ Example:
 let positions <- client.lPosMany "jobs" "a" { count? := some 3 }
 ```
 -/
-def Client.lPosMany [Transport.Transport τ]
+def lPosMany [Transport.Transport τ]
     (client : Client τ)
     (key element : String)
     (options : LPosOptions)
@@ -268,4 +269,4 @@ def Client.lPosMany [Transport.Transport τ]
       let reply <- Client.execute client <| CommandRequest.lPos key element options
       expectIntegerArray "LPOS" reply
 
-end LeanRedis
+end LeanRedis.Client

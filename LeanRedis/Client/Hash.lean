@@ -1,9 +1,10 @@
-import LeanRedis.Client.Internal
+import LeanRedis.Client.Basic
 import LeanRedis.Tools.ExpectResult
 
-namespace LeanRedis
+namespace LeanRedis.Client
 
 open Std.Internal.IO.Async
+open LeanRedis
 
 /--
 Get the value of a hash field.
@@ -13,7 +14,7 @@ Example:
 let value <- client.hGet "user:1" "name"
 ```
 -/
-def Client.hGet [Transport.Transport τ]
+def hGet [Transport.Transport τ]
     (client : Client τ)
     (key field : String)
     : Async (Option String) := do
@@ -28,7 +29,7 @@ Example:
 let changed <- client.hSet "user:1" #[("name", "alice")]
 ```
 -/
-def Client.hSet [Transport.Transport τ]
+def hSet [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     (entries : Array (String × String))
@@ -44,7 +45,7 @@ Example:
 let values <- client.hMGet "user:1" #["name", "role"]
 ```
 -/
-def Client.hMGet [Transport.Transport τ]
+def hMGet [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     (fields : Array String)
@@ -60,7 +61,7 @@ Example:
 let _ <- client.hMSet "user:1" #[("name", "alice"), ("role", "admin")]
 ```
 -/
-def Client.hMSet [Transport.Transport τ]
+def hMSet [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     (entries : Array (String × String))
@@ -76,7 +77,7 @@ Example:
 let entries <- client.hGetAll "user:1"
 ```
 -/
-def Client.hGetAll [Transport.Transport τ]
+def hGetAll [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     : Async (Array (String × String)) := do
@@ -91,7 +92,7 @@ Example:
 let removed <- client.hDel "user:1" #["role"]
 ```
 -/
-def Client.hDel [Transport.Transport τ]
+def hDel [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     (fields : Array String)
@@ -107,7 +108,7 @@ Example:
 let exists <- client.hExists "user:1" "name"
 ```
 -/
-def Client.hExists [Transport.Transport τ]
+def hExists [Transport.Transport τ]
     (client : Client τ)
     (key field : String)
     : Async Bool := do
@@ -122,7 +123,7 @@ Example:
 let len <- client.hLen "user:1"
 ```
 -/
-def Client.hLen [Transport.Transport τ]
+def hLen [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     : Async Int := do
@@ -137,7 +138,7 @@ Example:
 let keys <- client.hKeys "user:1"
 ```
 -/
-def Client.hKeys [Transport.Transport τ]
+def hKeys [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     : Async (Array String) := do
@@ -152,7 +153,7 @@ Example:
 let vals <- client.hVals "user:1"
 ```
 -/
-def Client.hVals [Transport.Transport τ]
+def hVals [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     : Async (Array String) := do
@@ -167,7 +168,7 @@ Example:
 let len <- client.hStrLen "user:1" "name"
 ```
 -/
-def Client.hStrLen [Transport.Transport τ]
+def hStrLen [Transport.Transport τ]
     (client : Client τ)
     (key field : String)
     : Async Int := do
@@ -182,7 +183,7 @@ Example:
 let value <- client.hIncrBy "stats" "count" 1
 ```
 -/
-def Client.hIncrBy [Transport.Transport τ]
+def hIncrBy [Transport.Transport τ]
     (client : Client τ)
     (key field : String)
     (amount : Int)
@@ -198,7 +199,7 @@ Example:
 let value <- client.hIncrByFloat "stats" "score" "1.5"
 ```
 -/
-def Client.hIncrByFloat [Transport.Transport τ]
+def hIncrByFloat [Transport.Transport τ]
     (client : Client τ)
     (key field amount : String)
     : Async String := do
@@ -213,7 +214,7 @@ Example:
 let stored <- client.hSetNx "user:1" "name" "alice"
 ```
 -/
-def Client.hSetNx [Transport.Transport τ]
+def hSetNx [Transport.Transport τ]
     (client : Client τ)
     (key field value : String)
     : Async Bool := do
@@ -228,7 +229,7 @@ Example:
 let field <- client.hRandField "user:1"
 ```
 -/
-def Client.hRandField [Transport.Transport τ]
+def hRandField [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     : Async (Option String) := do
@@ -243,7 +244,7 @@ Example:
 let fields <- client.hRandFields "user:1" 2
 ```
 -/
-def Client.hRandFields [Transport.Transport τ]
+def hRandFields [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     (count : Int)
@@ -259,7 +260,7 @@ Example:
 let entries <- client.hRandFieldsWithValues "user:1" 2
 ```
 -/
-def Client.hRandFieldsWithValues [Transport.Transport τ]
+def hRandFieldsWithValues [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     (count : Int)
@@ -275,7 +276,7 @@ Example:
 let page <- client.hScan "user:1" 0
 ```
 -/
-def Client.hScan [Transport.Transport τ]
+def hScan [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     (cursor : UInt64)
@@ -284,4 +285,4 @@ def Client.hScan [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.hScan key cursor options
   expectHScanResult reply
 
-end LeanRedis
+end LeanRedis.Client

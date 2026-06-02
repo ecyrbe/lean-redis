@@ -1,9 +1,10 @@
-import LeanRedis.Client.Internal
+import LeanRedis.Client.Basic
 import LeanRedis.Tools.ExpectResult
 
-namespace LeanRedis
+namespace LeanRedis.Client
 
 open Std.Internal.IO.Async
+open LeanRedis
 
 /--
 Add members to a set.
@@ -13,7 +14,7 @@ Example:
 let added <- client.sAdd "tags" #["lean", "redis"]
 ```
 -/
-def Client.sAdd [Transport.Transport τ]
+def sAdd [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     (members : Array String)
@@ -29,7 +30,7 @@ Example:
 let removed <- client.sRem "tags" #["redis"]
 ```
 -/
-def Client.sRem [Transport.Transport τ]
+def sRem [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     (members : Array String)
@@ -45,7 +46,7 @@ Example:
 let size <- client.sCard "tags"
 ```
 -/
-def Client.sCard [Transport.Transport τ]
+def sCard [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     : Async Int := do
@@ -60,7 +61,7 @@ Example:
 let present <- client.sIsMember "tags" "lean"
 ```
 -/
-def Client.sIsMember [Transport.Transport τ]
+def sIsMember [Transport.Transport τ]
     (client : Client τ)
     (key member : String)
     : Async Bool := do
@@ -75,7 +76,7 @@ Example:
 let present <- client.sMIsMember "tags" #["lean", "redis"]
 ```
 -/
-def Client.sMIsMember [Transport.Transport τ]
+def sMIsMember [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     (members : Array String)
@@ -95,7 +96,7 @@ Example:
 let members <- client.sMembers "tags"
 ```
 -/
-def Client.sMembers [Transport.Transport τ]
+def sMembers [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     : Async (Array String) := do
@@ -110,7 +111,7 @@ Example:
 let member <- client.sPop "tags"
 ```
 -/
-def Client.sPop [Transport.Transport τ]
+def sPop [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     : Async (Option String) := do
@@ -125,7 +126,7 @@ Example:
 let members <- client.sPopMany "tags" 2
 ```
 -/
-def Client.sPopMany [Transport.Transport τ]
+def sPopMany [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     (count : UInt64)
@@ -141,7 +142,7 @@ Example:
 let member <- client.sRandMember "tags"
 ```
 -/
-def Client.sRandMember [Transport.Transport τ]
+def sRandMember [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     : Async (Option String) := do
@@ -156,7 +157,7 @@ Example:
 let members <- client.sRandMembers "tags" 2
 ```
 -/
-def Client.sRandMembers [Transport.Transport τ]
+def sRandMembers [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     (count : Int)
@@ -175,7 +176,7 @@ Example:
 let moved <- client.sMove "todo" "done" "task:1"
 ```
 -/
-def Client.sMove [Transport.Transport τ]
+def sMove [Transport.Transport τ]
     (client : Client τ)
     (source destination member : String)
     : Async Bool := do
@@ -190,7 +191,7 @@ Example:
 let members <- client.sDiff #["a", "b"]
 ```
 -/
-def Client.sDiff [Transport.Transport τ]
+def sDiff [Transport.Transport τ]
     (client : Client τ)
     (keys : Array String)
     : Async (Array String) := do
@@ -205,7 +206,7 @@ Example:
 let size <- client.sDiffStore "result" #["a", "b"]
 ```
 -/
-def Client.sDiffStore [Transport.Transport τ]
+def sDiffStore [Transport.Transport τ]
     (client : Client τ)
     (destination : String)
     (keys : Array String)
@@ -221,7 +222,7 @@ Example:
 let members <- client.sInter #["a", "b"]
 ```
 -/
-def Client.sInter [Transport.Transport τ]
+def sInter [Transport.Transport τ]
     (client : Client τ)
     (keys : Array String)
     : Async (Array String) := do
@@ -236,7 +237,7 @@ Example:
 let size <- client.sInterCard #["a", "b"]
 ```
 -/
-def Client.sInterCard [Transport.Transport τ]
+def sInterCard [Transport.Transport τ]
     (client : Client τ)
     (keys : Array String)
     : Async Int := do
@@ -251,7 +252,7 @@ Example:
 let size <- client.sInterStore "result" #["a", "b"]
 ```
 -/
-def Client.sInterStore [Transport.Transport τ]
+def sInterStore [Transport.Transport τ]
     (client : Client τ)
     (destination : String)
     (keys : Array String)
@@ -267,7 +268,7 @@ Example:
 let members <- client.sUnion #["a", "b"]
 ```
 -/
-def Client.sUnion [Transport.Transport τ]
+def sUnion [Transport.Transport τ]
     (client : Client τ)
     (keys : Array String)
     : Async (Array String) := do
@@ -282,7 +283,7 @@ Example:
 let size <- client.sUnionStore "result" #["a", "b"]
 ```
 -/
-def Client.sUnionStore [Transport.Transport τ]
+def sUnionStore [Transport.Transport τ]
     (client : Client τ)
     (destination : String)
     (keys : Array String)
@@ -298,7 +299,7 @@ Example:
 let page <- client.sScan "tags" 0
 ```
 -/
-def Client.sScan [Transport.Transport τ]
+def sScan [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     (cursor : UInt64)
@@ -307,4 +308,4 @@ def Client.sScan [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.sScan key cursor options
   expectSetScanResult reply
 
-end LeanRedis
+end LeanRedis.Client

@@ -1,9 +1,10 @@
-import LeanRedis.Client.Internal
+import LeanRedis.Client.Basic
 import LeanRedis.Tools.ExpectResult
 
-namespace LeanRedis
+namespace LeanRedis.Client
 
 open Std.Internal.IO.Async
+open LeanRedis
 
 /--
 Copy a key to a new key.
@@ -13,7 +14,7 @@ Example:
 let copied <- client.copy "src" "dst"
 ```
 -/
-def Client.copy [Transport.Transport τ]
+def copy [Transport.Transport τ]
     (client : Client τ)
     (source destination : String)
     (options : CopyOptions := {})
@@ -29,7 +30,7 @@ Example:
 let removed <- client.del #["key1", "key2"]
 ```
 -/
-def Client.del [Transport.Transport τ]
+def del [Transport.Transport τ]
     (client : Client τ)
     (keys : Array String)
     : Async Int := do
@@ -44,7 +45,7 @@ Example:
 let serialized <- client.dump "key"
 ```
 -/
-def Client.dump [Transport.Transport τ]
+def dump [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     : Async String := do
@@ -59,7 +60,7 @@ Example:
 let count <- client.exists #["key1", "key2"]
 ```
 -/
-def Client.exists [Transport.Transport τ]
+def «exists» [Transport.Transport τ]
     (client : Client τ)
     (keys : Array String)
     : Async Int := do
@@ -74,7 +75,7 @@ Example:
 let set <- client.expire "key" 60
 ```
 -/
-def Client.expire [Transport.Transport τ]
+def expire [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     (seconds : UInt64)
@@ -91,7 +92,7 @@ Example:
 let set <- client.expireAt "key" timestamp
 ```
 -/
-def Client.expireAt [Transport.Transport τ]
+def expireAt [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     (timestamp : Std.Time.Timestamp)
@@ -108,7 +109,7 @@ Example:
 let ts <- client.expireTime "key"
 ```
 -/
-def Client.expireTime [Transport.Transport τ]
+def expireTime [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     : Async Int := do
@@ -123,7 +124,7 @@ Example:
 let keys <- client.keys "user:*"
 ```
 -/
-def Client.keys [Transport.Transport τ]
+def keys [Transport.Transport τ]
     (client : Client τ)
     (pattern : String)
     : Async (Array String) := do
@@ -138,7 +139,7 @@ Example:
 let moved <- client.move "key" 1
 ```
 -/
-def Client.move [Transport.Transport τ]
+def move [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     (destinationDb : UInt32)
@@ -154,7 +155,7 @@ Example:
 let encoding <- client.objectEncoding "key"
 ```
 -/
-def Client.objectEncoding [Transport.Transport τ]
+def objectEncoding [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     : Async String := do
@@ -169,7 +170,7 @@ Example:
 let freq <- client.objectFreq "key"
 ```
 -/
-def Client.objectFreq [Transport.Transport τ]
+def objectFreq [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     : Async Int := do
@@ -184,7 +185,7 @@ Example:
 let idle <- client.objectIdleTime "key"
 ```
 -/
-def Client.objectIdleTime [Transport.Transport τ]
+def objectIdleTime [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     : Async Int := do
@@ -199,7 +200,7 @@ Example:
 let refcount <- client.objectRefCount "key"
 ```
 -/
-def Client.objectRefCount [Transport.Transport τ]
+def objectRefCount [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     : Async Int := do
@@ -214,7 +215,7 @@ Example:
 let removed <- client.persist "key"
 ```
 -/
-def Client.persist [Transport.Transport τ]
+def persist [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     : Async Bool := do
@@ -229,7 +230,7 @@ Example:
 let set <- client.pexpire "key" 5000
 ```
 -/
-def Client.pexpire [Transport.Transport τ]
+def pexpire [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     (milliseconds : UInt64)
@@ -246,7 +247,7 @@ Example:
 let set <- client.pexpireAt "key" timestamp
 ```
 -/
-def Client.pexpireAt [Transport.Transport τ]
+def pexpireAt [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     (timestamp : Std.Time.Timestamp)
@@ -263,7 +264,7 @@ Example:
 let ttl <- client.pttl "key"
 ```
 -/
-def Client.pttl [Transport.Transport τ]
+def pttl [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     : Async Int := do
@@ -278,7 +279,7 @@ Example:
 let key <- client.randomKey
 ```
 -/
-def Client.randomKey [Transport.Transport τ]
+def randomKey [Transport.Transport τ]
     (client : Client τ)
     : Async (Option String) := do
   let reply ← Client.execute client CommandRequest.randomKey
@@ -292,7 +293,7 @@ Example:
 let _ <- client.rename "old" "new"
 ```
 -/
-def Client.rename [Transport.Transport τ]
+def rename [Transport.Transport τ]
     (client : Client τ)
     (key newKey : String)
     : Async Unit := do
@@ -307,7 +308,7 @@ Example:
 let renamed <- client.renameNx "old" "new"
 ```
 -/
-def Client.renameNx [Transport.Transport τ]
+def renameNx [Transport.Transport τ]
     (client : Client τ)
     (key newKey : String)
     : Async Bool := do
@@ -322,7 +323,7 @@ Example:
 let _ <- client.restore "key" 0 serialized
 ```
 -/
-def Client.restore [Transport.Transport τ]
+def restore [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     (ttl : UInt64)
@@ -340,7 +341,7 @@ Example:
 let page <- client.scan 0
 ```
 -/
-def Client.scan [Transport.Transport τ]
+def scan [Transport.Transport τ]
     (client : Client τ)
     (cursor : UInt64)
     (options : ScanOptions := {})
@@ -360,7 +361,7 @@ Example:
 let elements <- client.sort "mylist"
 ```
 -/
-def Client.sort [Transport.Transport τ]
+def sort [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     (options : SortOptions := {})
@@ -376,7 +377,7 @@ Example:
 let elements <- client.sortRo "mylist"
 ```
 -/
-def Client.sortRo [Transport.Transport τ]
+def sortRo [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     (options : SortRoOptions := {})
@@ -392,7 +393,7 @@ Example:
 let touched <- client.touch #["key1", "key2"]
 ```
 -/
-def Client.touch [Transport.Transport τ]
+def touch [Transport.Transport τ]
     (client : Client τ)
     (keys : Array String)
     : Async Int := do
@@ -407,7 +408,7 @@ Example:
 let ttl <- client.ttl "key"
 ```
 -/
-def Client.ttl [Transport.Transport τ]
+def ttl [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     : Async Int := do
@@ -422,7 +423,7 @@ Example:
 let type <- client.type "key"
 ```
 -/
-def Client.type [Transport.Transport τ]
+def type [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     : Async String := do
@@ -437,11 +438,11 @@ Example:
 let unlinked <- client.unlink #["key1", "key2"]
 ```
 -/
-def Client.unlink [Transport.Transport τ]
+def unlink [Transport.Transport τ]
     (client : Client τ)
     (keys : Array String)
     : Async Int := do
   let reply ← Client.execute client <| CommandRequest.unlink keys
   expectInteger "UNLINK" reply
 
-end LeanRedis
+end LeanRedis.Client

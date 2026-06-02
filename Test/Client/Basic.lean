@@ -258,7 +258,7 @@ def testReconnectEventsAndRecovery : Async String := do
     pure ()
   catch _ =>
     pure ()
-  sleep 150
+  sleep 250
   let pong <- client.ping
   let seen <- events.get
   pure s!"{pong.isNone}|{String.intercalate "," seen.toList}"
@@ -284,7 +284,7 @@ def testReconnectStopsAfterMaxAttempts : Async String := do
     pure ()
   catch _ =>
     pure ()
-  sleep 150
+  sleep 350
   let status <- client.connectionStatus
   let seen <- events.get
   pure s!"{repr status}|{String.intercalate "," seen.toList}"

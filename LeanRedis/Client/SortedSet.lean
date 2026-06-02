@@ -1,9 +1,10 @@
-import LeanRedis.Client.Internal
+import LeanRedis.Client.Basic
 import LeanRedis.Tools.ExpectResult
 
-namespace LeanRedis
+namespace LeanRedis.Client
 
 open Std.Internal.IO.Async
+open LeanRedis
 
 /--
 Add scored members to a sorted set.
@@ -13,7 +14,7 @@ Example:
 let added <- client.zAdd "scores" #[{ score := "10", member := "alice" }]
 ```
 -/
-def Client.zAdd [Transport.Transport τ]
+def zAdd [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     (entries : Array SortedSetEntry)
@@ -29,7 +30,7 @@ Example:
 let removed <- client.zRem "scores" #["alice"]
 ```
 -/
-def Client.zRem [Transport.Transport τ]
+def zRem [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     (members : Array String)
@@ -45,7 +46,7 @@ Example:
 let size <- client.zCard "scores"
 ```
 -/
-def Client.zCard [Transport.Transport τ]
+def zCard [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     : Async Int := do
@@ -60,7 +61,7 @@ Example:
 let score <- client.zScore "scores" "alice"
 ```
 -/
-def Client.zScore [Transport.Transport τ]
+def zScore [Transport.Transport τ]
     (client : Client τ)
     (key member : String)
     : Async (Option String) := do
@@ -75,7 +76,7 @@ Example:
 let scores <- client.zMScore "scores" #["alice", "bob"]
 ```
 -/
-def Client.zMScore [Transport.Transport τ]
+def zMScore [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     (members : Array String)
@@ -91,7 +92,7 @@ Example:
 let rank <- client.zRank "scores" "alice"
 ```
 -/
-def Client.zRank [Transport.Transport τ]
+def zRank [Transport.Transport τ]
     (client : Client τ)
     (key member : String)
     : Async (Option Int) := do
@@ -110,7 +111,7 @@ Example:
 let rank <- client.zRevRank "scores" "alice"
 ```
 -/
-def Client.zRevRank [Transport.Transport τ]
+def zRevRank [Transport.Transport τ]
     (client : Client τ)
     (key member : String)
     : Async (Option Int) := do
@@ -129,7 +130,7 @@ Example:
 let members <- client.zRange "scores" 0 (-1)
 ```
 -/
-def Client.zRange [Transport.Transport τ]
+def zRange [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     (start stop : Int)
@@ -145,7 +146,7 @@ Example:
 let entries <- client.zRangeWithScores "scores" 0 (-1)
 ```
 -/
-def Client.zRangeWithScores [Transport.Transport τ]
+def zRangeWithScores [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     (start stop : Int)
@@ -161,7 +162,7 @@ Example:
 let members <- client.zRevRange "scores" 0 (-1)
 ```
 -/
-def Client.zRevRange [Transport.Transport τ]
+def zRevRange [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     (start stop : Int)
@@ -177,7 +178,7 @@ Example:
 let entries <- client.zRevRangeWithScores "scores" 0 (-1)
 ```
 -/
-def Client.zRevRangeWithScores [Transport.Transport τ]
+def zRevRangeWithScores [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     (start stop : Int)
@@ -193,7 +194,7 @@ Example:
 let members <- client.zRangeByScore "scores" "0" "100"
 ```
 -/
-def Client.zRangeByScore [Transport.Transport τ]
+def zRangeByScore [Transport.Transport τ]
     (client : Client τ)
     (key min max : String)
     : Async (Array String) := do
@@ -208,7 +209,7 @@ Example:
 let entries <- client.zRangeByScoreWithScores "scores" "0" "100"
 ```
 -/
-def Client.zRangeByScoreWithScores [Transport.Transport τ]
+def zRangeByScoreWithScores [Transport.Transport τ]
     (client : Client τ)
     (key min max : String)
     : Async (Array SortedSetEntry) := do
@@ -223,7 +224,7 @@ Example:
 let members <- client.zRevRangeByScore "scores" "100" "0"
 ```
 -/
-def Client.zRevRangeByScore [Transport.Transport τ]
+def zRevRangeByScore [Transport.Transport τ]
     (client : Client τ)
     (key max min : String)
     : Async (Array String) := do
@@ -238,7 +239,7 @@ Example:
 let entries <- client.zRevRangeByScoreWithScores "scores" "100" "0"
 ```
 -/
-def Client.zRevRangeByScoreWithScores [Transport.Transport τ]
+def zRevRangeByScoreWithScores [Transport.Transport τ]
     (client : Client τ)
     (key max min : String)
     : Async (Array SortedSetEntry) := do
@@ -253,7 +254,7 @@ Example:
 let members <- client.zRangeByLex "names" "-" "+"
 ```
 -/
-def Client.zRangeByLex [Transport.Transport τ]
+def zRangeByLex [Transport.Transport τ]
     (client : Client τ)
     (key min max : String)
     : Async (Array String) := do
@@ -268,7 +269,7 @@ Example:
 let members <- client.zRevRangeByLex "names" "+" "-"
 ```
 -/
-def Client.zRevRangeByLex [Transport.Transport τ]
+def zRevRangeByLex [Transport.Transport τ]
     (client : Client τ)
     (key max min : String)
     : Async (Array String) := do
@@ -283,7 +284,7 @@ Example:
 let count <- client.zCount "scores" "0" "100"
 ```
 -/
-def Client.zCount [Transport.Transport τ]
+def zCount [Transport.Transport τ]
     (client : Client τ)
     (key min max : String)
     : Async Int := do
@@ -298,7 +299,7 @@ Example:
 let count <- client.zLexCount "names" "-" "+"
 ```
 -/
-def Client.zLexCount [Transport.Transport τ]
+def zLexCount [Transport.Transport τ]
     (client : Client τ)
     (key min max : String)
     : Async Int := do
@@ -313,7 +314,7 @@ Example:
 let removed <- client.zRemRangeByRank "scores" 0 1
 ```
 -/
-def Client.zRemRangeByRank [Transport.Transport τ]
+def zRemRangeByRank [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     (start stop : Int)
@@ -329,7 +330,7 @@ Example:
 let removed <- client.zRemRangeByScore "scores" "0" "10"
 ```
 -/
-def Client.zRemRangeByScore [Transport.Transport τ]
+def zRemRangeByScore [Transport.Transport τ]
     (client : Client τ)
     (key min max : String)
     : Async Int := do
@@ -344,7 +345,7 @@ Example:
 let removed <- client.zRemRangeByLex "names" "-" "+"
 ```
 -/
-def Client.zRemRangeByLex [Transport.Transport τ]
+def zRemRangeByLex [Transport.Transport τ]
     (client : Client τ)
     (key min max : String)
     : Async Int := do
@@ -359,7 +360,7 @@ Example:
 let score <- client.zIncrBy "scores" "1.5" "alice"
 ```
 -/
-def Client.zIncrBy [Transport.Transport τ]
+def zIncrBy [Transport.Transport τ]
     (client : Client τ)
     (key increment member : String)
     : Async String := do
@@ -374,7 +375,7 @@ Example:
 let member <- client.zRandMember "scores"
 ```
 -/
-def Client.zRandMember [Transport.Transport τ]
+def zRandMember [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     : Async (Option String) := do
@@ -389,7 +390,7 @@ Example:
 let members <- client.zRandMembers "scores" 2
 ```
 -/
-def Client.zRandMembers [Transport.Transport τ]
+def zRandMembers [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     (count : Int)
@@ -408,7 +409,7 @@ Example:
 let entries <- client.zRandMembersWithScores "scores" 2
 ```
 -/
-def Client.zRandMembersWithScores [Transport.Transport τ]
+def zRandMembersWithScores [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     (count : Int)
@@ -424,7 +425,7 @@ Example:
 let members <- client.zDiff #["a", "b"]
 ```
 -/
-def Client.zDiff [Transport.Transport τ]
+def zDiff [Transport.Transport τ]
     (client : Client τ)
     (keys : Array String)
     : Async (Array String) := do
@@ -439,7 +440,7 @@ Example:
 let size <- client.zDiffStore "result" #["a", "b"]
 ```
 -/
-def Client.zDiffStore [Transport.Transport τ]
+def zDiffStore [Transport.Transport τ]
     (client : Client τ)
     (destination : String)
     (keys : Array String)
@@ -455,7 +456,7 @@ Example:
 let members <- client.zInter #["a", "b"]
 ```
 -/
-def Client.zInter [Transport.Transport τ]
+def zInter [Transport.Transport τ]
     (client : Client τ)
     (keys : Array String)
     : Async (Array String) := do
@@ -470,7 +471,7 @@ Example:
 let size <- client.zInterCard #["a", "b"]
 ```
 -/
-def Client.zInterCard [Transport.Transport τ]
+def zInterCard [Transport.Transport τ]
     (client : Client τ)
     (keys : Array String)
     : Async Int := do
@@ -485,7 +486,7 @@ Example:
 let size <- client.zInterStore "result" #["a", "b"]
 ```
 -/
-def Client.zInterStore [Transport.Transport τ]
+def zInterStore [Transport.Transport τ]
     (client : Client τ)
     (destination : String)
     (keys : Array String)
@@ -501,7 +502,7 @@ Example:
 let members <- client.zUnion #["a", "b"]
 ```
 -/
-def Client.zUnion [Transport.Transport τ]
+def zUnion [Transport.Transport τ]
     (client : Client τ)
     (keys : Array String)
     : Async (Array String) := do
@@ -516,7 +517,7 @@ Example:
 let size <- client.zUnionStore "result" #["a", "b"]
 ```
 -/
-def Client.zUnionStore [Transport.Transport τ]
+def zUnionStore [Transport.Transport τ]
     (client : Client τ)
     (destination : String)
     (keys : Array String)
@@ -532,7 +533,7 @@ Example:
 let page <- client.zScan "scores" 0
 ```
 -/
-def Client.zScan [Transport.Transport τ]
+def zScan [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     (cursor : UInt64)
@@ -541,4 +542,4 @@ def Client.zScan [Transport.Transport τ]
   let reply <- Client.execute client <| CommandRequest.zScan key cursor options
   expectSortedSetScanResult reply
 
-end LeanRedis
+end LeanRedis.Client

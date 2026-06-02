@@ -1,9 +1,10 @@
-import LeanRedis.Client.Internal
+import LeanRedis.Client.Basic
 import LeanRedis.Tools.ExpectResult
 
 namespace LeanRedis
 
 open Std.Internal.IO.Async
+open LeanRedis
 
 /--
 Send `PING` and decode the optional message payload returned by Redis.
