@@ -10,9 +10,5 @@ name = "LeanRedisTest"
 globs = ["Test.+"]
 
 [[lean_exe]]
-name = "lean-redis"
-root = "Main"
-
-[[lean_exe]]
 name = "lean-redis-cli"
 root = "Cli"
