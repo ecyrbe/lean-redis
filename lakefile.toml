@@ -1,6 +1,6 @@
 name = "lean-redis"
 version = "0.1.0"
-defaultTargets = ["lean-redis"]
+defaultTargets = ["LeanRedis"]
 
 [[lean_lib]]
 name = "LeanRedis"
