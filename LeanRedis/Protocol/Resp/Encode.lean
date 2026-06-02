@@ -56,10 +56,10 @@ partial def encodeValue : Resp.Value -> ByteArray
 def encodeCommandName (name : String) : ByteArray :=
   encodeBulkString name.toUTF8
 
-def encodeCommand (request : CommandRequest) : ByteArray :=
-  let payload := request.args.toList.foldl
-    (fun acc arg => acc.append (encodeBulkString arg))
-    (encodeCommandName request.name)
-  encodeArrayHeader (request.args.size + 1) |>.append payload
+def encodeCommand (request : CommandRequest) : Array ByteArray :=
+  let header := encodeArrayHeader (request.args.size + 1)
+  let commandName := encodeCommandName request.name
+  let args := request.args.map encodeBulkString
+  #[header, commandName] ++ args
 
 end LeanRedis.Protocol.Resp.Encode

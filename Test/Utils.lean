@@ -19,6 +19,12 @@ def renderBytes (bytes : ByteArray) : String :=
   | some text => "\"" ++ escapeText text ++ "\""
   | none => s!"<bytes:{bytes.size}>"
 
+def concatBytes (chunks : Array ByteArray) : ByteArray :=
+  chunks.foldl (fun acc chunk => acc.append chunk) ByteArray.empty
+
+def renderChunks (chunks : Array ByteArray) : String :=
+  renderBytes (concatBytes chunks)
+
 instance : Repr ByteArray where
   reprPrec value _ := Std.Format.text (renderBytes value)
 

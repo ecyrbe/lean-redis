@@ -7,7 +7,7 @@ open LeanRedisTest.Utils
 namespace LeanRedisTest.Command.String
 
 private def renderCommand (request : CommandRequest) : String :=
-  renderBytes <| Protocol.Resp.Encode.encodeCommand request
+  renderChunks <| Protocol.Resp.Encode.encodeCommand request
 
 def testEncodeSetWithExpiryAndCondition : String :=
   renderCommand <| CommandRequest.set "name" "alice" {

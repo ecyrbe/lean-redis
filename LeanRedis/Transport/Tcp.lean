@@ -48,6 +48,12 @@ instance instTransportTCP : Transport TCP where
     catch err =>
       Error.raise <| .transport s!"tcp write failed: {err}"
 
+  sendAll socket arr_bytes := do
+    try
+      socket.sendAll arr_bytes
+    catch err =>
+      Error.raise <| .transport s!"tcp sendAll failed: {err}"
+
   close socket := do
     try
       socket.shutdown

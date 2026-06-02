@@ -55,7 +55,7 @@ def testParseAvailableValues : Except String (Array LeanRedis.Protocol.Resp.Valu
   parseAvailable? "+OK\r\n:42\r\n".toUTF8
 
 def testEncodePingCommand : String :=
-  renderBytes <| LeanRedis.Protocol.Resp.Encode.encodeCommand {
+  renderChunks <| LeanRedis.Protocol.Resp.Encode.encodeCommand {
     name := "PING"
     args := #["hello".toUTF8]
   }
@@ -94,14 +94,6 @@ def testProtocolFallbackAuto : Option LeanRedis.Protocol.Version :=
 
 def testProtocolFallbackResp3Strict : Option LeanRedis.Protocol.Version :=
   LeanRedis.Protocol.protocolAfterHello .resp3 (.simpleError "ERR unknown command 'HELLO'")
-
-def testEncodedBootstrapFrames : Array String :=
-  let cfg : LeanRedis.Config := {
-    endpoint := { host := "127.0.0.1", port := 6379 }
-    auth? := some { username? := some "default", password := "secret" }
-    database? := some 2
-  }
-  LeanRedis.Protocol.encodeBootstrap cfg |>.map renderBytes
 
 /--
 info: Except.ok (LeanRedis.Protocol.Resp.Value.simpleString "PONG", "")
@@ -241,11 +233,5 @@ info: "ready=true; protocol=resp3; db=2"
 -/
 #guard_msgs in
 #eval renderBootstrapSuccess
-/--
-info: #["\"*3\\r\\n$4\\r\\nAUTH\\r\\n$7\\r\\ndefault\\r\\n$6\\r\\nsecret\\r\\n\"",
-  "\"*2\\r\\n$5\\r\\nHELLO\\r\\n$1\\r\\n3\\r\\n\"", "\"*2\\r\\n$6\\r\\nSELECT\\r\\n$1\\r\\n2\\r\\n\""]
--/
-#guard_msgs in
-#eval testEncodedBootstrapFrames
 
 end LeanRedisTest.Protocol.Resp

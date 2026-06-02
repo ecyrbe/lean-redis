@@ -51,7 +51,7 @@ def Runtime.tryExecute
     : RuntimeM τ (Except ExecuteError Protocol.Resp.Value) := do
   let runtime ← get
   try
-    Transport.send runtime.transport <| Protocol.Resp.Encode.encodeCommand request
+    Transport.sendAll runtime.transport <| Protocol.Resp.Encode.encodeCommand request
     match ← readReply with
     | .ok value => return .ok value
     | .error err => return .error <| .commandError err

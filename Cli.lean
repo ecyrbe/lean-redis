@@ -254,6 +254,7 @@ open LeanRedis in
 def main : IO Unit := do
   let config : Config := {
     endpoint := { host := "127.0.0.1", port := 6379 }
+    protocolPreference := .resp3
     reconnectStrategy := .exponentialBackoff ({}) (some 10)
   }
   let client ← Client.newDefault config

@@ -61,6 +61,10 @@ instance : Transport.Transport FakeTransport where
   send transport bytes := do
     transport.writes.modify fun writes => writes.push bytes
 
+  sendAll transport chunks := do
+    let combined := chunks.foldl (fun acc c => acc.append c) ByteArray.empty
+    transport.writes.modify fun writes => writes.push combined
+
   close _ := pure ()
 
 private def reconnectReplies (attempt : Nat) : Array ByteArray :=
@@ -90,6 +94,10 @@ instance : Transport.Transport ReconnectingTransport where
   send transport bytes := do
     transport.writes.modify fun writes => writes.push bytes
 
+  sendAll transport chunks := do
+    let combined := chunks.foldl ByteArray.append ByteArray.empty
+    transport.writes.modify fun writes => writes.push combined
+
   close _ := pure ()
 
 instance : Transport.Transport FailingReconnectTransport where
@@ -110,6 +118,10 @@ instance : Transport.Transport FailingReconnectTransport where
 
   send transport bytes := do
     transport.writes.modify fun writes => writes.push bytes
+
+  sendAll transport chunks := do
+    let combined := chunks.foldl (fun acc c => acc.append c) ByteArray.empty
+    transport.writes.modify fun writes => writes.push combined
 
   close _ := pure ()
 
@@ -246,7 +258,7 @@ def testReconnectEventsAndRecovery : Async String := do
     pure ()
   catch _ =>
     pure ()
-  IO.sleep 30
+  sleep 150
   let pong <- client.ping
   let seen <- events.get
   pure s!"{pong.isNone}|{String.intercalate "," seen.toList}"
@@ -272,7 +284,7 @@ def testReconnectStopsAfterMaxAttempts : Async String := do
     pure ()
   catch _ =>
     pure ()
-  IO.sleep 30
+  sleep 150
   let status <- client.connectionStatus
   let seen <- events.get
   pure s!"{repr status}|{String.intercalate "," seen.toList}"

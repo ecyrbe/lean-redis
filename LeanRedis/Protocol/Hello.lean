@@ -195,7 +195,4 @@ def bootstrapSucceeded
   let protocol <- state.protocol?
   pure <| markBootstrapReady state protocol database?
 
-def encodeBootstrap (config : Config) : Array ByteArray :=
-  bootstrapRequests config |>.map Resp.Encode.encodeCommand
-
 end LeanRedis.Protocol

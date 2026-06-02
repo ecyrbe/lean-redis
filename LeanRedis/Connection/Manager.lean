@@ -57,7 +57,7 @@ private def connectRuntime [Transport τ]
   try
     let plan := Protocol.bootstrapPlan manager.config
     for step in plan do
-      Transport.send transport <| Protocol.Resp.Encode.encodeCommand step.request
+      Transport.sendAll transport <| Protocol.Resp.Encode.encodeCommand step.request
     let (replies, parser) <- readBootstrapReplies transport plan.size {} #[]
     match Protocol.bootstrapStateAfterReplies manager.config replies with
     | some state => pure ({ transport, parser }, { state })

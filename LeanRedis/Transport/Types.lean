@@ -20,6 +20,7 @@ class Transport (α : Type) where
   connect : Endpoint -> Async α
   recv : α -> UInt64 -> Async ByteArray
   send : α -> ByteArray -> Async Unit
+  sendAll: α → Array ByteArray → Async Unit
   close : α -> Async Unit
 
 end LeanRedis.Transport

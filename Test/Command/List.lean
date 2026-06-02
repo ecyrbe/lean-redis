@@ -7,7 +7,7 @@ open LeanRedisTest.Utils
 namespace LeanRedisTest.Command.List
 
 private def renderCommand (request : CommandRequest) : String :=
-  renderBytes <| Protocol.Resp.Encode.encodeCommand request
+  renderChunks <| Protocol.Resp.Encode.encodeCommand request
 
 def testEncodeLPush : String :=
   renderCommand <| CommandRequest.lPush "jobs" #["a", "b", "c"]

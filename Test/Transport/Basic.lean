@@ -17,6 +17,7 @@ instance : Transport.Transport FakeTransport where
   connect _ := pure { connected := true }
   recv _ _ := pure testBytes
   send _ _ := pure ()
+  sendAll _ _ := pure ()
   close _ := pure ()
 
 def testManagerStartsDisconnected : Bool :=

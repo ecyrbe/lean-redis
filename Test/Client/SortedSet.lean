@@ -62,6 +62,10 @@ instance : Transport.Transport FakeTransport where
   send transport bytes := do
     transport.writes.modify fun writes => writes.push bytes
 
+  sendAll transport chunks := do
+    let combined := chunks.foldl (fun acc c => acc.append c) ByteArray.empty
+    transport.writes.modify fun writes => writes.push combined
+
   close _ := pure ()
 
 def testZAdd : Async Int := do

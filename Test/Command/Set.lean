@@ -7,7 +7,7 @@ open LeanRedisTest.Utils
 namespace LeanRedisTest.Command.Set
 
 private def renderCommand (request : CommandRequest) : String :=
-  renderBytes <| Protocol.Resp.Encode.encodeCommand request
+  renderChunks <| Protocol.Resp.Encode.encodeCommand request
 
 def testEncodeSAdd : String :=
   renderCommand <| CommandRequest.sAdd "tags" #["lean", "redis"]

@@ -7,7 +7,7 @@ open LeanRedisTest.Utils
 namespace LeanRedisTest.Command.SortedSet
 
 private def renderCommand (request : CommandRequest) : String :=
-  renderBytes <| Protocol.Resp.Encode.encodeCommand request
+  renderChunks <| Protocol.Resp.Encode.encodeCommand request
 
 def testEncodeZAdd : String :=
   renderCommand <| CommandRequest.zAdd "scores" #[{ score := "10", member := "alice" }, { score := "20", member := "bob" }]
