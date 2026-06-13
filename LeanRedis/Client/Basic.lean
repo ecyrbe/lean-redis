@@ -1,4 +1,5 @@
 import LeanRedis.Client.Internal
+import LeanRedis.Pipeline.Basic
 
 namespace LeanRedis.Client
 
@@ -203,6 +204,33 @@ public def execute [Transport.Transport τ]
     : Async Protocol.Resp.Value :=
   executeWithManagerUpdate client request fun manager _ => pure manager
 
+/--
+Execute a pipeline.
+
+Example:
+```lean
+ (a,b,_) ← client.runPipeline <| Pipeline.empty |>.get "hello" |>.set "bar" "baz" |>.get "bar"
+```
+-/
+ public def Client.runPipeline
+    [Transport.Transport τ]
+    (client : Client τ)
+    (pipeline : Pipeline α)
+    : Async (HList α) := do
+  client.operation.atomically fun _ => do
+    let status <- getStatus client
+    unless status == .connected do
+      Error.raise <| .unavailable (statusErrorMessage status)
+    let manager ← client.getManager
+    match ← Pipeline.Manager.tryRun pipeline manager with
+    | .ok (manager', decoded) =>
+        client.setManager manager'
+        pure decoded
+    | .error (.commandError err) =>
+        Error.raise err
+    | .error (.remoteDisconnect reason err) =>
+        Client.handleRemoteDisconnect client manager reason err
+        Error.raise err
 
 /--
 Create a new client value for the given transport type without opening a connection.

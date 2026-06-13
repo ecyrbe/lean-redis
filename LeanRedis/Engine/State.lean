@@ -11,15 +11,11 @@ inductive SessionPhase where
   | failed
   deriving BEq, Inhabited, Repr
 
-structure PendingRequest where
-  request : LeanRedis.CommandRequest
-  deriving BEq, Inhabited
-
 structure State where
   phase : SessionPhase := .disconnected
   protocol? : Option Protocol.Version := none
   selectedDb? : Option UInt32 := none
-  pending : Array PendingRequest := #[]
+  pending : Array CommandRequest := #[]
   outbox : Array ByteArray := #[]
   lastReply? : Option Protocol.Resp.Value := none
   deriving BEq, Inhabited
