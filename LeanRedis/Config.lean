@@ -1,6 +1,6 @@
 import LeanRedis.Transport.Types
 import LeanRedis.Connection.Policy
-import LeanRedis.Tools.Redacted
+import LeanRedis.Data.Redacted
 
 namespace LeanRedis
 
