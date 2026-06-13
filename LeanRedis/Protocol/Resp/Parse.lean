@@ -21,6 +21,8 @@ structure ParserState where
   pending : ByteArray := ByteArray.empty
   deriving Inhabited
 
+abbrev ParserM := StateT ParserState (Except Error)
+
 def cr : UInt8 := '\r'.toUInt8
 def lf : UInt8 := '\n'.toUInt8
 
@@ -168,16 +170,17 @@ def parseOne (state : ParserState) : ParseStatus (Resp.Value × ParserState) :=
   | .error _ .eof => .needMore
   | .error _ err => .error (toString err)
 
-partial def parseAvailableLoop
-    (current : ParserState)
-    (acc : Array Resp.Value)
-    : Except Error (Array Resp.Value × ParserState) :=
-  match parseOne current with
-  | .done (value, nextState) _ => parseAvailableLoop nextState (acc.push value)
-  | .needMore => .ok (acc, current)
-  | .error message => .error (.protocol message)
 
-def parseAvailable (state : ParserState) : Except Error (Array Resp.Value × ParserState) :=
-  parseAvailableLoop state #[]
+def parseAvailable : ParserM (Array Resp.Value) := do
+    let mut acc := #[]
+    repeat do
+      let state ← get
+      match parseOne state with
+      | .done (value, nextState) _ =>
+          acc := acc.push value
+          set nextState
+      | .needMore => return acc
+      | .error message => throw (.protocol message)
+    unreachable!
 
 end LeanRedis.Protocol.Resp.Parse
