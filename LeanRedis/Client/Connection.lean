@@ -1,5 +1,5 @@
 import LeanRedis.Client.Basic
-import LeanRedis.Tools.ExpectResult
+import LeanRedis.Command.Connection
 
 namespace LeanRedis
 
@@ -19,8 +19,9 @@ def Client.ping [Transport.Transport τ]
     (client : Client τ)
     (message? : Option String := none)
     : Async (Option String) := do
-  let reply <- Client.execute client <| CommandRequest.ping message?
-  expectPong reply
+  let cmd := Command.ping message?
+  let reply <- Client.execute client <| cmd.request
+  cmd.decode reply
 
 /--
 Send `AUTH` using the provided credentials.
@@ -34,12 +35,13 @@ def Client.auth [Transport.Transport τ]
     (client : Client τ)
     (auth : AuthConfig)
     : Async Unit := do
-  let reply <- Client.executeWithManagerUpdate client (CommandRequest.auth auth) fun manager _ =>
+  let cmd := Command.auth auth
+  let reply <- Client.executeWithManagerUpdate client cmd.request fun manager _ =>
     pure {
       manager with
       config := { manager.config with auth? := some auth }
     }
-  expectOk reply
+  cmd.decode reply
 
 /--
 Send `SELECT` and update the tracked selected database on success.
@@ -53,11 +55,12 @@ def Client.select [Transport.Transport τ]
     (client : Client τ)
     (database : UInt32)
     : Async Unit := do
-  let reply <- Client.executeWithManagerUpdate client (CommandRequest.select database) fun manager _ =>
+  let cmd := Command.select database
+  let reply <- Client.executeWithManagerUpdate client cmd.request fun manager _ =>
     pure {
       manager with
       config := { manager.config with database? := some database }
     }
-  expectOk reply
+  cmd.decode reply
 
 end LeanRedis

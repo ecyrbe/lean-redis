@@ -1,4 +1,5 @@
 import LeanRedis.Command.Base
+import LeanRedis.Tools.ExpectResult
 
 namespace LeanRedis
 
@@ -180,5 +181,60 @@ def CommandRequest.lPos (key element : String) (options : LPosOptions := {}) : C
     name := "LPOS"
     args := CommandRequest.utf8Args #[key, element] ++ CommandRequest.lPosArgs options
   }
+
+def Command.lPush (key : String) (values : Array String) : Command Int :=
+  ⟨ CommandRequest.lPush key values, expectInteger "LPUSH" ⟩
+
+def Command.rPush (key : String) (values : Array String) : Command Int :=
+  ⟨ CommandRequest.rPush key values, expectInteger "RPUSH" ⟩
+
+def Command.lPushX (key value : String) : Command Int :=
+  ⟨ CommandRequest.lPushX key value, expectInteger "LPUSHX" ⟩
+
+def Command.rPushX (key value : String) : Command Int :=
+  ⟨ CommandRequest.rPushX key value, expectInteger "RPUSHX" ⟩
+
+def Command.lPop (key : String) : Command (Option String) :=
+  ⟨ CommandRequest.lPop key, expectOptionalString "LPOP" ⟩
+
+def Command.rPop (key : String) : Command (Option String) :=
+  ⟨ CommandRequest.rPop key, expectOptionalString "RPOP" ⟩
+
+def Command.lLen (key : String) : Command Int :=
+  ⟨ CommandRequest.lLen key, expectInteger "LLEN" ⟩
+
+def Command.lIndex (key : String) (index : Int) : Command (Option String) :=
+  ⟨ CommandRequest.lIndex key index, expectOptionalString "LINDEX" ⟩
+
+def Command.lRange (key : String) (start stop : Int) : Command (Array String) :=
+  ⟨ CommandRequest.lRange key start stop, expectPlainStringArray "LRANGE" ⟩
+
+def Command.lSet (key : String) (index : Int) (value : String) : Command Unit :=
+  ⟨ CommandRequest.lSet key index value, expectOk ⟩
+
+def Command.lTrim (key : String) (start stop : Int) : Command Unit :=
+  ⟨ CommandRequest.lTrim key start stop, expectOk ⟩
+
+def Command.lRem (key : String) (count : Int) (value : String) : Command Int :=
+  ⟨ CommandRequest.lRem key count value, expectInteger "LREM" ⟩
+
+def Command.lInsert (key : String) (position : LInsertPosition) (pivot value : String) : Command Int :=
+  ⟨ CommandRequest.lInsert key position pivot value, expectInteger "LINSERT" ⟩
+
+def Command.lMove (source destination : String) (fromWhere toWhere : LMoveWhere) : Command (Option String) :=
+  ⟨ CommandRequest.lMove source destination fromWhere toWhere, expectOptionalString "LMOVE" ⟩
+
+def Command.lPos (key element : String) (options : LPosOptions := {}) : Command (Option Int) :=
+  {
+    request := CommandRequest.lPos key element options
+    decode := fun
+      | .null => .ok none
+      | .number value => .ok (some value)
+      | .simpleError message => .error (.server message)
+      | _ => .error (.decode "unexpected LPOS reply")
+  }
+
+def Command.lPosMany (key element : String) (options : LPosOptions) : Command (Array Int) :=
+  ⟨ CommandRequest.lPos key element options, expectIntegerArray "LPOS" ⟩
 
 end LeanRedis

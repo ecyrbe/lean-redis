@@ -1,15 +1,11 @@
 import LeanRedis.Command.Base
+import LeanRedis.Tools.ExpectResult
 
 namespace LeanRedis
 
 structure HScanOptions where
   match? : Option String := none
   count? : Option UInt64 := none
-  deriving BEq, Inhabited, Repr
-
-structure HashScanResult where
-  cursor : UInt64
-  entries : Array (String × String)
   deriving BEq, Inhabited, Repr
 
 namespace CommandRequest
@@ -187,5 +183,59 @@ def CommandRequest.hScan (key : String) (cursor : UInt64) (options : HScanOption
     name := "HSCAN"
     args := CommandRequest.utf8Args #[key, toString cursor] ++ CommandRequest.hScanArgs options
   }
+
+def Command.hGet (key field : String) : Command (Option String) :=
+  ⟨ CommandRequest.hGet key field, expectOptionalString "HGET" ⟩
+
+def Command.hSet (key : String) (entries : Array (String × String)) : Command Int :=
+  ⟨ CommandRequest.hSet key entries, expectInteger "HSET" ⟩
+
+def Command.hMGet (key : String) (fields : Array String) : Command (Array (Option String)) :=
+  ⟨ CommandRequest.hMGet key fields, expectStringArray "HMGET" ⟩
+
+def Command.hMSet (key : String) (entries : Array (String × String)) : Command Unit :=
+  ⟨ CommandRequest.hMSet key entries, expectOk ⟩
+
+def Command.hGetAll (key : String) : Command (Array (String × String)) :=
+  ⟨ CommandRequest.hGetAll key, expectStringPairs "HGETALL" ⟩
+
+def Command.hDel (key : String) (fields : Array String) : Command Int :=
+  ⟨ CommandRequest.hDel key fields, expectInteger "HDEL" ⟩
+
+def Command.hExists (key field : String) : Command Bool :=
+  ⟨ CommandRequest.hExists key field, expectBoolean "HEXISTS" ⟩
+
+def Command.hLen (key : String) : Command Int :=
+  ⟨ CommandRequest.hLen key, expectInteger "HLEN" ⟩
+
+def Command.hKeys (key : String) : Command (Array String) :=
+  ⟨ CommandRequest.hKeys key, expectPlainStringArray "HKEYS" ⟩
+
+def Command.hVals (key : String) : Command (Array String) :=
+  ⟨ CommandRequest.hVals key, expectPlainStringArray "HVALS" ⟩
+
+def Command.hStrLen (key field : String) : Command Int :=
+  ⟨ CommandRequest.hStrLen key field, expectInteger "HSTRLEN" ⟩
+
+def Command.hIncrBy (key field : String) (amount : Int) : Command Int :=
+  ⟨ CommandRequest.hIncrBy key field amount, expectInteger "HINCRBY" ⟩
+
+def Command.hIncrByFloat (key field amount : String) : Command String :=
+  ⟨ CommandRequest.hIncrByFloat key field amount, expectString "HINCRBYFLOAT" ⟩
+
+def Command.hSetNx (key field value : String) : Command Bool :=
+  ⟨ CommandRequest.hSetNx key field value, expectBoolean "HSETNX" ⟩
+
+def Command.hRandField (key : String) : Command (Option String) :=
+  ⟨ CommandRequest.hRandField key, expectOptionalString "HRANDFIELD" ⟩
+
+def Command.hRandFields (key : String) (count : Int) : Command (Array String) :=
+  ⟨ CommandRequest.hRandFields key count, expectPlainStringArray "HRANDFIELD" ⟩
+
+def Command.hRandFieldsWithValues (key : String) (count : Int) : Command (Array (String × String)) :=
+  ⟨ CommandRequest.hRandFieldsWithValues key count, expectStringPairs "HRANDFIELD" ⟩
+
+def Command.hScan (key : String) (cursor : UInt64) (options : HScanOptions := {}) : Command HashScanResult :=
+  ⟨ CommandRequest.hScan key cursor options, expectHScanResult ⟩
 
 end LeanRedis

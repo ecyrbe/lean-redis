@@ -1,4 +1,5 @@
 import LeanRedis.Command.Base
+import LeanRedis.Tools.ExpectResult
 
 namespace LeanRedis
 
@@ -244,5 +245,65 @@ def CommandRequest.pSetEx (key : String) (milliseconds : UInt64) (value : String
     name := "PSETEX"
     args := CommandRequest.utf8Args #[key, toString milliseconds, value]
   }
+
+def Command.get (key : String) : Command (Option String) :=
+  ⟨ CommandRequest.get key, expectOptionalString "GET" ⟩
+
+def Command.set (key value : String) (options : SetOptions := {}) : Command Bool :=
+  ⟨ CommandRequest.set key value options, expectStored ⟩
+
+def Command.mGet (keys : Array String) : Command (Array (Option String)) :=
+  ⟨ CommandRequest.mGet keys, expectStringArray "MGET" ⟩
+
+def Command.mSet (entries : Array (String × String)) : Command Unit :=
+  ⟨ CommandRequest.mSet entries, expectOk ⟩
+
+def Command.mSetNx (entries : Array (String × String)) : Command Bool :=
+  ⟨ CommandRequest.mSetNx entries, expectBoolean "MSETNX" ⟩
+
+def Command.getDel (key : String) : Command (Option String) :=
+  ⟨ CommandRequest.getDel key, expectOptionalString "GETDEL" ⟩
+
+def Command.getEx (key : String) (mode? : Option GetExMode := none) : Command (Option String) :=
+  ⟨ CommandRequest.getEx key mode?, expectOptionalString "GETEX" ⟩
+
+def Command.getRange (key : String) (start stop : Int) : Command String :=
+  ⟨ CommandRequest.getRange key start stop, expectString "GETRANGE" ⟩
+
+def Command.getSet (key value : String) : Command (Option String) :=
+  ⟨ CommandRequest.getSet key value, expectOptionalString "GETSET" ⟩
+
+def Command.setRange (key : String) (offset : UInt64) (value : String) : Command Int :=
+  ⟨ CommandRequest.setRange key offset value, expectInteger "SETRANGE" ⟩
+
+def Command.strLen (key : String) : Command Int :=
+  ⟨ CommandRequest.strLen key, expectInteger "STRLEN" ⟩
+
+def Command.append (key value : String) : Command Int :=
+  ⟨ CommandRequest.append key value, expectInteger "APPEND" ⟩
+
+def Command.incr (key : String) : Command Int :=
+  ⟨ CommandRequest.incr key, expectInteger "INCR" ⟩
+
+def Command.incrBy (key : String) (amount : Int) : Command Int :=
+  ⟨ CommandRequest.incrBy key amount, expectInteger "INCRBY" ⟩
+
+def Command.incrByFloat (key amount : String) : Command String :=
+  ⟨ CommandRequest.incrByFloat key amount, expectString "INCRBYFLOAT" ⟩
+
+def Command.decr (key : String) : Command Int :=
+  ⟨ CommandRequest.decr key, expectInteger "DECR" ⟩
+
+def Command.decrBy (key : String) (amount : Int) : Command Int :=
+  ⟨ CommandRequest.decrBy key amount, expectInteger "DECRBY" ⟩
+
+def Command.setNx (key value : String) : Command Bool :=
+  ⟨ CommandRequest.setNx key value, expectBoolean "SETNX" ⟩
+
+def Command.setEx (key : String) (seconds : UInt64) (value : String) : Command Unit :=
+  ⟨ CommandRequest.setEx key seconds value, expectOk ⟩
+
+def Command.pSetEx (key : String) (milliseconds : UInt64) (value : String) : Command Unit :=
+  ⟨ CommandRequest.pSetEx key milliseconds value, expectOk ⟩
 
 end LeanRedis

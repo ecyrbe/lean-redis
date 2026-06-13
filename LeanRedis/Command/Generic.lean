@@ -1,4 +1,5 @@
 import LeanRedis.Command.Base
+import LeanRedis.Tools.ExpectResult
 
 namespace LeanRedis
 
@@ -54,6 +55,9 @@ def CommandRequest.copy (source destination : String) (options : CopyOptions := 
       ++ (if options.replace then #["REPLACE"] else #[])
   }
 
+def Command.copy (source destination : String) (options : CopyOptions := {}) : Command Bool :=
+  ⟨ CommandRequest.copy source destination options, expectBoolean "COPY"⟩
+
 /--
 DEL key [key ...]
 -/
@@ -62,6 +66,9 @@ def CommandRequest.del (keys : Array String) : CommandRequest :=
     name := "DEL"
     args := CommandRequest.utf8Args keys
   }
+
+def Command.del (keys : Array String) : Command Int :=
+  ⟨ CommandRequest.del keys , expectInteger "DEL" ⟩
 
 /--
 DUMP key
@@ -312,11 +319,6 @@ structure ScanOptions where
   count? : Option UInt64 := none
   type? : Option String := none
 
-structure ScanResult where
-  cursor : UInt64
-  keys : Array String
-  deriving BEq, Inhabited, Repr
-
 /--
 SCAN cursor [MATCH pattern] [COUNT count] [TYPE type]
 -/
@@ -430,5 +432,83 @@ def CommandRequest.unlink (keys : Array String) : CommandRequest :=
     name := "UNLINK"
     args := CommandRequest.utf8Args keys
   }
+
+def Command.dump (key : String) : Command String :=
+  ⟨ CommandRequest.dump key, expectString "DUMP" ⟩
+
+def Command.exists (keys : Array String) : Command Int :=
+  ⟨ CommandRequest.exists keys, expectInteger "EXISTS" ⟩
+
+def Command.expire (key : String) (seconds : UInt64) (option : Option ExpireOption := none) : Command Bool :=
+  ⟨ CommandRequest.expire key seconds option, expectBoolean "EXPIRE" ⟩
+
+def Command.expireAt (key : String) (timestamp : Std.Time.Timestamp) (option : Option ExpireOption := none) : Command Bool :=
+  ⟨ CommandRequest.expireAt key timestamp option, expectBoolean "EXPIREAT" ⟩
+
+def Command.expireTime (key : String) : Command Int :=
+  ⟨ CommandRequest.expireTime key, expectInteger "EXPIRETIME" ⟩
+
+def Command.keys (pattern : String) : Command (Array String) :=
+  ⟨ CommandRequest.keys pattern, expectPlainStringArray "KEYS" ⟩
+
+def Command.move (key : String) (destinationDb : UInt32) : Command Bool :=
+  ⟨ CommandRequest.move key destinationDb, expectBoolean "MOVE" ⟩
+
+def Command.objectEncoding (key : String) : Command String :=
+  ⟨ CommandRequest.objectEncoding key, expectString "OBJECT ENCODING" ⟩
+
+def Command.objectFreq (key : String) : Command Int :=
+  ⟨ CommandRequest.objectFreq key, expectInteger "OBJECT FREQ" ⟩
+
+def Command.objectIdleTime (key : String) : Command Int :=
+  ⟨ CommandRequest.objectIdleTime key, expectInteger "OBJECT IDLETIME" ⟩
+
+def Command.objectRefCount (key : String) : Command Int :=
+  ⟨ CommandRequest.objectRefCount key, expectInteger "OBJECT REFCOUNT" ⟩
+
+def Command.persist (key : String) : Command Bool :=
+  ⟨ CommandRequest.persist key, expectBoolean "PERSIST" ⟩
+
+def Command.pexpire (key : String) (milliseconds : UInt64) (option : Option ExpireOption := none) : Command Bool :=
+  ⟨ CommandRequest.pexpire key milliseconds option, expectBoolean "PEXPIRE" ⟩
+
+def Command.pexpireAt (key : String) (timestamp : Std.Time.Timestamp) (option : Option ExpireOption := none) : Command Bool :=
+  ⟨ CommandRequest.pexpireAt key timestamp option, expectBoolean "PEXPIREAT" ⟩
+
+def Command.pttl (key : String) : Command Int :=
+  ⟨ CommandRequest.pttl key, expectInteger "PTTL" ⟩
+
+def Command.randomKey : Command (Option String) :=
+  ⟨ CommandRequest.randomKey, expectOptionalString "RANDOMKEY" ⟩
+
+def Command.rename (key newKey : String) : Command Unit :=
+  ⟨ CommandRequest.rename key newKey, expectOk ⟩
+
+def Command.renameNx (key newKey : String) : Command Bool :=
+  ⟨ CommandRequest.renameNx key newKey, expectBoolean "RENAMENX" ⟩
+
+def Command.restore (key : String) (ttl : UInt64) (serializedValue : String) (options : RestoreOptions := {}) : Command Unit :=
+  ⟨ CommandRequest.restore key ttl serializedValue options, expectOk ⟩
+
+def Command.scan (cursor : UInt64) (options : ScanOptions := {}) : Command ScanResult :=
+  ⟨ CommandRequest.scan cursor options, expectScanResult ⟩
+
+def Command.sort (key : String) (options : SortOptions := {}) : Command (Array String) :=
+  ⟨ CommandRequest.sort key options, expectPlainStringArray "SORT" ⟩
+
+def Command.sortRo (key : String) (options : SortRoOptions := {}) : Command (Array String) :=
+  ⟨ CommandRequest.sortRo key options, expectPlainStringArray "SORT_RO" ⟩
+
+def Command.touch (keys : Array String) : Command Int :=
+  ⟨ CommandRequest.touch keys, expectInteger "TOUCH" ⟩
+
+def Command.TTL (key : String) : Command Int :=
+  ⟨ CommandRequest.TTL key, expectInteger "TTL" ⟩
+
+def Command.type (key : String) : Command String :=
+  ⟨ CommandRequest.type key, expectString "TYPE" ⟩
+
+def Command.unlink (keys : Array String) : Command Int :=
+  ⟨ CommandRequest.unlink keys, expectInteger "UNLINK" ⟩
 
 end LeanRedis

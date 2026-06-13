@@ -1,9 +1,6 @@
 import LeanRedis.Protocol.Resp.Value
 import LeanRedis.Error
-import LeanRedis.Command.Hash
-import LeanRedis.Command.Set
-import LeanRedis.Command.Generic
-import LeanRedis.Command.SortedSet
+import LeanRedis.Command.Base
 
 namespace LeanRedis
 

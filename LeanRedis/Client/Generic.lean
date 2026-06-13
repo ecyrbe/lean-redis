@@ -1,7 +1,7 @@
 import LeanRedis.Client.Basic
-import LeanRedis.Tools.ExpectResult
+import LeanRedis.Command.Generic
 
-namespace LeanRedis.Client
+namespace LeanRedis
 
 open Std.Internal.IO.Async
 open LeanRedis
@@ -14,13 +14,14 @@ Example:
 let copied <- client.copy "src" "dst"
 ```
 -/
-def copy [Transport.Transport τ]
+def Client.copy [Transport.Transport τ]
     (client : Client τ)
     (source destination : String)
     (options : CopyOptions := {})
     : Async Bool := do
-  let reply ← Client.execute client <| CommandRequest.copy source destination options
-  expectBoolean "COPY" reply
+  let cmd := Command.copy source destination options
+  let reply ← Client.execute client <| cmd.request
+  cmd.decode reply
 
 /--
 Delete one or more keys.
@@ -30,12 +31,13 @@ Example:
 let removed <- client.del #["key1", "key2"]
 ```
 -/
-def del [Transport.Transport τ]
+def Client.del [Transport.Transport τ]
     (client : Client τ)
     (keys : Array String)
     : Async Int := do
-  let reply ← Client.execute client <| CommandRequest.del keys
-  expectInteger "DEL" reply
+  let cmd := Command.del keys
+  let reply ← Client.execute client <| cmd.request
+  cmd.decode reply
 
 /--
 Dump a serialised version of the value stored at a key.
@@ -45,12 +47,13 @@ Example:
 let serialized <- client.dump "key"
 ```
 -/
-def dump [Transport.Transport τ]
+def Client.dump [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     : Async String := do
-  let reply ← Client.execute client <| CommandRequest.dump key
-  expectString "DUMP" reply
+  let cmd := Command.dump key
+  let reply ← Client.execute client <| cmd.request
+  cmd.decode reply
 
 /--
 Determine whether one or more keys exist.
@@ -60,12 +63,13 @@ Example:
 let count <- client.exists #["key1", "key2"]
 ```
 -/
-def «exists» [Transport.Transport τ]
+def Client.exists [Transport.Transport τ]
     (client : Client τ)
     (keys : Array String)
     : Async Int := do
-  let reply ← Client.execute client <| CommandRequest.exists keys
-  expectInteger "EXISTS" reply
+  let cmd := Command.exists keys
+  let reply ← Client.execute client <| cmd.request
+  cmd.decode reply
 
 /--
 Set a key's time to live in seconds.
@@ -75,14 +79,15 @@ Example:
 let set <- client.expire "key" 60
 ```
 -/
-def expire [Transport.Transport τ]
+def Client.expire [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     (seconds : UInt64)
     (option : Option ExpireOption := none)
     : Async Bool := do
-  let reply ← Client.execute client <| CommandRequest.expire key seconds option
-  expectBoolean "EXPIRE" reply
+  let cmd := Command.expire key seconds option
+  let reply ← Client.execute client <| cmd.request
+  cmd.decode reply
 
 /--
 Set a key's time to live as a Unix timestamp in seconds.
@@ -92,14 +97,15 @@ Example:
 let set <- client.expireAt "key" timestamp
 ```
 -/
-def expireAt [Transport.Transport τ]
+def Client.expireAt [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     (timestamp : Std.Time.Timestamp)
     (option : Option ExpireOption := none)
     : Async Bool := do
-  let reply ← Client.execute client <| CommandRequest.expireAt key timestamp option
-  expectBoolean "EXPIREAT" reply
+  let cmd := Command.expireAt key timestamp option
+  let reply ← Client.execute client <| cmd.request
+  cmd.decode reply
 
 /--
 Get the expiration time of a key as a Unix timestamp in seconds.
@@ -109,12 +115,13 @@ Example:
 let ts <- client.expireTime "key"
 ```
 -/
-def expireTime [Transport.Transport τ]
+def Client.expireTime [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     : Async Int := do
-  let reply ← Client.execute client <| CommandRequest.expireTime key
-  expectInteger "EXPIRETIME" reply
+  let cmd := Command.expireTime key
+  let reply ← Client.execute client <| cmd.request
+  cmd.decode reply
 
 /--
 Find all keys matching the given pattern.
@@ -124,12 +131,13 @@ Example:
 let keys <- client.keys "user:*"
 ```
 -/
-def keys [Transport.Transport τ]
+def Client.keys [Transport.Transport τ]
     (client : Client τ)
     (pattern : String)
     : Async (Array String) := do
-  let reply ← Client.execute client <| CommandRequest.keys pattern
-  expectPlainStringArray "KEYS" reply
+  let cmd := Command.keys pattern
+  let reply ← Client.execute client <| cmd.request
+  cmd.decode reply
 
 /--
 Move a key to another database.
@@ -139,13 +147,14 @@ Example:
 let moved <- client.move "key" 1
 ```
 -/
-def move [Transport.Transport τ]
+def Client.move [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     (destinationDb : UInt32)
     : Async Bool := do
-  let reply ← Client.execute client <| CommandRequest.move key destinationDb
-  expectBoolean "MOVE" reply
+  let cmd := Command.move key destinationDb
+  let reply ← Client.execute client <| cmd.request
+  cmd.decode reply
 
 /--
 Get the internal encoding of a key's value.
@@ -155,12 +164,13 @@ Example:
 let encoding <- client.objectEncoding "key"
 ```
 -/
-def objectEncoding [Transport.Transport τ]
+def Client.objectEncoding [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     : Async String := do
-  let reply ← Client.execute client <| CommandRequest.objectEncoding key
-  expectString "OBJECT ENCODING" reply
+  let cmd := Command.objectEncoding key
+  let reply ← Client.execute client <| cmd.request
+  cmd.decode reply
 
 /--
 Get the logarithmic access frequency counter of a key's value.
@@ -170,12 +180,13 @@ Example:
 let freq <- client.objectFreq "key"
 ```
 -/
-def objectFreq [Transport.Transport τ]
+def Client.objectFreq [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     : Async Int := do
-  let reply ← Client.execute client <| CommandRequest.objectFreq key
-  expectInteger "OBJECT FREQ" reply
+  let cmd := Command.objectFreq key
+  let reply ← Client.execute client <| cmd.request
+  cmd.decode reply
 
 /--
 Get the idle time of a key in seconds.
@@ -185,12 +196,13 @@ Example:
 let idle <- client.objectIdleTime "key"
 ```
 -/
-def objectIdleTime [Transport.Transport τ]
+def Client.objectIdleTime [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     : Async Int := do
-  let reply ← Client.execute client <| CommandRequest.objectIdleTime key
-  expectInteger "OBJECT IDLETIME" reply
+  let cmd := Command.objectIdleTime key
+  let reply ← Client.execute client <| cmd.request
+  cmd.decode reply
 
 /--
 Get the reference count of a key's value.
@@ -200,12 +212,13 @@ Example:
 let refcount <- client.objectRefCount "key"
 ```
 -/
-def objectRefCount [Transport.Transport τ]
+def Client.objectRefCount [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     : Async Int := do
-  let reply ← Client.execute client <| CommandRequest.objectRefCount key
-  expectInteger "OBJECT REFCOUNT" reply
+  let cmd := Command.objectRefCount key
+  let reply ← Client.execute client <| cmd.request
+  cmd.decode reply
 
 /--
 Remove the expiration from a key.
@@ -215,12 +228,13 @@ Example:
 let removed <- client.persist "key"
 ```
 -/
-def persist [Transport.Transport τ]
+def Client.persist [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     : Async Bool := do
-  let reply ← Client.execute client <| CommandRequest.persist key
-  expectBoolean "PERSIST" reply
+  let cmd := Command.persist key
+  let reply ← Client.execute client <| cmd.request
+  cmd.decode reply
 
 /--
 Set a key's time to live in milliseconds.
@@ -230,14 +244,15 @@ Example:
 let set <- client.pexpire "key" 5000
 ```
 -/
-def pexpire [Transport.Transport τ]
+def Client.pexpire [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     (milliseconds : UInt64)
     (option : Option ExpireOption := none)
     : Async Bool := do
-  let reply ← Client.execute client <| CommandRequest.pexpire key milliseconds option
-  expectBoolean "PEXPIRE" reply
+  let cmd := Command.pexpire key milliseconds option
+  let reply ← Client.execute client <| cmd.request
+  cmd.decode reply
 
 /--
 Set a key's time to live as a Unix timestamp in milliseconds.
@@ -247,14 +262,15 @@ Example:
 let set <- client.pexpireAt "key" timestamp
 ```
 -/
-def pexpireAt [Transport.Transport τ]
+def Client.pexpireAt [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     (timestamp : Std.Time.Timestamp)
     (option : Option ExpireOption := none)
     : Async Bool := do
-  let reply ← Client.execute client <| CommandRequest.pexpireAt key timestamp option
-  expectBoolean "PEXPIREAT" reply
+  let cmd := Command.pexpireAt key timestamp option
+  let reply ← Client.execute client <| cmd.request
+  cmd.decode reply
 
 /--
 Get the time to live for a key in milliseconds.
@@ -264,12 +280,13 @@ Example:
 let ttl <- client.pttl "key"
 ```
 -/
-def pttl [Transport.Transport τ]
+def Client.pttl [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     : Async Int := do
-  let reply ← Client.execute client <| CommandRequest.pttl key
-  expectInteger "PTTL" reply
+  let cmd := Command.pttl key
+  let reply ← Client.execute client <| cmd.request
+  cmd.decode reply
 
 /--
 Return a random key from the keyspace.
@@ -279,11 +296,12 @@ Example:
 let key <- client.randomKey
 ```
 -/
-def randomKey [Transport.Transport τ]
+def Client.randomKey [Transport.Transport τ]
     (client : Client τ)
     : Async (Option String) := do
-  let reply ← Client.execute client CommandRequest.randomKey
-  expectOptionalString "RANDOMKEY" reply
+  let cmd := Command.randomKey
+  let reply ← Client.execute client <| cmd.request
+  cmd.decode reply
 
 /--
 Rename a key.
@@ -293,12 +311,13 @@ Example:
 let _ <- client.rename "old" "new"
 ```
 -/
-def rename [Transport.Transport τ]
+def Client.rename [Transport.Transport τ]
     (client : Client τ)
     (key newKey : String)
     : Async Unit := do
-  let reply ← Client.execute client <| CommandRequest.rename key newKey
-  expectOk reply
+  let cmd := Command.rename key newKey
+  let reply ← Client.execute client <| cmd.request
+  cmd.decode reply
 
 /--
 Rename a key only when the target key does not exist.
@@ -308,12 +327,13 @@ Example:
 let renamed <- client.renameNx "old" "new"
 ```
 -/
-def renameNx [Transport.Transport τ]
+def Client.renameNx [Transport.Transport τ]
     (client : Client τ)
     (key newKey : String)
     : Async Bool := do
-  let reply ← Client.execute client <| CommandRequest.renameNx key newKey
-  expectBoolean "RENAMENX" reply
+  let cmd := Command.renameNx key newKey
+  let reply ← Client.execute client <| cmd.request
+  cmd.decode reply
 
 /--
 Restore a serialised value previously obtained with DUMP.
@@ -323,15 +343,16 @@ Example:
 let _ <- client.restore "key" 0 serialized
 ```
 -/
-def restore [Transport.Transport τ]
+def Client.restore [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     (ttl : UInt64)
     (serializedValue : String)
     (options : RestoreOptions := {})
     : Async Unit := do
-  let reply ← Client.execute client <| CommandRequest.restore key ttl serializedValue options
-  expectOk reply
+  let cmd := Command.restore key ttl serializedValue options
+  let reply ← Client.execute client <| cmd.request
+  cmd.decode reply
 
 /--
 Incrementally iterate the keyspace.
@@ -341,13 +362,14 @@ Example:
 let page <- client.scan 0
 ```
 -/
-def scan [Transport.Transport τ]
+def Client.scan [Transport.Transport τ]
     (client : Client τ)
     (cursor : UInt64)
     (options : ScanOptions := {})
     : Async ScanResult := do
-  let reply ← Client.execute client <| CommandRequest.scan cursor options
-  expectScanResult reply
+  let cmd := Command.scan cursor options
+  let reply ← Client.execute client <| cmd.request
+  cmd.decode reply
 
 /--
 Sort the elements in a list, set, or sorted set.
@@ -361,13 +383,14 @@ Example:
 let elements <- client.sort "mylist"
 ```
 -/
-def sort [Transport.Transport τ]
+def Client.sort [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     (options : SortOptions := {})
     : Async (Array String) := do
-  let reply ← Client.execute client <| CommandRequest.sort key options
-  expectPlainStringArray "SORT" reply
+  let cmd := Command.sort key options
+  let reply ← Client.execute client <| cmd.request
+  cmd.decode reply
 
 /--
 Sort the elements in a list, set, or sorted set (read‑only variant).
@@ -377,13 +400,14 @@ Example:
 let elements <- client.sortRo "mylist"
 ```
 -/
-def sortRo [Transport.Transport τ]
+def Client.sortRo [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     (options : SortRoOptions := {})
     : Async (Array String) := do
-  let reply ← Client.execute client <| CommandRequest.sortRo key options
-  expectPlainStringArray "SORT_RO" reply
+  let cmd := Command.sortRo key options
+  let reply ← Client.execute client <| cmd.request
+  cmd.decode reply
 
 /--
 Touch one or more keys, updating their access time.
@@ -393,12 +417,13 @@ Example:
 let touched <- client.touch #["key1", "key2"]
 ```
 -/
-def touch [Transport.Transport τ]
+def Client.touch [Transport.Transport τ]
     (client : Client τ)
     (keys : Array String)
     : Async Int := do
-  let reply ← Client.execute client <| CommandRequest.touch keys
-  expectInteger "TOUCH" reply
+  let cmd := Command.touch keys
+  let reply ← Client.execute client <| cmd.request
+  cmd.decode reply
 
 /--
 Get the time to live for a key in seconds.
@@ -408,12 +433,13 @@ Example:
 let ttl <- client.ttl "key"
 ```
 -/
-def ttl [Transport.Transport τ]
+def Client.ttl [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     : Async Int := do
-  let reply ← Client.execute client <| CommandRequest.TTL key
-  expectInteger "TTL" reply
+  let cmd := Command.TTL key
+  let reply ← Client.execute client <| cmd.request
+  cmd.decode reply
 
 /--
 Determine the type of the value stored at a key.
@@ -423,12 +449,13 @@ Example:
 let type <- client.type "key"
 ```
 -/
-def type [Transport.Transport τ]
+def Client.type [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     : Async String := do
-  let reply ← Client.execute client <| CommandRequest.type key
-  expectString "TYPE" reply
+  let cmd := Command.type key
+  let reply ← Client.execute client <| cmd.request
+  cmd.decode reply
 
 /--
 Delete one or more keys asynchronously (non‑blocking).
@@ -438,11 +465,12 @@ Example:
 let unlinked <- client.unlink #["key1", "key2"]
 ```
 -/
-def unlink [Transport.Transport τ]
+def Client.unlink [Transport.Transport τ]
     (client : Client τ)
     (keys : Array String)
     : Async Int := do
-  let reply ← Client.execute client <| CommandRequest.unlink keys
-  expectInteger "UNLINK" reply
+  let cmd := Command.unlink keys
+  let reply ← Client.execute client <| cmd.request
+  cmd.decode reply
 
-end LeanRedis.Client
+end LeanRedis

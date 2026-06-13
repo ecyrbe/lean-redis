@@ -1,20 +1,11 @@
 import LeanRedis.Command.Base
+import LeanRedis.Tools.ExpectResult
 
 namespace LeanRedis
-
-structure SortedSetEntry where
-  score : String
-  member : String
-  deriving BEq, Inhabited, Repr
 
 structure ZScanOptions where
   match? : Option String := none
   count? : Option UInt64 := none
-  deriving BEq, Inhabited, Repr
-
-structure SortedSetScanResult where
-  cursor : UInt64
-  entries : Array SortedSetEntry
   deriving BEq, Inhabited, Repr
 
 namespace CommandRequest
@@ -337,5 +328,129 @@ def CommandRequest.zScan (key : String) (cursor : UInt64) (options : ZScanOption
     name := "ZSCAN"
     args := CommandRequest.utf8Args #[key, toString cursor] ++ CommandRequest.zScanArgs options
   }
+
+def Command.zAdd (key : String) (entries : Array SortedSetEntry) : Command Int :=
+  ⟨ CommandRequest.zAdd key entries, expectInteger "ZADD" ⟩
+
+def Command.zRem (key : String) (members : Array String) : Command Int :=
+  ⟨ CommandRequest.zRem key members, expectInteger "ZREM" ⟩
+
+def Command.zCard (key : String) : Command Int :=
+  ⟨ CommandRequest.zCard key, expectInteger "ZCARD" ⟩
+
+def Command.zScore (key member : String) : Command (Option String) :=
+  ⟨ CommandRequest.zScore key member, expectOptionalString "ZSCORE" ⟩
+
+def Command.zMScore (key : String) (members : Array String) : Command (Array (Option String)) :=
+  ⟨ CommandRequest.zMScore key members, expectStringArray "ZMSCORE" ⟩
+
+def Command.zRank (key member : String) : Command (Option Int) :=
+  {
+    request := CommandRequest.zRank key member
+    decode := fun
+      | .null => .ok none
+      | .number value => .ok (some value)
+      | .simpleError message => .error (.server message)
+      | _ => .error (.decode "unexpected ZRANK reply")
+  }
+
+def Command.zRevRank (key member : String) : Command (Option Int) :=
+  {
+    request := CommandRequest.zRevRank key member
+    decode := fun
+      | .null => .ok none
+      | .number value => .ok (some value)
+      | .simpleError message => .error (.server message)
+      | _ => .error (.decode "unexpected ZREVRANK reply")
+  }
+
+def Command.zRange (key : String) (start stop : Int) : Command (Array String) :=
+  ⟨ CommandRequest.zRange key start stop, expectPlainStringArray "ZRANGE" ⟩
+
+def Command.zRangeWithScores (key : String) (start stop : Int) : Command (Array SortedSetEntry) :=
+  ⟨ CommandRequest.zRangeWithScores key start stop, expectSortedSetEntries "ZRANGE" ⟩
+
+def Command.zRevRange (key : String) (start stop : Int) : Command (Array String) :=
+  ⟨ CommandRequest.zRevRange key start stop, expectPlainStringArray "ZREVRANGE" ⟩
+
+def Command.zRevRangeWithScores (key : String) (start stop : Int) : Command (Array SortedSetEntry) :=
+  ⟨ CommandRequest.zRevRangeWithScores key start stop, expectSortedSetEntries "ZREVRANGE" ⟩
+
+def Command.zRangeByScore (key min max : String) : Command (Array String) :=
+  ⟨ CommandRequest.zRangeByScore key min max, expectPlainStringArray "ZRANGEBYSCORE" ⟩
+
+def Command.zRangeByScoreWithScores (key min max : String) : Command (Array SortedSetEntry) :=
+  ⟨ CommandRequest.zRangeByScoreWithScores key min max, expectSortedSetEntries "ZRANGEBYSCORE" ⟩
+
+def Command.zRevRangeByScore (key max min : String) : Command (Array String) :=
+  ⟨ CommandRequest.zRevRangeByScore key max min, expectPlainStringArray "ZREVRANGEBYSCORE" ⟩
+
+def Command.zRevRangeByScoreWithScores (key max min : String) : Command (Array SortedSetEntry) :=
+  ⟨ CommandRequest.zRevRangeByScoreWithScores key max min, expectSortedSetEntries "ZREVRANGEBYSCORE" ⟩
+
+def Command.zRangeByLex (key min max : String) : Command (Array String) :=
+  ⟨ CommandRequest.zRangeByLex key min max, expectPlainStringArray "ZRANGEBYLEX" ⟩
+
+def Command.zRevRangeByLex (key max min : String) : Command (Array String) :=
+  ⟨ CommandRequest.zRevRangeByLex key max min, expectPlainStringArray "ZREVRANGEBYLEX" ⟩
+
+def Command.zCount (key min max : String) : Command Int :=
+  ⟨ CommandRequest.zCount key min max, expectInteger "ZCOUNT" ⟩
+
+def Command.zLexCount (key min max : String) : Command Int :=
+  ⟨ CommandRequest.zLexCount key min max, expectInteger "ZLEXCOUNT" ⟩
+
+def Command.zRemRangeByRank (key : String) (start stop : Int) : Command Int :=
+  ⟨ CommandRequest.zRemRangeByRank key start stop, expectInteger "ZREMRANGEBYRANK" ⟩
+
+def Command.zRemRangeByScore (key min max : String) : Command Int :=
+  ⟨ CommandRequest.zRemRangeByScore key min max, expectInteger "ZREMRANGEBYSCORE" ⟩
+
+def Command.zRemRangeByLex (key min max : String) : Command Int :=
+  ⟨ CommandRequest.zRemRangeByLex key min max, expectInteger "ZREMRANGEBYLEX" ⟩
+
+def Command.zIncrBy (key increment member : String) : Command String :=
+  ⟨ CommandRequest.zIncrBy key increment member, expectString "ZINCRBY" ⟩
+
+def Command.zRandMember (key : String) : Command (Option String) :=
+  ⟨ CommandRequest.zRandMember key, expectOptionalString "ZRANDMEMBER" ⟩
+
+def Command.zRandMembers (key : String) (count : Int) : Command (Array String) :=
+  {
+    request := CommandRequest.zRandMembers key count
+    decode := fun reply =>
+      match expectOptionalStringOrArray "ZRANDMEMBER" reply with
+      | .ok (.inl none) => .ok #[]
+      | .ok (.inl (some value)) => .ok #[value]
+      | .ok (.inr values) => .ok values
+      | .error e => .error e
+  }
+
+def Command.zRandMembersWithScores (key : String) (count : Int) : Command (Array SortedSetEntry) :=
+  ⟨ CommandRequest.zRandMembersWithScores key count, expectSortedSetEntries "ZRANDMEMBER" ⟩
+
+def Command.zDiff (keys : Array String) : Command (Array String) :=
+  ⟨ CommandRequest.zDiff keys, expectPlainStringArray "ZDIFF" ⟩
+
+def Command.zDiffStore (destination : String) (keys : Array String) : Command Int :=
+  ⟨ CommandRequest.zDiffStore destination keys, expectInteger "ZDIFFSTORE" ⟩
+
+def Command.zInter (keys : Array String) : Command (Array String) :=
+  ⟨ CommandRequest.zInter keys, expectPlainStringArray "ZINTER" ⟩
+
+def Command.zInterCard (keys : Array String) : Command Int :=
+  ⟨ CommandRequest.zInterCard keys, expectInteger "ZINTERCARD" ⟩
+
+def Command.zInterStore (destination : String) (keys : Array String) : Command Int :=
+  ⟨ CommandRequest.zInterStore destination keys, expectInteger "ZINTERSTORE" ⟩
+
+def Command.zUnion (keys : Array String) : Command (Array String) :=
+  ⟨ CommandRequest.zUnion keys, expectPlainStringArray "ZUNION" ⟩
+
+def Command.zUnionStore (destination : String) (keys : Array String) : Command Int :=
+  ⟨ CommandRequest.zUnionStore destination keys, expectInteger "ZUNIONSTORE" ⟩
+
+def Command.zScan (key : String) (cursor : UInt64) (options : ZScanOptions := {}) : Command SortedSetScanResult :=
+  ⟨ CommandRequest.zScan key cursor options, expectSortedSetScanResult ⟩
 
 end LeanRedis

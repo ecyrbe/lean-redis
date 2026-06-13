@@ -1,7 +1,7 @@
 import LeanRedis.Client.Basic
-import LeanRedis.Tools.ExpectResult
+import LeanRedis.Command.Set
 
-namespace LeanRedis.Client
+namespace LeanRedis
 
 open Std.Internal.IO.Async
 open LeanRedis
@@ -14,13 +14,14 @@ Example:
 let added <- client.sAdd "tags" #["lean", "redis"]
 ```
 -/
-def sAdd [Transport.Transport τ]
+def Client.sAdd [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     (members : Array String)
     : Async Int := do
-  let reply <- Client.execute client <| CommandRequest.sAdd key members
-  expectInteger "SADD" reply
+  let cmd := Command.sAdd key members
+  let reply ← Client.execute client <| cmd.request
+  cmd.decode reply
 
 /--
 Remove members from a set.
@@ -30,13 +31,14 @@ Example:
 let removed <- client.sRem "tags" #["redis"]
 ```
 -/
-def sRem [Transport.Transport τ]
+def Client.sRem [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     (members : Array String)
     : Async Int := do
-  let reply <- Client.execute client <| CommandRequest.sRem key members
-  expectInteger "SREM" reply
+  let cmd := Command.sRem key members
+  let reply ← Client.execute client <| cmd.request
+  cmd.decode reply
 
 /--
 Return the cardinality of a set.
@@ -46,12 +48,13 @@ Example:
 let size <- client.sCard "tags"
 ```
 -/
-def sCard [Transport.Transport τ]
+def Client.sCard [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     : Async Int := do
-  let reply <- Client.execute client <| CommandRequest.sCard key
-  expectInteger "SCARD" reply
+  let cmd := Command.sCard key
+  let reply ← Client.execute client <| cmd.request
+  cmd.decode reply
 
 /--
 Check whether a member belongs to a set.
@@ -61,12 +64,13 @@ Example:
 let present <- client.sIsMember "tags" "lean"
 ```
 -/
-def sIsMember [Transport.Transport τ]
+def Client.sIsMember [Transport.Transport τ]
     (client : Client τ)
     (key member : String)
     : Async Bool := do
-  let reply <- Client.execute client <| CommandRequest.sIsMember key member
-  expectBoolean "SISMEMBER" reply
+  let cmd := Command.sIsMember key member
+  let reply ← Client.execute client <| cmd.request
+  cmd.decode reply
 
 /--
 Check multiple members against a set.
@@ -76,17 +80,14 @@ Example:
 let present <- client.sMIsMember "tags" #["lean", "redis"]
 ```
 -/
-def sMIsMember [Transport.Transport τ]
+def Client.sMIsMember [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     (members : Array String)
     : Async (Array Bool) := do
-  let reply <- Client.execute client <| CommandRequest.sMIsMember key members
-  match reply with
-  | .array items =>
-      items.mapM (expectBoolean "SMISMEMBER" ·)
-  | .simpleError message => Error.raise <| Error.server message
-  | _ => Error.raise <| .decode "unexpected SMISMEMBER reply"
+  let cmd := Command.sMIsMember key members
+  let reply ← Client.execute client <| cmd.request
+  cmd.decode reply
 
 /--
 Return all members of a set.
@@ -96,12 +97,13 @@ Example:
 let members <- client.sMembers "tags"
 ```
 -/
-def sMembers [Transport.Transport τ]
+def Client.sMembers [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     : Async (Array String) := do
-  let reply <- Client.execute client <| CommandRequest.sMembers key
-  expectPlainStringArray "SMEMBERS" reply
+  let cmd := Command.sMembers key
+  let reply ← Client.execute client <| cmd.request
+  cmd.decode reply
 
 /--
 Pop one random member from a set.
@@ -111,12 +113,13 @@ Example:
 let member <- client.sPop "tags"
 ```
 -/
-def sPop [Transport.Transport τ]
+def Client.sPop [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     : Async (Option String) := do
-  let reply <- Client.execute client <| CommandRequest.sPop key
-  expectOptionalString "SPOP" reply
+  let cmd := Command.sPop key
+  let reply ← Client.execute client <| cmd.request
+  cmd.decode reply
 
 /--
 Pop multiple random members from a set.
@@ -126,13 +129,14 @@ Example:
 let members <- client.sPopMany "tags" 2
 ```
 -/
-def sPopMany [Transport.Transport τ]
+def Client.sPopMany [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     (count : UInt64)
     : Async (Array String) := do
-  let reply <- Client.execute client <| CommandRequest.sPopCount key count
-  expectPlainStringArray "SPOP" reply
+  let cmd := Command.sPopMany key count
+  let reply ← Client.execute client <| cmd.request
+  cmd.decode reply
 
 /--
 Return one random set member without removing it.
@@ -142,12 +146,13 @@ Example:
 let member <- client.sRandMember "tags"
 ```
 -/
-def sRandMember [Transport.Transport τ]
+def Client.sRandMember [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     : Async (Option String) := do
-  let reply <- Client.execute client <| CommandRequest.sRandMember key
-  expectOptionalString "SRANDMEMBER" reply
+  let cmd := Command.sRandMember key
+  let reply ← Client.execute client <| cmd.request
+  cmd.decode reply
 
 /--
 Return random set members without removing them.
@@ -157,16 +162,14 @@ Example:
 let members <- client.sRandMembers "tags" 2
 ```
 -/
-def sRandMembers [Transport.Transport τ]
+def Client.sRandMembers [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     (count : Int)
     : Async (Array String) := do
-  let reply <- Client.execute client <| CommandRequest.sRandMembers key count
-  match (← expectOptionalStringOrArray "SRANDMEMBER" reply) with
-  | .inl none => pure #[]
-  | .inl (some value) => pure #[value]
-  | .inr values => pure values
+  let cmd := Command.sRandMembers key count
+  let reply ← Client.execute client <| cmd.request
+  cmd.decode reply
 
 /--
 Move a set member to another set.
@@ -176,12 +179,13 @@ Example:
 let moved <- client.sMove "todo" "done" "task:1"
 ```
 -/
-def sMove [Transport.Transport τ]
+def Client.sMove [Transport.Transport τ]
     (client : Client τ)
     (source destination member : String)
     : Async Bool := do
-  let reply <- Client.execute client <| CommandRequest.sMove source destination member
-  expectBoolean "SMOVE" reply
+  let cmd := Command.sMove source destination member
+  let reply ← Client.execute client <| cmd.request
+  cmd.decode reply
 
 /--
 Return the difference of multiple sets.
@@ -191,12 +195,13 @@ Example:
 let members <- client.sDiff #["a", "b"]
 ```
 -/
-def sDiff [Transport.Transport τ]
+def Client.sDiff [Transport.Transport τ]
     (client : Client τ)
     (keys : Array String)
     : Async (Array String) := do
-  let reply <- Client.execute client <| CommandRequest.sDiff keys
-  expectPlainStringArray "SDIFF" reply
+  let cmd := Command.sDiff keys
+  let reply ← Client.execute client <| cmd.request
+  cmd.decode reply
 
 /--
 Store the difference of multiple sets into a destination key.
@@ -206,13 +211,14 @@ Example:
 let size <- client.sDiffStore "result" #["a", "b"]
 ```
 -/
-def sDiffStore [Transport.Transport τ]
+def Client.sDiffStore [Transport.Transport τ]
     (client : Client τ)
     (destination : String)
     (keys : Array String)
     : Async Int := do
-  let reply <- Client.execute client <| CommandRequest.sDiffStore destination keys
-  expectInteger "SDIFFSTORE" reply
+  let cmd := Command.sDiffStore destination keys
+  let reply ← Client.execute client <| cmd.request
+  cmd.decode reply
 
 /--
 Return the intersection of multiple sets.
@@ -222,12 +228,13 @@ Example:
 let members <- client.sInter #["a", "b"]
 ```
 -/
-def sInter [Transport.Transport τ]
+def Client.sInter [Transport.Transport τ]
     (client : Client τ)
     (keys : Array String)
     : Async (Array String) := do
-  let reply <- Client.execute client <| CommandRequest.sInter keys
-  expectPlainStringArray "SINTER" reply
+  let cmd := Command.sInter keys
+  let reply ← Client.execute client <| cmd.request
+  cmd.decode reply
 
 /--
 Return the intersection cardinality of multiple sets.
@@ -237,12 +244,13 @@ Example:
 let size <- client.sInterCard #["a", "b"]
 ```
 -/
-def sInterCard [Transport.Transport τ]
+def Client.sInterCard [Transport.Transport τ]
     (client : Client τ)
     (keys : Array String)
     : Async Int := do
-  let reply <- Client.execute client <| CommandRequest.sInterCard keys
-  expectInteger "SINTERCARD" reply
+  let cmd := Command.sInterCard keys
+  let reply ← Client.execute client <| cmd.request
+  cmd.decode reply
 
 /--
 Store the intersection of multiple sets into a destination key.
@@ -252,13 +260,14 @@ Example:
 let size <- client.sInterStore "result" #["a", "b"]
 ```
 -/
-def sInterStore [Transport.Transport τ]
+def Client.sInterStore [Transport.Transport τ]
     (client : Client τ)
     (destination : String)
     (keys : Array String)
     : Async Int := do
-  let reply <- Client.execute client <| CommandRequest.sInterStore destination keys
-  expectInteger "SINTERSTORE" reply
+  let cmd := Command.sInterStore destination keys
+  let reply ← Client.execute client <| cmd.request
+  cmd.decode reply
 
 /--
 Return the union of multiple sets.
@@ -268,12 +277,13 @@ Example:
 let members <- client.sUnion #["a", "b"]
 ```
 -/
-def sUnion [Transport.Transport τ]
+def Client.sUnion [Transport.Transport τ]
     (client : Client τ)
     (keys : Array String)
     : Async (Array String) := do
-  let reply <- Client.execute client <| CommandRequest.sUnion keys
-  expectPlainStringArray "SUNION" reply
+  let cmd := Command.sUnion keys
+  let reply ← Client.execute client <| cmd.request
+  cmd.decode reply
 
 /--
 Store the union of multiple sets into a destination key.
@@ -283,13 +293,14 @@ Example:
 let size <- client.sUnionStore "result" #["a", "b"]
 ```
 -/
-def sUnionStore [Transport.Transport τ]
+def Client.sUnionStore [Transport.Transport τ]
     (client : Client τ)
     (destination : String)
     (keys : Array String)
     : Async Int := do
-  let reply <- Client.execute client <| CommandRequest.sUnionStore destination keys
-  expectInteger "SUNIONSTORE" reply
+  let cmd := Command.sUnionStore destination keys
+  let reply ← Client.execute client <| cmd.request
+  cmd.decode reply
 
 /--
 Scan a set incrementally.
@@ -299,13 +310,14 @@ Example:
 let page <- client.sScan "tags" 0
 ```
 -/
-def sScan [Transport.Transport τ]
+def Client.sScan [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     (cursor : UInt64)
     (options : SScanOptions := {})
     : Async SetScanResult := do
-  let reply <- Client.execute client <| CommandRequest.sScan key cursor options
-  expectSetScanResult reply
+  let cmd := Command.sScan key cursor options
+  let reply ← Client.execute client <| cmd.request
+  cmd.decode reply
 
-end LeanRedis.Client
+end LeanRedis

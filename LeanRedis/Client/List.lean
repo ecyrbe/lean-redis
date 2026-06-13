@@ -1,7 +1,7 @@
 import LeanRedis.Client.Basic
-import LeanRedis.Tools.ExpectResult
+import LeanRedis.Command.List
 
-namespace LeanRedis.Client
+namespace LeanRedis
 
 open Std.Internal.IO.Async
 open LeanRedis
@@ -14,13 +14,14 @@ Example:
 let len <- client.lPush "jobs" #["a", "b"]
 ```
 -/
-def lPush [Transport.Transport τ]
+def Client.lPush [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     (values : Array String)
     : Async Int := do
-  let reply <- Client.execute client <| CommandRequest.lPush key values
-  expectInteger "LPUSH" reply
+  let cmd := Command.lPush key values
+  let reply ← Client.execute client <| cmd.request
+  cmd.decode reply
 
 /--
 Push values to the right side of a list.
@@ -30,13 +31,14 @@ Example:
 let len <- client.rPush "jobs" #["a", "b"]
 ```
 -/
-def rPush [Transport.Transport τ]
+def Client.rPush [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     (values : Array String)
     : Async Int := do
-  let reply <- Client.execute client <| CommandRequest.rPush key values
-  expectInteger "RPUSH" reply
+  let cmd := Command.rPush key values
+  let reply ← Client.execute client <| cmd.request
+  cmd.decode reply
 
 /--
 Push a value to the left only if the list already exists.
@@ -46,12 +48,13 @@ Example:
 let len <- client.lPushX "jobs" "a"
 ```
 -/
-def lPushX [Transport.Transport τ]
+def Client.lPushX [Transport.Transport τ]
     (client : Client τ)
     (key value : String)
     : Async Int := do
-  let reply <- Client.execute client <| CommandRequest.lPushX key value
-  expectInteger "LPUSHX" reply
+  let cmd := Command.lPushX key value
+  let reply ← Client.execute client <| cmd.request
+  cmd.decode reply
 
 /--
 Push a value to the right only if the list already exists.
@@ -61,12 +64,13 @@ Example:
 let len <- client.rPushX "jobs" "a"
 ```
 -/
-def rPushX [Transport.Transport τ]
+def Client.rPushX [Transport.Transport τ]
     (client : Client τ)
     (key value : String)
     : Async Int := do
-  let reply <- Client.execute client <| CommandRequest.rPushX key value
-  expectInteger "RPUSHX" reply
+  let cmd := Command.rPushX key value
+  let reply ← Client.execute client <| cmd.request
+  cmd.decode reply
 
 /--
 Pop one value from the left side of a list.
@@ -76,12 +80,13 @@ Example:
 let value <- client.lPop "jobs"
 ```
 -/
-def lPop [Transport.Transport τ]
+def Client.lPop [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     : Async (Option String) := do
-  let reply <- Client.execute client <| CommandRequest.lPop key
-  expectOptionalString "LPOP" reply
+  let cmd := Command.lPop key
+  let reply ← Client.execute client <| cmd.request
+  cmd.decode reply
 
 /--
 Pop one value from the right side of a list.
@@ -91,12 +96,13 @@ Example:
 let value <- client.rPop "jobs"
 ```
 -/
-def rPop [Transport.Transport τ]
+def Client.rPop [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     : Async (Option String) := do
-  let reply <- Client.execute client <| CommandRequest.rPop key
-  expectOptionalString "RPOP" reply
+  let cmd := Command.rPop key
+  let reply ← Client.execute client <| cmd.request
+  cmd.decode reply
 
 /--
 Return the current length of a list.
@@ -106,12 +112,13 @@ Example:
 let len <- client.lLen "jobs"
 ```
 -/
-def lLen [Transport.Transport τ]
+def Client.lLen [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     : Async Int := do
-  let reply <- Client.execute client <| CommandRequest.lLen key
-  expectInteger "LLEN" reply
+  let cmd := Command.lLen key
+  let reply ← Client.execute client <| cmd.request
+  cmd.decode reply
 
 /--
 Return the value at a list index.
@@ -121,13 +128,14 @@ Example:
 let value <- client.lIndex "jobs" 0
 ```
 -/
-def lIndex [Transport.Transport τ]
+def Client.lIndex [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     (index : Int)
     : Async (Option String) := do
-  let reply <- Client.execute client <| CommandRequest.lIndex key index
-  expectOptionalString "LINDEX" reply
+  let cmd := Command.lIndex key index
+  let reply ← Client.execute client <| cmd.request
+  cmd.decode reply
 
 /--
 Return a range of list elements.
@@ -137,13 +145,14 @@ Example:
 let values <- client.lRange "jobs" 0 (-1)
 ```
 -/
-def lRange [Transport.Transport τ]
+def Client.lRange [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     (start stop : Int)
     : Async (Array String) := do
-  let reply <- Client.execute client <| CommandRequest.lRange key start stop
-  expectPlainStringArray "LRANGE" reply
+  let cmd := Command.lRange key start stop
+  let reply ← Client.execute client <| cmd.request
+  cmd.decode reply
 
 /--
 Replace the value at a list index.
@@ -153,14 +162,15 @@ Example:
 let _ <- client.lSet "jobs" 0 "next"
 ```
 -/
-def lSet [Transport.Transport τ]
+def Client.lSet [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     (index : Int)
     (value : String)
     : Async Unit := do
-  let reply <- Client.execute client <| CommandRequest.lSet key index value
-  expectOk reply
+  let cmd := Command.lSet key index value
+  let reply ← Client.execute client <| cmd.request
+  cmd.decode reply
 
 /--
 Trim a list to the given inclusive range.
@@ -170,13 +180,14 @@ Example:
 let _ <- client.lTrim "jobs" 0 9
 ```
 -/
-def lTrim [Transport.Transport τ]
+def Client.lTrim [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     (start stop : Int)
     : Async Unit := do
-  let reply <- Client.execute client <| CommandRequest.lTrim key start stop
-  expectOk reply
+  let cmd := Command.lTrim key start stop
+  let reply ← Client.execute client <| cmd.request
+  cmd.decode reply
 
 /--
 Remove matching elements from a list.
@@ -186,14 +197,15 @@ Example:
 let removed <- client.lRem "jobs" 0 "done"
 ```
 -/
-def lRem [Transport.Transport τ]
+def Client.lRem [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     (count : Int)
     (value : String)
     : Async Int := do
-  let reply <- Client.execute client <| CommandRequest.lRem key count value
-  expectInteger "LREM" reply
+  let cmd := Command.lRem key count value
+  let reply ← Client.execute client <| cmd.request
+  cmd.decode reply
 
 /--
 Insert a value before or after a pivot element.
@@ -203,14 +215,15 @@ Example:
 let index <- client.lInsert "jobs" .after "a" "b"
 ```
 -/
-def lInsert [Transport.Transport τ]
+def Client.lInsert [Transport.Transport τ]
     (client : Client τ)
     (key : String)
     (position : LInsertPosition)
     (pivot value : String)
     : Async Int := do
-  let reply <- Client.execute client <| CommandRequest.lInsert key position pivot value
-  expectInteger "LINSERT" reply
+  let cmd := Command.lInsert key position pivot value
+  let reply ← Client.execute client <| cmd.request
+  cmd.decode reply
 
 /--
 Move one element between lists.
@@ -220,13 +233,14 @@ Example:
 let value <- client.lMove "jobs" "done" .left .right
 ```
 -/
-def lMove [Transport.Transport τ]
+def Client.lMove [Transport.Transport τ]
     (client : Client τ)
     (source destination : String)
     (fromWhere toWhere : LMoveWhere)
     : Async (Option String) := do
-  let reply <- Client.execute client <| CommandRequest.lMove source destination fromWhere toWhere
-  expectOptionalString "LMOVE" reply
+  let cmd := Command.lMove source destination fromWhere toWhere
+  let reply ← Client.execute client <| cmd.request
+  cmd.decode reply
 
 /--
 Return a single matching position from `LPOS`.
@@ -236,19 +250,16 @@ Example:
 let pos <- client.lPos "jobs" "a"
 ```
 -/
-def lPos [Transport.Transport τ]
+def Client.lPos [Transport.Transport τ]
     (client : Client τ)
     (key element : String)
     (options : LPosOptions := {})
     : Async (Option Int) := do
   if options.count?.isSome then
     Error.raise <| .decode "LPOS with COUNT returns multiple positions; use lPosMany"
-  let reply <- Client.execute client <| CommandRequest.lPos key element options
-  match reply with
-  | .null => pure none
-  | .number value => pure (some value)
-  | .simpleError message => Error.raise <| .server message
-  | _ => Error.raise <| .decode "unexpected LPOS reply"
+  let cmd := Command.lPos key element options
+  let reply ← Client.execute client <| cmd.request
+  cmd.decode reply
 
 /--
 Return multiple matching positions from `LPOS`.
@@ -258,7 +269,7 @@ Example:
 let positions <- client.lPosMany "jobs" "a" { count? := some 3 }
 ```
 -/
-def lPosMany [Transport.Transport τ]
+def Client.lPosMany [Transport.Transport τ]
     (client : Client τ)
     (key element : String)
     (options : LPosOptions)
@@ -266,7 +277,8 @@ def lPosMany [Transport.Transport τ]
   match options.count? with
   | none => Error.raise <| .decode "lPosMany requires COUNT"
   | some _ =>
-      let reply <- Client.execute client <| CommandRequest.lPos key element options
-      expectIntegerArray "LPOS" reply
+      let cmd := Command.lPosMany key element options
+      let reply ← Client.execute client <| cmd.request
+      cmd.decode reply
 
-end LeanRedis.Client
+end LeanRedis

@@ -1,11 +1,12 @@
 import LeanRedis.Command.Base
+import LeanRedis.Tools.ExpectResult
 
 namespace LeanRedis
 
 /--
 PING [message]
 -/
-def CommandRequest.ping (message? : Option String := none) : CommandRequest :=
+abbrev CommandRequest.ping (message? : Option String := none) : CommandRequest :=
   {
     name := "PING"
     args := match message? with
@@ -13,10 +14,12 @@ def CommandRequest.ping (message? : Option String := none) : CommandRequest :=
       | none => #[]
   }
 
+abbrev Command.ping (message?: Option String := none): Command (Option String) := ⟨ CommandRequest.ping message?, expectPong ⟩
+
 /--
 AUTH [username] password
 -/
-def CommandRequest.auth (auth : AuthConfig) : CommandRequest :=
+abbrev CommandRequest.auth (auth : AuthConfig) : CommandRequest :=
   match auth.username? with
   | some username =>
       {
@@ -29,14 +32,18 @@ def CommandRequest.auth (auth : AuthConfig) : CommandRequest :=
         args := #[auth.password.value.toUTF8]
       }
 
+abbrev Command.auth (auth : AuthConfig) : Command Unit := ⟨ CommandRequest.auth auth, expectOk ⟩
+
 /--
 SELECT index
 -/
-def CommandRequest.select (database : UInt32) : CommandRequest :=
+abbrev CommandRequest.select (database : UInt32) : CommandRequest :=
   {
     name := "SELECT"
     args := #[(toString database).toUTF8]
   }
+
+abbrev Command.select (database : UInt32) : Command Unit := ⟨ CommandRequest.select database, expectOk ⟩
 
 def CommandRequest.selectedDb? (request : CommandRequest) : Option UInt32 := do
   guard (request.name == "SELECT")
