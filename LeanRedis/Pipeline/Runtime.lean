@@ -12,30 +12,27 @@ open LeanRedis.Connection
 open LeanRedis.Transport
 open Std.Internal.IO.Async
 
-private partial def readNReplies
-    [Transport τ]
-    (n : Nat)
-    (acc : Array Protocol.Resp.Value := #[])
-    : RuntimeM τ (Array Protocol.Resp.Value) := do
-  if n == 0 then
-    return acc
-  else
+private def readNReplies [Transport τ] (n : Nat) : RuntimeM τ (Array Protocol.Resp.Value) := do
+  let mut values := #[]
+  let mut n := n
+  while n > 0 do
     let runtime ← get
     match Protocol.Resp.Parse.parseAvailable runtime.parser with
     | .error err => Error.raise err
-    | .ok (values, nextParser) =>
-        if values.isEmpty then
+    | .ok (nextValues, nextParser) =>
+        if nextValues.isEmpty then
           let bytes ← Transport.recv runtime.transport readSize
           if bytes.isEmpty then
             Error.raise <| .transport "connection closed while waiting for pipeline reply"
           else
             modify fun r => { r with parser := Protocol.Resp.Parse.feed r.parser bytes }
-            readNReplies n acc
         else
-          let takeCount := Nat.min n values.size
-          let consumed := values.extract 0 takeCount
+          let takeCount := Nat.min n nextValues.size
+          let consumed := nextValues.extract 0 takeCount
           modify fun r => { r with parser := nextParser }
-          readNReplies (n - takeCount) (acc ++ consumed)
+          n := n - takeCount
+          values := values ++ consumed
+  return values
 
 def Runtime.tryExecuteBatch
     [Transport τ]
