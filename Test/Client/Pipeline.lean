@@ -49,6 +49,12 @@ private def scriptedReplies (host : String) : Array ByteArray :=
         "$5\r\nhello\r\n".toUTF8,
         "-ERR bad command\r\n".toUTF8
       ]
+  | "pipeline-incomplete-replies" =>
+      #[
+        "%2\r\n+server\r\n+redis\r\n+proto\r\n:3\r\n".toUTF8,
+        "$5\r\nhello\r\n".toUTF8,
+        ByteArray.empty
+      ]
   | _ =>
       #[
         "%2\r\n+server\r\n+redis\r\n+proto\r\n:3\r\n".toUTF8,
@@ -135,6 +141,20 @@ def testPipelineFailsWhenDisconnected : Async String := do
   catch err =>
     pure err.toString
 
+def testPipelineIncompleteReplies : Async String := do
+  try
+    let client : Client FakeTransport <- Client.new {
+      endpoint := { host := "pipeline-incomplete-replies", port := 6379 }
+    }
+    client.connect
+    let _ <- client.runPipeline <|
+      Pipeline.empty
+        |>.get "k1"
+        |>.get "k2"
+    pure "unexpected success"
+  catch err =>
+    pure err.toString
+
 /--
 info: [some "hello", true, some "good"]ₕ
 -/
@@ -164,5 +184,11 @@ info: "unavailable: client is not connected"
 -/
 #guard_msgs in
 #eval testPipelineFailsWhenDisconnected |>.block
+
+/--
+info: "transport error: connection closed while waiting for pipeline replies"
+-/
+#guard_msgs in
+#eval testPipelineIncompleteReplies |>.block
 
 end LeanRedisTest.Client.Pipeline
