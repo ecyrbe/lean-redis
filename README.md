@@ -196,11 +196,11 @@ Pipeline operations:
 
 ```lean
 def pipelineExample : Async (Option String × Bool × Option String) := do
-  let client <- LeanRedis.Client.newDefault {
+  let client <- Client.newDefault {
     endpoint := { host := "127.0.0.1", port := 6379 }
   }
-  let _ <- client.connect
-  let (a, b, c, _) <- client.runPipeline <|
+  client.connect
+  let [a, b, c]ₕ <- client.runPipeline <|
     Pipeline.empty
       |>.get "greeting"
       |>.set "key" "val"
