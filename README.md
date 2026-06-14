@@ -24,6 +24,8 @@ Typed commands, RESP2/RESP3 support, native async TCP, and a design built for ex
 - 📣 Async connection lifecycle event callbacks for disconnect and reconnect logging
 - 🧪 Transport abstraction makes mocked and scripted transports easy to use in tests
 - 🗂️ Typed command families for generic, strings, hashes, lists, sets, and sorted sets
+- 🔗 Pipeline API for batching commands over a single connection with typed, positional result unpacking
+- 🧩 Heterogeneous result lists (`HList`) pair each pipeline command's return type with its position in the result tuple
 - 🧪 Scripted tests for protocol, transport, connection, and typed command decoding
 - 🛠️ Modular internal layout split by command family for easier review and maintenance
 
@@ -35,6 +37,7 @@ Core:
 - default TCP transport
 - connection bootstrap and opt-in background reconnect
 - async client lifecycle, reconnect events, and connection state inspection
+- pipeline batching with typed `HList` result unpacking
 
 Command families:
 - 🔐 Connection: `AUTH`, `PING`, `SELECT`
@@ -49,7 +52,6 @@ Current non-goals for v1:
 - sync API
 - blocking Redis command variants
 - pub/sub mode
-- pipelines / transactions
 - cluster / sentinel support
 - TLS transport
 
@@ -72,7 +74,7 @@ Current non-goals for v1:
 | Set commands | Yes | includes `SSCAN` |
 | Sorted set commands | Yes | includes `ZSCAN` |
 | Scripted transport tests | Yes | protocol, runtime, manager, client |
-| Pipelines / transactions | No | not part of v1 |
+| Pipelines / transactions | Yes | typed, uses `HList` for positional result unpacking |
 | Pub/Sub | No | not part of v1 |
 | TLS | No | intended as future extension |
 | Cluster / Sentinel | No | not part of v1 |
@@ -190,6 +192,28 @@ def sortedSetExample : Async (Array LeanRedis.SortedSetEntry) := do
   client.zRangeWithScores "scores" 0 (-1)
 ```
 
+Pipeline operations:
+
+```lean
+def pipelineExample : Async (Option String × Bool × Option String) := do
+  let client <- LeanRedis.Client.newDefault {
+    endpoint := { host := "127.0.0.1", port := 6379 }
+  }
+  let _ <- client.connect
+  let (a, b, c, _) <- client.runPipeline <|
+    Pipeline.empty
+      |>.get "greeting"
+      |>.set "key" "val"
+      |>.get "key"
+  pure (a, b, c)
+```
+
+Results are unpacked positionally via `HList`. The example above destructures into
+`(some_string, set_ok, some_string, ())` matching the return types of `GET`, `SET`, and `GET`.
+
+Pipeline command families mirror the single-command client API — strings, hashes, lists,
+sets, sorted sets, generics, and connection commands are all supported inside a pipeline.
+
 Mocked transport for tests:
 
 ```lean
@@ -248,6 +272,7 @@ Main public entry points:
 - `Client.onEvent`
 - `Client.offEvent`
 - `Client.currentState`
+- `Client.runPipeline`
 
 Design notes:
 
@@ -311,6 +336,19 @@ Internal client layout:
 - `LeanRedis/Client/SortedSet.lean`
 - `LeanRedis/Client/Generic.lean`
 
+Pipeline layout:
+
+- `LeanRedis/Pipeline/Basic.lean` — `Pipeline` structure, `empty`, `fromCommand`, `hAppend`
+- `LeanRedis/Pipeline/Runtime.lean` — batch execution on the runtime transport
+- `LeanRedis/Pipeline/Manager.lean` — pipeline execution via `Connection.Manager`
+- `LeanRedis/Pipeline/Connection.lean` — connection command builders
+- `LeanRedis/Pipeline/String.lean` — string command builders
+- `LeanRedis/Pipeline/Hash.lean` — hash command builders
+- `LeanRedis/Pipeline/List.lean` — list command builders
+- `LeanRedis/Pipeline/Set.lean` — set command builders
+- `LeanRedis/Pipeline/SortedSet.lean` — sorted set command builders
+- `LeanRedis/Pipeline/Generic.lean` — generic command builders
+
 ## Status
 
 Implemented and verified:
@@ -321,6 +359,7 @@ Implemented and verified:
 - connection management
 - async public client API
 - connection, generic, string, hash, list, set, and sorted-set command families
+- pipeline batching with typed `HList` result unpacking
 
 Tracking details live in `docs/features/TODO.md`.
 

@@ -14,5 +14,6 @@ import LeanRedis.Engine.RequestQueue
 import LeanRedis.Engine.Session
 import LeanRedis.Connection.Runtime
 import LeanRedis.Connection.Manager
+import LeanRedis.Pipeline
 import LeanRedis.Client
 import LeanRedis.Cache

@@ -212,11 +212,10 @@ Example:
  (a,b,_) ← client.runPipeline <| Pipeline.empty |>.get "hello" |>.set "bar" "baz" |>.get "bar"
 ```
 -/
- public def Client.runPipeline
-    [Transport.Transport τ]
-    (client : Client τ)
-    (pipeline : Pipeline α)
-    : Async (HList α) := do
+public def runPipeline
+  [Transport.Transport τ]
+  (client : Client τ)
+  (pipeline : Pipeline α) : Async (HList α) := do
   client.operation.atomically fun _ => do
     let status <- getStatus client
     unless status == .connected do
