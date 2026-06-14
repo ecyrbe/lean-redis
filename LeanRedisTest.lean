@@ -10,6 +10,8 @@ import Test.Client.Hash
 import Test.Client.List
 import Test.Client.Set
 import Test.Client.SortedSet
+import Test.Client.Pipeline
+import Test.Pipeline.Basic
 import Test.Connection.Manager
 import Test.Connection.Runtime
 import Test.Transport.Basic
