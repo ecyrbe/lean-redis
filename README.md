@@ -74,7 +74,8 @@ Current non-goals for v1:
 | Set commands | Yes | includes `SSCAN` |
 | Sorted set commands | Yes | includes `ZSCAN` |
 | Scripted transport tests | Yes | protocol, runtime, manager, client |
-| Pipelines / transactions | Yes | typed, uses `HList` for positional result unpacking |
+| Pipelines  | Yes | typed, uses `HList` for positional result unpacking |
+| Transactions | No | not part of v1 |
 | Pub/Sub | No | not part of v1 |
 | TLS | No | intended as future extension |
 | Cluster / Sentinel | No | not part of v1 |
