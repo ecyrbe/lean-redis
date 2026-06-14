@@ -205,7 +205,7 @@ def pipelineExample : Async (Option String × Bool × Option String) := do
       |>.get "greeting"
       |>.set "key" "val"
       |>.get "key"
-  pure (a, b, c)
+  return (a, b, c)
 ```
 
 Results are unpacked positionally via `HList`. The example above destructures into
