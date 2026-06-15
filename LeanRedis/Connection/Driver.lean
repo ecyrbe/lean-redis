@@ -55,6 +55,26 @@ private def readNReplies [Transport τ] (transport : τ) (parser : Protocol.Resp
           values := values ++ consumed
   return (values, parser)
 
+-- Pure state machine transitions (no IO)
+
+def onRemoteDisconnect (state : DriverState τ) : DriverState τ × Array Protocol.Effect :=
+  let (session, effects) := state.session.step .remoteDisconnect state.config
+  ({ state with session }, effects)
+
+def onReconnectExhausted (state : DriverState τ) : DriverState τ × Array Protocol.Effect :=
+  let (session, effects) := state.session.step .reconnectExhausted state.config
+  ({ state with session }, effects)
+
+def onTransportFailed (state : DriverState τ) (error : String) : DriverState τ × Array Protocol.Effect :=
+  let (session, effects) := state.session.step (.transportFailed error) state.config
+  ({ state with session }, effects)
+
+def onConnectRequest (state : DriverState τ) : DriverState τ × Array Protocol.Effect :=
+  let (session, effects) := state.session.step .requestConnect state.config
+  ({ state with session }, effects)
+
+-- IO operations that include state machine transitions
+
 def executeCommand [Transport τ]
     (request : CommandRequest)
     (state : DriverState τ)
@@ -103,29 +123,39 @@ def connectBootstrap [Transport τ]
     let state := { state with session := session' }
     pure (state, postEffects)
 
-def connect [Transport τ]
-    (config : Config)
+-- Connect transport + bootstrap (no state transition — caller must call onConnectRequest first)
+def connectTransport [Transport τ]
     (state : DriverState τ)
     : Async (DriverState τ × Array Protocol.Effect) := do
-  let action := match state.session.phase with
-    | .disconnected => .requestConnect
-    | .reconnecting _ => .reconnectTick
-    | _ => .requestConnect
-  let (session, preEffects) := state.session.step action config
+  let transport ← Transport.connect state.config.endpoint
+  connectBootstrap transport state.config state
+
+-- Full reconnect: reconnectTick + transport + bootstrap
+-- Catches transport errors internally and applies onTransportFailed
+-- Uses the post-tick session for error transition so .transportFailed sees .connecting phase
+def tryReconnect [Transport τ]
+    (state : DriverState τ)
+    : Async (DriverState τ × Array Protocol.Effect) := do
+  let (session, preEffects) := state.session.step .reconnectTick state.config
   match session.phase with
   | .connecting _ =>
-      let transport ← Transport.connect config.endpoint
-      let (state, postEffects) ← connectBootstrap transport config { state with session }
-      pure (state, preEffects ++ postEffects)
+      try
+        let transport ← Transport.connect state.config.endpoint
+        let (state, postEffects) ← connectBootstrap transport state.config { state with session }
+        pure (state, preEffects ++ postEffects)
+      catch err =>
+        let (session', effects) := session.step (.transportFailed err.toString) state.config
+        pure ({ state with session := session' }, preEffects ++ effects)
   | _ =>
-      pure ({ state with session }, preEffects)
+      pure ({ state with session := session }, preEffects)
 
-def disconnect [Transport τ] (state : DriverState τ) : Async (DriverState τ) := do
-  let (session, _) := state.session.step .requestDisconnect state.config
+-- Full disconnect: requestDisconnect + close transport + closeComplete
+def disconnect [Transport τ] (state : DriverState τ) : Async (DriverState τ × Array Protocol.Effect) := do
+  let (session, preEffects) := state.session.step .requestDisconnect state.config
   match state.transport? with
   | some transport => Transport.close transport
   | none => pure ()
-  let (session, _) := session.step .closeComplete (default : Config)
-  pure { transport? := none, parser := {}, session }
+  let (session, postEffects) := session.step .closeComplete state.config
+  pure ({ transport? := none, parser := {}, session, config := state.config }, preEffects ++ postEffects)
 
 end LeanRedis.Connection

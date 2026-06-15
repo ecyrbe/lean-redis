@@ -86,7 +86,7 @@ def Session.step (session : Session) (action : Action) (config : Config) : Sessi
       ({ session with phase := .failed "connect failed" }, #[.emit .initialConnectFailed])
 
   | .connecting n, .transportFailed _ =>
-      ({ session with phase := .reconnecting (n + 1) }, #[.emit .reconnectAttemptFailed])
+      ({ session with phase := .reconnecting n }, #[.emit .reconnectAttemptFailed])
 
   | .bootstrapping reconnect, .bootstrapComplete replies =>
       match bootstrapStateAfterReplies config replies with

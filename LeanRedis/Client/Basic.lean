@@ -26,9 +26,8 @@ private def emitEvent (client : Client τ) (event : Client.Event) : Async Unit :
     let subscribers <- ref.get
     pure subscribers.handlers
   for (_, handler) in handlers do
-    discard <| IO.asTask do
-      let _ <- (handler event).block
-      pure ()
+    let _ <- handler event
+    pure ()
 
 private def emitEffect (client : Client τ) (tag : Protocol.EventTag) : Async Unit := do
   let metadata <- eventMetadata
@@ -54,79 +53,59 @@ private def getState (client : Client τ) : Async (DriverState τ) :=
 private def setState (client : Client τ) (state : DriverState τ) : Async Unit :=
   client.state.atomically fun ref => ref.set state
 
-private partial def doReconnectAttempt [Transport.Transport τ]
+/-- Wait for the given delay, then attempt one reconnection cycle.
+    Returns `true` if a retry should be attempted (still reconnecting). -/
+private partial def retryAfterDelay [Transport.Transport τ]
     (client : Client τ)
-    : Async Unit := do
-  let state <- getState client
-  match state.session.phase with
-  | .reconnecting _ =>
-      let (session, preEffects) := state.session.step .reconnectTick state.config
-      setState client { state with session }
-      executeEffects client preEffects
-      match session.phase with
-      | .connecting _ =>
-          try
-            let transport ← Transport.Transport.connect state.config.endpoint
-            let (state', postEffects) <- LeanRedis.Connection.connectBootstrap transport state.config { state with session }
-            setState client state'
-            executeEffects client postEffects
-          catch err =>
-            let state <- getState client
-            let (session, effects) := state.session.step (.transportFailed err.toString) state.config
-            setState client { state with session }
-            executeEffects client effects
-            if session.phase matches .reconnecting _ then
-              doReconnectAttempt client
-            else
-              pure ()
-      | _ => pure ()
-  | _ => pure ()
-
-private partial def handleReconnectDelay [Transport.Transport τ]
-    (client : Client τ)
-    (attemptNumber : Nat)
+    (state : DriverState τ)
+    (n : Nat)
     (delayMs : UInt32)
-    : Async Unit := do
+    : Async Bool := do
+  let attemptNumber := n + 1
   let scheduled <- eventMetadata (attempt? := some attemptNumber)
   emitEvent client (.reconnectScheduled delayMs scheduled)
   IO.sleep delayMs
-  doReconnectAttempt client
+  let (state', effects) <- LeanRedis.Connection.tryReconnect state
+  setState client state'
+  executeEffects client effects
+  match state'.session.phase with
+  | .reconnecting _ => pure true
+  | _ => pure false
 
-private partial def handleReconnectExhausted [Transport.Transport τ]
+/-- No more retries allowed by the strategy — transition to disconnected and emit stopped. -/
+private def exhaustReconnect [Transport.Transport τ]
     (client : Client τ)
     (state : DriverState τ)
     : Async Unit := do
-  let (session, effects) := state.session.step .reconnectExhausted state.config
-  setState client { state with session }
+  let (state', effects) := LeanRedis.Connection.onReconnectExhausted state
+  setState client state'
   executeEffects client effects
 
-private partial def handleReconnectIteration [Transport.Transport τ]
-    (client : Client τ)
-    (state : DriverState τ)
-    : Async Unit := do
-  let n := match state.session.phase with | .reconnecting n => n | _ => 0
-  let attemptNumber := n + 1
-  let delayMs? <- state.config.reconnectStrategy.delayMs n
-  match delayMs? with
-  | none => handleReconnectExhausted client state
-  | some delayMs => handleReconnectDelay client attemptNumber delayMs
-
+/-- Reconnection loop: fetch the next delay from the strategy, wait, attempt
+    a connection, and repeat until the strategy says stop or we reconnect. -/
 private partial def reconnectLoop [Transport.Transport τ]
     (client : Client τ)
-    (attempt : Nat)
     : Async Unit := do
   let state <- getState client
   match state.session.phase with
   | .reconnecting n =>
-      if n != attempt then pure ()
-      else handleReconnectIteration client state
+      let delayMs? <- state.config.reconnectStrategy.delayMs n
+      match delayMs? with
+      | none =>
+          exhaustReconnect client state
+      | some delayMs =>
+          let shouldRetry <- retryAfterDelay client state n delayMs
+          if shouldRetry then
+            reconnectLoop client
+          else
+            pure ()
   | _ => pure ()
 
 private def startReconnectWorker [Transport.Transport τ]
     (client : Client τ)
     : Async Unit := do
   discard <| IO.asTask do
-    let _ <- (reconnectLoop client 0).block
+    let _ <- (reconnectLoop client).block
     pure ()
 
 /--
@@ -152,8 +131,8 @@ public def execute [Transport.Transport τ]
         catch
           | err =>
             if Error.isTransportIOError err then
-              let (session, effects) := state.session.step .remoteDisconnect state.config
-              ref.set { state with session }
+              let (state', effects) := LeanRedis.Connection.onRemoteDisconnect state
+              ref.set state'
               executeEffects client effects
               startReconnectWorker client
             throw err
@@ -185,8 +164,8 @@ public def runPipeline
         catch
           | err =>
             if Error.isTransportIOError err then
-              let (session, effects) := state.session.step .remoteDisconnect state.config
-              ref.set { state with session }
+              let (state', effects) := LeanRedis.Connection.onRemoteDisconnect state
+              ref.set state'
               executeEffects client effects
               startReconnectWorker client
             throw err
@@ -233,17 +212,17 @@ def connect [Transport.Transport τ] (client : Client τ) : Async Unit := do
     let state <- ref.get
     match state.session.phase with
     | .disconnected | .failed _ =>
-        let (session, _) := state.session.step .requestConnect state.config
-        ref.set { state with session }
+        let (state, preEffects) := LeanRedis.Connection.onConnectRequest state
+        ref.set state
+        executeEffects client preEffects
         try
-          let transport ← Transport.Transport.connect state.config.endpoint
-          let (state', effects) <- LeanRedis.Connection.connectBootstrap transport state.config { state with session }
+          let (state', postEffects) <- LeanRedis.Connection.connectTransport state
           ref.set state'
-          executeEffects client effects
+          executeEffects client postEffects
         catch err =>
           let state <- ref.get
-          let (session, effects) := state.session.step (.transportFailed err.toString) state.config
-          ref.set { state with session }
+          let (state', effects) := LeanRedis.Connection.onTransportFailed state err.toString
+          ref.set state'
           executeEffects client effects
           throw err
     | _ => pure ()
@@ -259,13 +238,9 @@ let _ <- client.disconnect
 def disconnect [Transport.Transport τ] (client : Client τ) : Async Unit := do
   client.state.atomically fun ref => do
     let state <- ref.get
-    let (session, effects) := state.session.step .requestDisconnect state.config
+    let (state', effects) <- LeanRedis.Connection.disconnect state
+    ref.set state'
     executeEffects client effects
-    match state.transport? with
-    | some transport => Transport.close transport
-    | none => pure ()
-    let (session, _) := session.step .closeComplete state.config
-    ref.set { transport? := none, parser := {}, session := session, config := state.config }
 
 /--
 Return `true` when the client currently has a ready runtime.

@@ -22,9 +22,10 @@ instance : Transport.Transport FakeTransport where
 
 def testDriverConnectToReady : Async Protocol.Phase := do
   let config : Config := { endpoint := { host := "127.0.0.1", port := 6379 } }
-  let state : DriverState FakeTransport := {}
-  let (state', _) ← connect config state
-  pure state'.session.phase
+  let state : DriverState FakeTransport := { config := config }
+  let (s, _) := onConnectRequest state
+  let (s', _) ← connectTransport s
+  pure s'.session.phase
 
 def testDefaultClientStartsDisconnected : Async Bool := do
   let client <- Client.newDefault {

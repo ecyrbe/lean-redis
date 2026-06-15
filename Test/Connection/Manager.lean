@@ -57,9 +57,10 @@ def testBootstrapConnectWithDatabase : Async String := do
     endpoint := { host := "resp3-db", port := 6379 }
     database? := some 2
   }
-  let state : DriverState FakeTransport := {}
-  let (state', _) ← connect config state
-  pure s!"{state'.session.isReady}|{renderProtocol state'.session.protocol?}|{(state'.session.selectedDb?).getD 0}"
+  let state : DriverState FakeTransport := { config := config }
+  let (s, _) := onConnectRequest state
+  let (s', _) ← connectTransport s
+  pure s!"{s'.session.isReady}|{renderProtocol s'.session.protocol?}|{(s'.session.selectedDb?).getD 0}"
 
 def testResp2PlanWithoutHello : Nat :=
   (Protocol.bootstrapPlan {
@@ -79,10 +80,11 @@ def testDisconnectClearsReadyRuntime : Async String := do
   let config : Config := {
     endpoint := { host := "resp3", port := 6379 }
   }
-  let state : DriverState FakeTransport := {}
-  let (state', _) ← connect config state
-  let state'' ← disconnect state'
-  pure s!"{state''.session.isReady}|{match state''.session.phase with | .disconnected => "disconnected" | _ => "other"}"
+  let state : DriverState FakeTransport := { config := config }
+  let (s, _) := onConnectRequest state
+  let (s', _) ← connectTransport s
+  let (s'', _) ← disconnect s'
+  pure s!"{s''.session.isReady}|{match s''.session.phase with | .disconnected => "disconnected" | _ => "other"}"
 
 /--
 info: "true|resp3|2"
