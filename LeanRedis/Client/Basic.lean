@@ -83,7 +83,7 @@ private partial def reconnectLoop [Transport.Transport τ]
     let attemptNumber := attempt + 1
     let started <- eventMetadata (attempt? := some attemptNumber)
     emitEvent client <| .reconnectAttemptStarted started
-    let reconnectResult <- client.operation.atomically fun _ => do
+    let reconnectResult <- client.operation.atomically do
       if (← currentReconnectGeneration client) != generation then
         pure <| Except.error none
       else
@@ -172,7 +172,7 @@ public def executeWithManagerUpdate [Transport.Transport τ]
     (request : CommandRequest)
     (updateManager : Connection.Manager τ -> Protocol.Resp.Value -> Async (Connection.Manager τ))
     : Async Protocol.Resp.Value := do
-  client.operation.atomically fun _ => do
+  client.operation.atomically do
     let status <- getStatus client
     unless status == .connected do
       Error.raise <| .unavailable (statusErrorMessage status)
@@ -216,7 +216,7 @@ public def runPipeline
   [Transport.Transport τ]
   (client : Client τ)
   (pipeline : Pipeline α) : Async (HList α) := do
-  client.operation.atomically fun _ => do
+  client.operation.atomically do
     let status <- getStatus client
     unless status == .connected do
       Error.raise <| .unavailable (statusErrorMessage status)
@@ -271,7 +271,7 @@ let _ <- client.connect
 ```
 -/
 def connect (client : Client τ) [Transport.Transport τ] : Async Unit := do
-  client.operation.atomically fun _ => do
+  client.operation.atomically do
     let _ <- Client.nextReconnectGeneration client
     let status <- Client.getStatus client
     if status == .connected then
@@ -300,7 +300,7 @@ let _ <- client.disconnect
 ```
 -/
 def disconnect [Transport.Transport τ] (client : Client τ) : Async Unit := do
-  client.operation.atomically fun _ => do
+  client.operation.atomically do
     let _ <- Client.nextReconnectGeneration client
     let manager <- Client.getManager client
     let manager <- manager.disconnect

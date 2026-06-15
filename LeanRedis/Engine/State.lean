@@ -15,8 +15,6 @@ structure State where
   phase : SessionPhase := .disconnected
   protocol? : Option Protocol.Version := none
   selectedDb? : Option UInt32 := none
-  pending : Array CommandRequest := #[]
-  outbox : Array ByteArray := #[]
   lastReply? : Option Protocol.Resp.Value := none
   deriving BEq, Inhabited
 

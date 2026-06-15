@@ -27,7 +27,7 @@ abbrev RuntimeM (τ : Type) := StateRefT (Runtime τ) Async
 private def readReply
     [Transport τ]
     : RuntimeM τ (Except Error Protocol.Resp.Value) := do
- while true do
+ repeat do
     let runtime ← get
     match Protocol.Resp.Parse.parseOne runtime.parser with
     | .done (value, parser) _ =>
