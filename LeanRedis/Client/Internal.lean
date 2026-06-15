@@ -2,7 +2,6 @@ import Std.Sync.Mutex
 import LeanRedis.Client.Event
 import LeanRedis.Connection.Manager
 import LeanRedis.Connection.Runtime
-import LeanRedis.Pipeline.Manager
 import LeanRedis.Error
 import LeanRedis.Transport.Tcp
 import Std.Time

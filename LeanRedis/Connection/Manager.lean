@@ -3,6 +3,7 @@ import LeanRedis.Connection.Runtime
 import LeanRedis.Engine.Session
 import LeanRedis.Protocol.Hello
 import LeanRedis.Transport.Types
+import LeanRedis.Pipeline.Basic
 
 namespace LeanRedis.Connection
 
@@ -83,5 +84,44 @@ def Manager.disconnect [Transport τ] (manager : Manager τ) : Async (Manager τ
       pure { manager with runtime? := none, session := manager.session.markDisconnected }
   | none =>
       pure { manager with session := manager.session.markDisconnected }
+
+/--
+Execute a pipeline on the Manager's runtime, returning the raw `ExecuteError`
+so callers (e.g. Client) can distinguish remote disconnect from command errors.
+-/
+def Manager.tryRunPipeline
+    [Transport τ]
+    (pipeline : Pipeline α)
+    (manager : Connection.Manager τ)
+    : Async (Except ExecuteError (Connection.Manager τ × HList α)) := do
+  let some runtime := manager.runtime?
+    | return (.error <| .commandError (.unavailable "manager is not connected"))
+  let (result, runtime) ← (Runtime.tryExecBatch pipeline.requests).run runtime
+  match result with
+  | .error err => return (.error err)
+  | .ok values =>
+      match pipeline.exec values with
+      | .ok decoded =>
+          let lastReply := if h: values.size > 0 then some values[values.size - 1] else none
+          let manager := {
+            manager with
+            runtime? := some runtime
+            session := { manager.session with state := { manager.session.state with lastReply? := lastReply } }
+          }
+          return (.ok (manager, decoded))
+      | .error err => return (.error <| .commandError err)
+
+/--
+Execute a pipeline on the Manager's runtime, raising on any error.
+-/
+def Manager.runPipeline
+    [Transport τ]
+    (pipeline : Pipeline α)
+    (manager : Connection.Manager τ)
+    : Async (Connection.Manager τ × HList α) := do
+  match ← manager.tryRunPipeline pipeline with
+  | .ok result => pure result
+  | .error (.commandError err) => Error.raise err
+  | .error (.remoteDisconnect _ err) => Error.raise err
 
 end LeanRedis.Connection

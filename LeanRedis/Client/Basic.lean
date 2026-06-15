@@ -221,7 +221,7 @@ public def runPipeline
     unless status == .connected do
       Error.raise <| .unavailable (statusErrorMessage status)
     let manager ← client.getManager
-    match ← Pipeline.Manager.tryRun pipeline manager with
+    match ← manager.tryRunPipeline pipeline with
     | .ok (manager', decoded) =>
         client.setManager manager'
         pure decoded

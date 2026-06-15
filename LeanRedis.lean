@@ -3,6 +3,8 @@ import LeanRedis.Command
 import LeanRedis.Transport.Types
 import LeanRedis.Transport.Tcp
 import LeanRedis.Connection.Policy
+import LeanRedis.Connection.Runtime
+import LeanRedis.Connection.Manager
 import LeanRedis.Config
 import LeanRedis.Protocol.Version
 import LeanRedis.Protocol.Hello
@@ -12,8 +14,6 @@ import LeanRedis.Protocol.Resp.Parse
 import LeanRedis.Engine.State
 import LeanRedis.Engine.RequestQueue
 import LeanRedis.Engine.Session
-import LeanRedis.Connection.Runtime
-import LeanRedis.Connection.Manager
 import LeanRedis.Pipeline
 import LeanRedis.Client
 import LeanRedis.Cache
