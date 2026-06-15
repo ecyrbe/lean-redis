@@ -10,8 +10,7 @@ import LeanRedis.Protocol.Hello
 import LeanRedis.Protocol.Resp.Value
 import LeanRedis.Protocol.Resp.Encode
 import LeanRedis.Protocol.Resp.Parse
-import LeanRedis.Engine.RequestQueue
-import LeanRedis.Engine.Session
+import LeanRedis.Protocol.Session
 import LeanRedis.Pipeline
 import LeanRedis.Client
 import LeanRedis.Cache

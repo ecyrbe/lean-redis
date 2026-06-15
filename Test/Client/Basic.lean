@@ -325,7 +325,7 @@ info: "unavailable: client is not connected"
 #eval testRequireConnectedUsesRichStatus |>.block
 
 /--
-info: "LeanRedis.Engine.Phase.disconnected"
+info: "LeanRedis.Protocol.Phase.disconnected"
 -/
 #guard_msgs in
 #eval testDisconnectUpdatesStatus |>.block
@@ -337,7 +337,7 @@ info: "true|remote-disconnected,reconnect-scheduled,reconnect-started,reconnecte
 #eval testReconnectEventsAndRecovery |>.block
 
 /--
-info: "LeanRedis.Engine.Phase.disconnected|remote-disconnected,reconnect-scheduled,reconnect-started,reconnect-failed,reconnect-stopped"
+info: "LeanRedis.Protocol.Phase.disconnected|remote-disconnected,reconnect-scheduled,reconnect-started,reconnect-failed,reconnect-stopped"
 -/
 #guard_msgs in
 #eval testReconnectStopsAfterMaxAttempts |>.block

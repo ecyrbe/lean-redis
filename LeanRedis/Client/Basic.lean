@@ -30,7 +30,7 @@ private def emitEvent (client : Client τ) (event : Client.Event) : Async Unit :
       let _ <- (handler event).block
       pure ()
 
-private def emitEffect (client : Client τ) (tag : Engine.EventTag) : Async Unit := do
+private def emitEffect (client : Client τ) (tag : Protocol.EventTag) : Async Unit := do
   let metadata <- eventMetadata
   let event := match tag with
     | .initialConnectFailed => .initialConnectFailed metadata
@@ -42,7 +42,7 @@ private def emitEffect (client : Client τ) (tag : Engine.EventTag) : Async Unit
     | .explicitlyDisconnected => .explicitlyDisconnected metadata
   emitEvent client event
 
-private def executeEffects (client : Client τ) (effects : Array Engine.Effect) : Async Unit :=
+private def executeEffects (client : Client τ) (effects : Array Protocol.Effect) : Async Unit :=
   for eff in effects do
     match eff with
     | .emit tag => emitEffect client tag
@@ -60,7 +60,7 @@ private partial def doReconnectAttempt [Transport.Transport τ]
   let state <- getState client
   match state.session.phase with
   | .reconnecting _ =>
-      let (session, preEffects) := Engine.step .reconnectTick state.session state.config
+      let (session, preEffects) := state.session.step .reconnectTick state.config
       setState client { state with session }
       executeEffects client preEffects
       match session.phase with
@@ -72,7 +72,7 @@ private partial def doReconnectAttempt [Transport.Transport τ]
             executeEffects client postEffects
           catch err =>
             let state <- getState client
-            let (session, effects) := Engine.step (.transportFailed err.toString) state.session state.config
+            let (session, effects) := state.session.step (.transportFailed err.toString) state.config
             setState client { state with session }
             executeEffects client effects
             if session.phase matches .reconnecting _ then
@@ -96,7 +96,7 @@ private partial def handleReconnectExhausted [Transport.Transport τ]
     (client : Client τ)
     (state : DriverState τ)
     : Async Unit := do
-  let (session, effects) := Engine.step .reconnectExhausted state.session state.config
+  let (session, effects) := state.session.step .reconnectExhausted state.config
   setState client { state with session }
   executeEffects client effects
 
@@ -152,7 +152,7 @@ public def execute [Transport.Transport τ]
         catch
           | err =>
             if Error.isTransportIOError err then
-              let (session, effects) := Engine.step .remoteDisconnect state.session state.config
+              let (session, effects) := state.session.step .remoteDisconnect state.config
               ref.set { state with session }
               executeEffects client effects
               startReconnectWorker client
@@ -185,7 +185,7 @@ public def runPipeline
         catch
           | err =>
             if Error.isTransportIOError err then
-              let (session, effects) := Engine.step .remoteDisconnect state.session state.config
+              let (session, effects) := state.session.step .remoteDisconnect state.config
               ref.set { state with session }
               executeEffects client effects
               startReconnectWorker client
@@ -233,7 +233,7 @@ def connect [Transport.Transport τ] (client : Client τ) : Async Unit := do
     let state <- ref.get
     match state.session.phase with
     | .disconnected | .failed _ =>
-        let (session, _) := Engine.step .requestConnect state.session state.config
+        let (session, _) := state.session.step .requestConnect state.config
         ref.set { state with session }
         try
           let transport ← Transport.Transport.connect state.config.endpoint
@@ -242,7 +242,7 @@ def connect [Transport.Transport τ] (client : Client τ) : Async Unit := do
           executeEffects client effects
         catch err =>
           let state <- ref.get
-          let (session, effects) := Engine.step (.transportFailed err.toString) state.session state.config
+          let (session, effects) := state.session.step (.transportFailed err.toString) state.config
           ref.set { state with session }
           executeEffects client effects
           throw err
@@ -259,12 +259,12 @@ let _ <- client.disconnect
 def disconnect [Transport.Transport τ] (client : Client τ) : Async Unit := do
   client.state.atomically fun ref => do
     let state <- ref.get
-    let (session, effects) := Engine.step .requestDisconnect state.session state.config
+    let (session, effects) := state.session.step .requestDisconnect state.config
     executeEffects client effects
     match state.transport? with
     | some transport => Transport.close transport
     | none => pure ()
-    let (session, _) := Engine.step .closeComplete session state.config
+    let (session, _) := session.step .closeComplete state.config
     ref.set { transport? := none, parser := {}, session := session, config := state.config }
 
 /--
@@ -287,7 +287,7 @@ Example:
 let status <- client.connectionStatus
 ```
 -/
-def connectionStatus (client : Client τ) : Async Engine.Phase := do
+def connectionStatus (client : Client τ) : Async Protocol.Phase := do
   let state <- getState client
   pure state.session.phase
 
@@ -312,7 +312,7 @@ Example:
 let state <- client.currentState
 ```
 -/
-def currentState (client : Client τ) : Async Engine.Session := do
+def currentState (client : Client τ) : Async Protocol.Session := do
   let state <- getState client
   pure state.session
 

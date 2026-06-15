@@ -2,7 +2,7 @@ import LeanRedis.Command
 import LeanRedis.Protocol.Version
 import LeanRedis.Protocol.Resp.Value
 
-namespace LeanRedis.Engine
+namespace LeanRedis.Protocol
 
 inductive SessionPhase where
   | disconnected
@@ -13,9 +13,9 @@ inductive SessionPhase where
 
 structure State where
   phase : SessionPhase := .disconnected
-  protocol? : Option Protocol.Version := none
+  protocol? : Option Version := none
   selectedDb? : Option UInt32 := none
-  lastReply? : Option Protocol.Resp.Value := none
+  lastReply? : Option Resp.Value := none
   deriving BEq, Inhabited
 
-end LeanRedis.Engine
+end LeanRedis.Protocol

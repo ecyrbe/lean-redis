@@ -20,7 +20,7 @@ instance : Transport.Transport FakeTransport where
   sendAll _ _ := pure ()
   close _ := pure ()
 
-def testDriverConnectToReady : Async Engine.Phase := do
+def testDriverConnectToReady : Async Protocol.Phase := do
   let config : Config := { endpoint := { host := "127.0.0.1", port := 6379 } }
   let state : DriverState FakeTransport := {}
   let (state', _) ← connect config state
@@ -40,7 +40,7 @@ def testCustomClientConnectNow : Async Bool := do
   Client.isConnected client
 
 /--
-info: LeanRedis.Engine.Phase.ready (LeanRedis.Protocol.Version.resp3) none
+info: LeanRedis.Protocol.Phase.ready (LeanRedis.Protocol.Version.resp3) none
 -/
 #guard_msgs in
 #eval testDriverConnectToReady |>.block

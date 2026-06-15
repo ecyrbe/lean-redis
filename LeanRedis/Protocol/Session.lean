@@ -4,7 +4,7 @@ import LeanRedis.Protocol.Version
 import LeanRedis.Protocol.Resp.Value
 import LeanRedis.Protocol.Hello
 
-namespace LeanRedis.Engine
+namespace LeanRedis.Protocol
 
 open LeanRedis
 
@@ -12,7 +12,7 @@ inductive Phase where
   | disconnected
   | connecting (attempt : Nat)
   | bootstrapping (isReconnect : Bool)
-  | ready (version : Protocol.Version) (selectedDb? : Option UInt32)
+  | ready (version : Version) (selectedDb? : Option UInt32)
   | reconnecting (attempt : Nat)
   | closing
   | failed (error : String)
@@ -20,15 +20,15 @@ inductive Phase where
 
 structure Session where
   phase : Phase := .disconnected
-  lastReply? : Option Protocol.Resp.Value := none
+  lastReply? : Option Resp.Value := none
   deriving BEq, Inhabited
 
 inductive Action where
   | requestConnect
   | transportOpened
   | transportFailed (error : String)
-  | bootstrapComplete (replies : Array Protocol.Resp.Value)
-  | replyReceived (request? : Option CommandRequest) (reply : Protocol.Resp.Value)
+  | bootstrapComplete (replies : Array Resp.Value)
+  | replyReceived (request? : Option CommandRequest) (reply : Resp.Value)
   | remoteDisconnect
   | reconnectTick
   | reconnectExhausted
@@ -62,7 +62,7 @@ def Session.isDisconnected (session : Session) : Bool :=
   | .disconnected => true
   | _ => false
 
-def Session.protocol? (session : Session) : Option Protocol.Version :=
+def Session.protocol? (session : Session) : Option Version :=
   match session.phase with
   | .ready v _ => some v
   | _ => none
@@ -72,13 +72,13 @@ def Session.selectedDb? (session : Session) : Option UInt32 :=
   | .ready _ db => db
   | _ => none
 
-def step (action : Action) (session : Session) (config : Config) : Session × Array Effect :=
+def Session.step (session : Session) (action : Action) (config : Config) : Session × Array Effect :=
   match session.phase, action with
   | .disconnected, .requestConnect =>
       ({ session with phase := .connecting 0 }, #[])
 
   | .connecting n, .transportOpened =>
-      let plan := Protocol.bootstrapPlan config
+      let plan := bootstrapPlan config
       let effects := if plan.isEmpty then #[] else #[.sendBootstrapRequests]
       ({ session with phase := .bootstrapping (n > 0) }, effects)
 
@@ -89,9 +89,9 @@ def step (action : Action) (session : Session) (config : Config) : Session × Ar
       ({ session with phase := .reconnecting (n + 1) }, #[.emit .reconnectAttemptFailed])
 
   | .bootstrapping reconnect, .bootstrapComplete replies =>
-      match Protocol.bootstrapStateAfterReplies config replies with
+      match bootstrapStateAfterReplies config replies with
       | some state =>
-          let version := state.protocol?.getD (Protocol.initialProtocol config.protocolPreference)
+          let version := state.protocol?.getD (initialProtocol config.protocolPreference)
           let db := config.database?
           let effects := if reconnect then #[.emit .reconnected] else #[]
           ({ session with phase := .ready version db, lastReply? := state.lastReply? }, effects)
@@ -127,4 +127,4 @@ def step (action : Action) (session : Session) (config : Config) : Session × Ar
   | _, _ =>
       (session, #[])
 
-end LeanRedis.Engine
+end LeanRedis.Protocol

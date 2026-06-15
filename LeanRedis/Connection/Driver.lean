@@ -1,5 +1,5 @@
 import LeanRedis.Config
-import LeanRedis.Engine.Session
+import LeanRedis.Protocol.Session
 import LeanRedis.Protocol.Hello
 import LeanRedis.Protocol.Resp.Encode
 import LeanRedis.Protocol.Resp.Parse
@@ -16,7 +16,7 @@ open Std.Internal.IO.Async
 structure DriverState (τ : Type) where
   transport? : Option τ := none
   parser : Protocol.Resp.Parse.ParserState := {}
-  session : Engine.Session := {}
+  session : Protocol.Session := {}
   config : Config := default
   deriving Inhabited
 
@@ -63,7 +63,7 @@ def executeCommand [Transport τ]
     | Error.raise <| .unavailable "not connected"
   Transport.sendAll transport <| Protocol.Resp.Encode.encodeCommand request
   let (reply, parser) ← readOneReply transport state.parser
-  let session' := (Engine.step (.replyReceived (some request) reply) state.session state.config).1
+  let session' := (state.session.step (.replyReceived (some request) reply) state.config).1
   pure ({ state with parser, session := session' }, reply)
 
 def executeBatch [Transport τ]
@@ -76,18 +76,20 @@ def executeBatch [Transport τ]
     Transport.sendAll transport <| Protocol.Resp.Encode.encodeCommand request
   let (replies, parser) ← readNReplies transport state.parser requests.size
   let mut session := state.session
-  for i in [:replies.size] do
-    let (session', _) := Engine.step (.replyReceived (some requests[i]!) replies[i]!) session state.config
-    session := session'
-  pure ({ state with parser, session }, replies)
+  if replies.size = requests.size then
+    for h: i in [:replies.size] do
+      let (session', _) := session.step (.replyReceived (some requests[i]!) replies[i]) state.config
+      session := session'
+    return ({ state with parser, session }, replies)
+  Error.raise <| Error.protocol "replies size does not match request size"
 
 def connectBootstrap [Transport τ]
     (transport : τ)
     (config : Config)
     (state : DriverState τ)
-    : Async (DriverState τ × Array Engine.Effect) := do
+    : Async (DriverState τ × Array Protocol.Effect) := do
   let state := { state with transport? := some transport, config }
-  let (session, _) := Engine.step .transportOpened state.session state.config
+  let (session, _) := state.session.step .transportOpened state.config
   let state := { state with session }
   let plan := Protocol.bootstrapPlan config
   if plan.isEmpty then
@@ -97,19 +99,19 @@ def connectBootstrap [Transport τ]
       Transport.sendAll transport <| Protocol.Resp.Encode.encodeCommand step.request
     let (replies, parser) ← readNReplies transport state.parser plan.size
     let state := { state with parser }
-    let (session', postEffects) := Engine.step (.bootstrapComplete replies) state.session config
+    let (session', postEffects) := state.session.step (.bootstrapComplete replies) config
     let state := { state with session := session' }
     pure (state, postEffects)
 
 def connect [Transport τ]
     (config : Config)
     (state : DriverState τ)
-    : Async (DriverState τ × Array Engine.Effect) := do
+    : Async (DriverState τ × Array Protocol.Effect) := do
   let action := match state.session.phase with
     | .disconnected => .requestConnect
     | .reconnecting _ => .reconnectTick
     | _ => .requestConnect
-  let (session, preEffects) := Engine.step action state.session config
+  let (session, preEffects) := state.session.step action config
   match session.phase with
   | .connecting _ =>
       let transport ← Transport.connect config.endpoint
@@ -119,11 +121,11 @@ def connect [Transport τ]
       pure ({ state with session }, preEffects)
 
 def disconnect [Transport τ] (state : DriverState τ) : Async (DriverState τ) := do
-  let (session, _) := Engine.step .requestDisconnect state.session state.config
+  let (session, _) := state.session.step .requestDisconnect state.config
   match state.transport? with
   | some transport => Transport.close transport
   | none => pure ()
-  let (session, _) := Engine.step .closeComplete session (default : Config)
+  let (session, _) := session.step .closeComplete (default : Config)
   pure { transport? := none, parser := {}, session }
 
 end LeanRedis.Connection

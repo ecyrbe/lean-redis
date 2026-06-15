@@ -1,6 +1,6 @@
 import LeanRedis.Config
 import LeanRedis.Command
-import LeanRedis.Engine.State
+import LeanRedis.Protocol.State
 import LeanRedis.Protocol.Version
 import LeanRedis.Protocol.Resp.Encode
 import LeanRedis.Protocol.Resp.Value
@@ -97,18 +97,18 @@ def initialProtocol (preference : ProtocolPreference) : Version :=
   | .auto => .resp2
 
 def applyHelloReply
-    (state : Engine.State)
+    (state : Protocol.State)
     (preference : ProtocolPreference)
     (reply : Resp.Value)
-    : Option Engine.State := do
+    : Option Protocol.State := do
   let version <- protocolAfterHello preference reply
   pure { state with protocol? := some version, lastReply? := some reply }
 
 def markBootstrapReady
-    (state : Engine.State)
+    (state : Protocol.State)
     (protocol : Version)
     (database? : Option UInt32)
-    : Engine.State :=
+    : Protocol.State :=
   {
     state with
     phase := .ready
@@ -117,11 +117,11 @@ def markBootstrapReady
   }
 
 def applyBootstrapReply
-    (state : Engine.State)
+    (state : Protocol.State)
     (preference : ProtocolPreference)
     (step : BootstrapStep)
     (reply : Resp.Value)
-    : Option Engine.State :=
+    : Option Protocol.State :=
   match step with
   | .auth _ =>
       match reply with
@@ -152,11 +152,11 @@ def applyBootstrapReply
       | _ => none
 
 def bootstrapStateAfterStep
-    (state : Engine.State)
+    (state : Protocol.State)
     (config : Config)
     (step : BootstrapStep)
     (reply : Resp.Value)
-    : Option Engine.State :=
+    : Option Protocol.State :=
   match applyBootstrapReply state config.protocolPreference step reply with
   | some nextState =>
       match step with
@@ -167,12 +167,12 @@ def bootstrapStateAfterStep
 def bootstrapStateAfterReplies
     (config : Config)
     (replies : Array Resp.Value)
-    : Option Engine.State := do
+    : Option Protocol.State := do
   let plan := bootstrapPlan config
   if plan.size != replies.size then
     none
   else
-    let initial : Engine.State := {
+    let initial : Protocol.State := {
       phase := .bootstrapping
       protocol? := some (initialProtocol config.protocolPreference)
       selectedDb? := none
@@ -186,11 +186,11 @@ def bootstrapStateAfterReplies
     some <| markBootstrapReady current protocol config.database?
 
 def bootstrapSucceeded
-    (state : Engine.State)
+    (state : Protocol.State)
     (preference : ProtocolPreference)
     (helloReply : Resp.Value)
     (database? : Option UInt32)
-    : Option Engine.State := do
+    : Option Protocol.State := do
   let state <- applyHelloReply state preference helloReply
   let protocol <- state.protocol?
   pure <| markBootstrapReady state protocol database?
