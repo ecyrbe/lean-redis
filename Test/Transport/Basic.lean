@@ -1,11 +1,11 @@
 import LeanRedis
 
 open LeanRedis
+open LeanRedis.Connection
 
 namespace LeanRedisTest.Transport.Basic
 
 open Std.Internal.IO.Async
-
 
 def testBytes : ByteArray := "%2\r\n+server\r\n+redis\r\n+proto\r\n:3\r\n".toUTF8
 
@@ -20,17 +20,11 @@ instance : Transport.Transport FakeTransport where
   sendAll _ _ := pure ()
   close _ := pure ()
 
-def testManagerStartsDisconnected : Bool :=
-  let manager : Connection.Manager FakeTransport := Connection.Manager.new {
-    endpoint := { host := "127.0.0.1", port := 6379 }
-  }
-  manager.runtime?.isNone
-
-def testManagerConnectsToReady : Async LeanRedis.Engine.SessionPhase := do
-  let manager <- ((Connection.Manager.new {
-    endpoint := { host := "127.0.0.1", port := 6379 }
-  } : Connection.Manager FakeTransport).connect)
-  pure manager.session.state.phase
+def testDriverConnectToReady : Async Engine.Phase := do
+  let config : Config := { endpoint := { host := "127.0.0.1", port := 6379 } }
+  let state : DriverState FakeTransport := {}
+  let (state', _) ← connect config state
+  pure state'.session.phase
 
 def testDefaultClientStartsDisconnected : Async Bool := do
   let client <- Client.newDefault {
@@ -46,16 +40,10 @@ def testCustomClientConnectNow : Async Bool := do
   Client.isConnected client
 
 /--
-info: true
+info: LeanRedis.Engine.Phase.ready (LeanRedis.Protocol.Version.resp3) none
 -/
 #guard_msgs in
-#eval testManagerStartsDisconnected
-
-/--
-info: LeanRedis.Engine.SessionPhase.ready
--/
-#guard_msgs in
-#eval testManagerConnectsToReady |>.block
+#eval testDriverConnectToReady |>.block
 
 /--
 info: false

@@ -8,6 +8,8 @@ open Std.Internal.IO.Async
 
 namespace LeanRedisTest.Client.Basic
 
+open LeanRedis.Connection
+
 structure FakeTransport where
   replies : IO.Ref (Array ByteArray)
   writes : IO.Ref (Array ByteArray)
@@ -29,10 +31,10 @@ private def shiftReplies (ref : IO.Ref (Array ByteArray)) : IO (Option ByteArray
   | none => pure none
 
 private def writesOf (client : Client FakeTransport) : IO (Array ByteArray) := do
-  client.manager.atomically fun ref => do
-    let manager <- ref.get
-    match manager.runtime? with
-    | some runtime => runtime.transport.writes.get
+  client.state.atomically fun ref => do
+    let state <- ref.get
+    match state.transport? with
+    | some transport => transport.writes.get
     | none => pure #[]
 
 instance : Transport.Transport FakeTransport where
@@ -125,7 +127,7 @@ instance : Transport.Transport FailingReconnectTransport where
 
   close _ := pure ()
 
-def testIsConnected  : Async Bool := do
+def testIsConnected : Async Bool := do
   let client: Client FakeTransport ← Client.new {
     endpoint := { host := "client-ping", port := 6379 }
   }
@@ -249,6 +251,7 @@ def testReconnectEventsAndRecovery : Async String := do
       | .reconnectAttemptStarted _ => "reconnect-started"
       | .reconnectAttemptFailed _ => "reconnect-failed"
       | .reconnectScheduled _ _ => "reconnect-scheduled"
+      | .reconnectStopped _ => "reconnect-stopped"
       | .reconnected _ => "reconnected"
       | _ => "other"
     events.modify fun xs => xs.push label
@@ -275,7 +278,9 @@ def testReconnectStopsAfterMaxAttempts : Async String := do
       | .remoteDisconnected _ _ => "remote-disconnected"
       | .reconnectAttemptStarted _ => "reconnect-started"
       | .reconnectAttemptFailed _ => "reconnect-failed"
+      | .reconnectScheduled _ _ => "reconnect-scheduled"
       | .reconnectStopped _ => "reconnect-stopped"
+      | .reconnected _ => "reconnected"
       | _ => "other"
     events.modify fun xs => xs.push label
   client.connect
@@ -320,19 +325,19 @@ info: "unavailable: client is not connected"
 #eval testRequireConnectedUsesRichStatus |>.block
 
 /--
-info: "LeanRedis.ClientConnectionStatus.closed"
+info: "LeanRedis.Engine.Phase.disconnected"
 -/
 #guard_msgs in
 #eval testDisconnectUpdatesStatus |>.block
 
 /--
-info: "true|remote-disconnected,reconnect-started,reconnected"
+info: "true|remote-disconnected,reconnect-scheduled,reconnect-started,reconnected"
 -/
 #guard_msgs in
 #eval testReconnectEventsAndRecovery |>.block
 
 /--
-info: "LeanRedis.ClientConnectionStatus.disconnected|remote-disconnected,reconnect-started,reconnect-failed,reconnect-stopped"
+info: "LeanRedis.Engine.Phase.disconnected|remote-disconnected,reconnect-scheduled,reconnect-started,reconnect-failed,reconnect-stopped"
 -/
 #guard_msgs in
 #eval testReconnectStopsAfterMaxAttempts |>.block

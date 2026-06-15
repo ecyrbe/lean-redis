@@ -1,10 +1,12 @@
 import LeanRedis
+import Std.Sync.Mutex
 
 open LeanRedis
+open Std.Internal.IO.Async
 
 namespace LeanRedisTest.Connection.Manager
 
-open Std.Internal.IO.Async
+open LeanRedis.Connection
 
 structure FakeTransport where
   replies : IO.Ref (Array ByteArray)
@@ -51,11 +53,13 @@ def renderProtocol (version? : Option Protocol.Version) : String :=
   | none => "none"
 
 def testBootstrapConnectWithDatabase : Async String := do
-  let manager <- ((Connection.Manager.new {
+  let config : Config := {
     endpoint := { host := "resp3-db", port := 6379 }
     database? := some 2
-  } : Connection.Manager FakeTransport).connect)
-  pure s!"{manager.isConnected}|{renderProtocol manager.session.state.protocol?}|{manager.session.state.selectedDb?.getD 0}"
+  }
+  let state : DriverState FakeTransport := {}
+  let (state', _) ← connect config state
+  pure s!"{state'.session.isReady}|{renderProtocol state'.session.protocol?}|{(state'.session.selectedDb?).getD 0}"
 
 def testResp2PlanWithoutHello : Nat :=
   (Protocol.bootstrapPlan {
@@ -72,11 +76,13 @@ def testResp2PlanWithAuthAndSelect : Nat :=
   }).size
 
 def testDisconnectClearsReadyRuntime : Async String := do
-  let manager <- ((Connection.Manager.new {
+  let config : Config := {
     endpoint := { host := "resp3", port := 6379 }
-  } : Connection.Manager FakeTransport).connect)
-  let manager <- manager.disconnect
-  pure s!"{manager.isConnected}|{match manager.session.state.phase with | .disconnected => "disconnected" | _ => "other"}"
+  }
+  let state : DriverState FakeTransport := {}
+  let (state', _) ← connect config state
+  let state'' ← disconnect state'
+  pure s!"{state''.session.isReady}|{match state''.session.phase with | .disconnected => "disconnected" | _ => "other"}"
 
 /--
 info: "true|resp3|2"

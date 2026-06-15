@@ -1,17 +1,22 @@
 import LeanRedis.Client.Internal
+import LeanRedis.Connection.Driver
 import LeanRedis.Pipeline.Basic
+import LeanRedis.Transport.Tcp
+import LeanRedis.Transport.Types
 
 namespace LeanRedis.Client
 
 open Std.Internal.IO.Async
 open LeanRedis
+open LeanRedis.Connection
+open LeanRedis.Transport
 
 private def eventMetadata
     (error? : Option Error := none)
     (attempt? : Option Nat := none)
     : Async Client.EventMetadata := do
   pure {
-    timestamp := ← Std.Time.PlainDateTime.now
+    timestamp := (<- Std.Time.PlainDateTime.now)
     error?
     attempt?
   }
@@ -25,184 +30,134 @@ private def emitEvent (client : Client τ) (event : Client.Event) : Async Unit :
       let _ <- (handler event).block
       pure ()
 
-private def getStatus (client : Client τ) : Async ClientConnectionStatus :=
-  client.status.atomically fun ref => ref.get
+private def emitEffect (client : Client τ) (tag : Engine.EventTag) : Async Unit := do
+  let metadata <- eventMetadata
+  let event := match tag with
+    | .initialConnectFailed => .initialConnectFailed metadata
+    | .remoteDisconnected => .remoteDisconnected .closedByPeer metadata
+    | .reconnectAttemptStarted => .reconnectAttemptStarted metadata
+    | .reconnectAttemptFailed => .reconnectAttemptFailed metadata
+    | .reconnected => .reconnected metadata
+    | .reconnectStopped => .reconnectStopped metadata
+    | .explicitlyDisconnected => .explicitlyDisconnected metadata
+  emitEvent client event
 
-private def setStatus (client : Client τ) (status : ClientConnectionStatus) : Async Unit :=
-  client.status.atomically fun ref => ref.set status
+private def executeEffects (client : Client τ) (effects : Array Engine.Effect) : Async Unit :=
+  for eff in effects do
+    match eff with
+    | .emit tag => emitEffect client tag
+    | _ => pure ()
 
-private def getManager (client : Client τ) : Async (Connection.Manager τ) :=
-  client.manager.atomically fun ref => ref.get
+private def getState (client : Client τ) : Async (DriverState τ) :=
+  client.state.atomically fun ref => ref.get
 
-private def setManager (client : Client τ) (manager : Connection.Manager τ) : Async Unit :=
-  client.manager.atomically fun ref => ref.set manager
+private def setState (client : Client τ) (state : DriverState τ) : Async Unit :=
+  client.state.atomically fun ref => ref.set state
 
-private def modifyManager (client : Client τ) (f : Connection.Manager τ -> Connection.Manager τ) : Async Unit :=
-  client.manager.atomically fun ref => ref.modify f
+private partial def doReconnectAttempt [Transport.Transport τ]
+    (client : Client τ)
+    : Async Unit := do
+  let state <- getState client
+  match state.session.phase with
+  | .reconnecting _ =>
+      let (session, preEffects) := Engine.step .reconnectTick state.session state.config
+      setState client { state with session }
+      executeEffects client preEffects
+      match session.phase with
+      | .connecting _ =>
+          try
+            let transport ← Transport.Transport.connect state.config.endpoint
+            let (state', postEffects) <- LeanRedis.Connection.connectBootstrap transport state.config { state with session }
+            setState client state'
+            executeEffects client postEffects
+          catch err =>
+            let state <- getState client
+            let (session, effects) := Engine.step (.transportFailed err.toString) state.session state.config
+            setState client { state with session }
+            executeEffects client effects
+            if session.phase matches .reconnecting _ then
+              doReconnectAttempt client
+            else
+              pure ()
+      | _ => pure ()
+  | _ => pure ()
 
-private def nextReconnectGeneration (client : Client τ) : Async Nat :=
-  client.reconnectControl.atomically fun ref => do
-    let control <- ref.get
-    let next := control.generation + 1
-    ref.set { generation := next }
-    pure next
+private partial def handleReconnectDelay [Transport.Transport τ]
+    (client : Client τ)
+    (attemptNumber : Nat)
+    (delayMs : UInt32)
+    : Async Unit := do
+  let scheduled <- eventMetadata (attempt? := some attemptNumber)
+  emitEvent client (.reconnectScheduled delayMs scheduled)
+  IO.sleep delayMs
+  doReconnectAttempt client
 
-private def currentReconnectGeneration (client : Client τ) : Async Nat :=
-  client.reconnectControl.atomically fun ref => do
-    let control <- ref.get
-    pure control.generation
+private partial def handleReconnectExhausted [Transport.Transport τ]
+    (client : Client τ)
+    (state : DriverState τ)
+    : Async Unit := do
+  let (session, effects) := Engine.step .reconnectExhausted state.session state.config
+  setState client { state with session }
+  executeEffects client effects
 
-private def statusErrorMessage : ClientConnectionStatus -> String
-  | .disconnected => "client is not connected"
-  | .connecting => "client is connecting"
-  | .connected => "client is connected"
-  | .reconnecting => "client is reconnecting"
-  | .closed => "client is disconnected"
-
-private def closeRuntimeIfPresent [Transport.Transport τ]
-    (manager : Connection.Manager τ)
-    : Async (Connection.Manager τ) := do
-  match manager.runtime? with
-  | some runtime =>
-      try
-        Connection.Runtime.close runtime
-      catch _ =>
-        pure ()
-      pure { manager with runtime? := none, session := manager.session.markDisconnected }
-  | none =>
-      pure { manager with session := manager.session.markDisconnected }
+private partial def handleReconnectIteration [Transport.Transport τ]
+    (client : Client τ)
+    (state : DriverState τ)
+    : Async Unit := do
+  let n := match state.session.phase with | .reconnecting n => n | _ => 0
+  let attemptNumber := n + 1
+  let delayMs? <- state.config.reconnectStrategy.delayMs n
+  match delayMs? with
+  | none => handleReconnectExhausted client state
+  | some delayMs => handleReconnectDelay client attemptNumber delayMs
 
 private partial def reconnectLoop [Transport.Transport τ]
     (client : Client τ)
-    (generation : Nat)
     (attempt : Nat)
     : Async Unit := do
-  if (← currentReconnectGeneration client) != generation then
-    pure ()
-  else
-    let attemptNumber := attempt + 1
-    let started <- eventMetadata (attempt? := some attemptNumber)
-    emitEvent client <| .reconnectAttemptStarted started
-    let reconnectResult <- client.operation.atomically do
-      if (← currentReconnectGeneration client) != generation then
-        pure <| Except.error none
-      else
-        let status <- getStatus client
-        if status != ClientConnectionStatus.reconnecting then
-          pure <| Except.error none
-        else
-          let manager <- getManager client
-          try
-            let manager <- Connection.Manager.connect manager
-            setManager client manager
-            setStatus client ClientConnectionStatus.connected
-            pure <| Except.ok ()
-          catch err =>
-            let manager <- closeRuntimeIfPresent manager
-            setManager client manager
-            pure <| Except.error (some err)
-    match reconnectResult with
-    | .ok _ =>
-        let metadata <- eventMetadata (attempt? := some attemptNumber)
-        emitEvent client <| .reconnected metadata
-    | .error none =>
-        pure ()
-    | .error (some err) =>
-        let failure : Error := .transport err.toString
-        let failed <- eventMetadata (some failure) (some attemptNumber)
-        emitEvent client <| .reconnectAttemptFailed failed
-        let manager <- getManager client
-        match ← manager.config.reconnectStrategy.delayMs attemptNumber with
-        | none =>
-            if (← currentReconnectGeneration client) == generation then
-              setStatus client ClientConnectionStatus.disconnected
-              let stopped <- eventMetadata (some failure) (some attemptNumber)
-              emitEvent client <| .reconnectStopped stopped
-        | some delayMs =>
-            let scheduled <- eventMetadata (some failure) (some (attemptNumber + 1))
-            emitEvent client <| .reconnectScheduled delayMs scheduled
-            IO.sleep delayMs
-            reconnectLoop client generation (attempt + 1)
+  let state <- getState client
+  match state.session.phase with
+  | .reconnecting n =>
+      if n != attempt then pure ()
+      else handleReconnectIteration client state
+  | _ => pure ()
 
 private def startReconnectWorker [Transport.Transport τ]
     (client : Client τ)
-    (generation : Nat)
     : Async Unit := do
   discard <| IO.asTask do
-    let _ <- (reconnectLoop client generation 0).block
+    let _ <- (reconnectLoop client 0).block
     pure ()
 
-def stateAfterReply
-    (manager : Connection.Manager τ)
-    (request : CommandRequest)
-    (reply : Protocol.Resp.Value)
-    : Engine.State :=
-  match request.selectedDb? with
-  | some database =>
-      {
-        manager.session.state with
-        selectedDb? := some database
-        lastReply? := some reply
-      }
-  | none =>
-      { manager.session.state with lastReply? := some reply }
+/--
+Execute a single command and return its Redis response value.
 
-private def handleRemoteDisconnect [Transport.Transport τ]
-    (client : Client τ)
-    (manager : Connection.Manager τ)
-    (reason : Transport.DisconnectReason)
-    (err : Error)
-    : Async Unit := do
-  let manager <- closeRuntimeIfPresent manager
-  setManager client manager
-  let disconnected <- eventMetadata (some err)
-  emitEvent client <| .remoteDisconnected reason disconnected
-  match manager.config.reconnectStrategy with
-  | .disabled =>
-      setStatus client .disconnected
-      let stopped <- eventMetadata (some err)
-      emitEvent client <| .reconnectStopped stopped
-  | _ =>
-      setStatus client .reconnecting
-      let generation <- nextReconnectGeneration client
-      startReconnectWorker client generation
-
-public def executeWithManagerUpdate [Transport.Transport τ]
-    (client : Client τ)
-    (request : CommandRequest)
-    (updateManager : Connection.Manager τ -> Protocol.Resp.Value -> Async (Connection.Manager τ))
-    : Async Protocol.Resp.Value := do
-  client.operation.atomically do
-    let status <- getStatus client
-    unless status == .connected do
-      Error.raise <| .unavailable (statusErrorMessage status)
-    let manager <- getManager client
-    let some runtime := manager.runtime?
-      | do
-          setStatus client .disconnected
-          Error.raise <| .unavailable "client is not connected"
-    let (result, runtime) ← (Connection.Runtime.tryExecute request).run runtime
-    match result with
-    | .ok reply =>
-        let manager := {
-          manager with
-          runtime? := some runtime
-          session := { state := stateAfterReply manager request reply }
-        }
-        let manager <- updateManager manager reply
-        setManager client manager
-        pure reply
-    | .error (.remoteDisconnect reason err) =>
-        handleRemoteDisconnect client manager reason err
-        Error.raise err
-    | .error (.commandError err) =>
-        Error.raise err
-
+Example:
+```lean
+let reply <- client.execute (Command.ping ()).request
+```
+-/
 public def execute [Transport.Transport τ]
     (client : Client τ)
     (request : CommandRequest)
-    : Async Protocol.Resp.Value :=
-  executeWithManagerUpdate client request fun manager _ => pure manager
+    : Async Protocol.Resp.Value := do
+  client.state.atomically fun ref => do
+    let state <- ref.get
+    match state.session.phase with
+    | .ready _ _ =>
+        try
+          let (state', reply) <- executeCommand request state
+          ref.set state'
+          pure reply
+        catch
+          | err =>
+            if Error.isTransportIOError err then
+              let (session, effects) := Engine.step .remoteDisconnect state.session state.config
+              ref.set { state with session }
+              executeEffects client effects
+              startReconnectWorker client
+            throw err
+    | _ => Error.raise <| .unavailable "client is not connected"
 
 /--
 Execute a pipeline.
@@ -213,23 +168,29 @@ Example:
 ```
 -/
 public def runPipeline
-  [Transport.Transport τ]
-  (client : Client τ)
-  (pipeline : Pipeline α) : Async (HList α) := do
-  client.operation.atomically do
-    let status <- getStatus client
-    unless status == .connected do
-      Error.raise <| .unavailable (statusErrorMessage status)
-    let manager ← client.getManager
-    match ← manager.tryRunPipeline pipeline with
-    | .ok (manager', decoded) =>
-        client.setManager manager'
-        pure decoded
-    | .error (.commandError err) =>
-        Error.raise err
-    | .error (.remoteDisconnect reason err) =>
-        Client.handleRemoteDisconnect client manager reason err
-        Error.raise err
+    [Transport.Transport τ]
+    (client : Client τ)
+    (pipeline : Pipeline α)
+    : Async (HList α) := do
+  client.state.atomically fun ref => do
+    let state <- ref.get
+    match state.session.phase with
+    | .ready _ _ =>
+        try
+          let (state', values) <- executeBatch pipeline.requests state
+          ref.set state'
+          match pipeline.exec values with
+          | .ok decoded => pure decoded
+          | .error err => Error.raise err
+        catch
+          | err =>
+            if Error.isTransportIOError err then
+              let (session, effects) := Engine.step .remoteDisconnect state.session state.config
+              ref.set { state with session }
+              executeEffects client effects
+              startReconnectWorker client
+            throw err
+    | _ => Error.raise <| .unavailable "client is not connected"
 
 /--
 Create a new client value for the given transport type without opening a connection.
@@ -240,12 +201,9 @@ let client : LeanRedis.Client MyTransport <- LeanRedis.Client.new cfg
 ```
 -/
 public def new [Transport.Transport τ] (config : Config) : IO (Client τ) := do
-  let manager <- Std.Mutex.new (Connection.Manager.new config : Connection.Manager τ)
-  let operation <- Std.Mutex.new ()
-  let status <- Std.Mutex.new ClientConnectionStatus.disconnected
-  let reconnectControl <- Std.Mutex.new {}
-  let subscribers <- Std.Mutex.new {}
-  pure { manager, operation, status, reconnectControl, subscribers }
+  let state <- Std.Mutex.new ({ config } : DriverState τ)
+  let subscribers <- Std.Mutex.new ({} : ClientSubscribers)
+  pure { state, subscribers }
 
 /--
 Create a new client using the default TCP transport without opening a connection.
@@ -270,26 +228,25 @@ Example:
 let _ <- client.connect
 ```
 -/
-def connect (client : Client τ) [Transport.Transport τ] : Async Unit := do
-  client.operation.atomically do
-    let _ <- Client.nextReconnectGeneration client
-    let status <- Client.getStatus client
-    if status == .connected then
-      pure ()
-    else
-      Client.setStatus client .connecting
-      let manager <- Client.getManager client
-      try
-        let manager <- manager.connect
-        Client.setManager client manager
-        Client.setStatus client .connected
-      catch err =>
-        let manager <- Client.closeRuntimeIfPresent manager
-        Client.setManager client manager
-        Client.setStatus client .disconnected
-        let failed <- Client.eventMetadata (some (.transport err.toString))
-        Client.emitEvent client <| .initialConnectFailed failed
-        throw err
+def connect [Transport.Transport τ] (client : Client τ) : Async Unit := do
+  client.state.atomically fun ref => do
+    let state <- ref.get
+    match state.session.phase with
+    | .disconnected | .failed _ =>
+        let (session, _) := Engine.step .requestConnect state.session state.config
+        ref.set { state with session }
+        try
+          let transport ← Transport.Transport.connect state.config.endpoint
+          let (state', effects) <- LeanRedis.Connection.connectBootstrap transport state.config { state with session }
+          ref.set state'
+          executeEffects client effects
+        catch err =>
+          let state <- ref.get
+          let (session, effects) := Engine.step (.transportFailed err.toString) state.session state.config
+          ref.set { state with session }
+          executeEffects client effects
+          throw err
+    | _ => pure ()
 
 /--
 Close the current connection and stop background reconnects until a later explicit `connect`.
@@ -300,14 +257,15 @@ let _ <- client.disconnect
 ```
 -/
 def disconnect [Transport.Transport τ] (client : Client τ) : Async Unit := do
-  client.operation.atomically do
-    let _ <- Client.nextReconnectGeneration client
-    let manager <- Client.getManager client
-    let manager <- manager.disconnect
-    Client.setManager client manager
-    Client.setStatus client .closed
-    let metadata <- Client.eventMetadata
-    Client.emitEvent client <| .explicitlyDisconnected metadata
+  client.state.atomically fun ref => do
+    let state <- ref.get
+    let (session, effects) := Engine.step .requestDisconnect state.session state.config
+    executeEffects client effects
+    match state.transport? with
+    | some transport => Transport.close transport
+    | none => pure ()
+    let (session, _) := Engine.step .closeComplete session state.config
+    ref.set { transport? := none, parser := {}, session := session, config := state.config }
 
 /--
 Return `true` when the client currently has a ready runtime.
@@ -318,7 +276,8 @@ let connected <- client.isConnected
 ```
 -/
 def isConnected (client : Client τ) : Async Bool := do
-  pure ((← Client.getStatus client) == .connected)
+  let state <- getState client
+  pure state.session.isReady
 
 /--
 Return the current lifecycle status of the client.
@@ -328,8 +287,9 @@ Example:
 let status <- client.connectionStatus
 ```
 -/
-def connectionStatus (client : Client τ) : Async ClientConnectionStatus :=
-  Client.getStatus client
+def connectionStatus (client : Client τ) : Async Engine.Phase := do
+  let state <- getState client
+  pure state.session.phase
 
 /--
 Fail with an `unavailable` error unless the client is connected.
@@ -340,9 +300,9 @@ let _ <- client.requireConnected
 ```
 -/
 def requireConnected [Transport.Transport τ] (client : Client τ) : Async Unit := do
-  let status <- Client.getStatus client
-  unless status == .connected do
-    Error.raise <| .unavailable (Client.statusErrorMessage status)
+  let state <- getState client
+  unless state.session.isReady do
+    Error.raise <| .unavailable "client is not connected"
 
 /--
 Read the current internal connection state tracked by the client.
@@ -352,9 +312,9 @@ Example:
 let state <- client.currentState
 ```
 -/
-def currentState (client : Client τ) : Async Engine.State := do
-  let manager <- Client.getManager client
-  pure manager.session.state
+def currentState (client : Client τ) : Async Engine.Session := do
+  let state <- getState client
+  pure state.session
 
 /--
 Subscribe an async handler to client connection lifecycle events.

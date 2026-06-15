@@ -9,6 +9,8 @@ open Std.Internal.IO.Async
 
 namespace LeanRedisTest.Client.Pipeline
 
+open LeanRedis.Connection
+
 structure FakeTransport where
   replies : IO.Ref (Array ByteArray)
   writes : IO.Ref (Array ByteArray)
@@ -22,10 +24,10 @@ private def shiftReplies (ref : IO.Ref (Array ByteArray)) : IO (Option ByteArray
   | none => pure none
 
 private def writesOf (client : Client FakeTransport) : IO (Array ByteArray) := do
-  client.manager.atomically fun ref => do
-    let manager <- ref.get
-    match manager.runtime? with
-    | some runtime => runtime.transport.writes.get
+  client.state.atomically fun ref => do
+    let state <- ref.get
+    match state.transport? with
+    | some transport => transport.writes.get
     | none => pure #[]
 
 private def scriptedReplies (host : String) : Array ByteArray :=
@@ -186,7 +188,7 @@ info: "unavailable: client is not connected"
 #eval testPipelineFailsWhenDisconnected |>.block
 
 /--
-info: "transport error: connection closed while waiting for pipeline replies"
+info: "transport error: connection closed while waiting for pipeline reply"
 -/
 #guard_msgs in
 #eval testPipelineIncompleteReplies |>.block

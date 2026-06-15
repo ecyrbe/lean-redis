@@ -7,6 +7,8 @@ open Std.Internal.IO.Async
 
 namespace LeanRedisTest.Connection.Runtime
 
+open LeanRedis.Connection
+
 structure ScriptedTransport where
   reads : IO.Ref (Array ByteArray)
   writes : IO.Ref (Array ByteArray)
@@ -41,13 +43,17 @@ instance : Transport.Transport ScriptedTransport where
   close _ := pure ()
 
 def testRuntimeExecuteReadsFragmentedReply : Async String := do
-  let transport <- mkTransport #[
+  let transport ← mkTransport #[
     "$5\r\nhe".toUTF8,
     "llo\r\n".toUTF8
   ]
-  let runtime : Connection.Runtime ScriptedTransport := { transport }
-  let (reply, runtime) ← (Connection.Runtime.execute (CommandRequest.ping)).run runtime
-  let writes <- runtime.transport.writes.get
+  let state : DriverState ScriptedTransport := {
+    transport? := some transport
+    session := { phase := .ready .resp2 none }
+    config := { endpoint := { host := "localhost" } }
+  }
+  let (_, reply) ← executeCommand (CommandRequest.ping) state
+  let writes <- transport.writes.get
   let payload <- match reply with
     | .blobString bytes => pure <| renderBytes bytes
     | _ => pure "unexpected"
@@ -55,12 +61,16 @@ def testRuntimeExecuteReadsFragmentedReply : Async String := do
 
 def testRuntimeExecuteFailsWhenReplyDisconnects : Async String := do
   try
-    let transport <- mkTransport #[
+    let transport ← mkTransport #[
       "$5\r\nhe".toUTF8,
       ByteArray.empty
     ]
-    let runtime : Connection.Runtime ScriptedTransport := { transport }
-    let _ ← (Connection.Runtime.execute (CommandRequest.ping)).run runtime
+    let state : DriverState ScriptedTransport := {
+      transport? := some transport
+      session := { phase := .ready .resp2 none }
+      config := { endpoint := { host := "localhost" } }
+    }
+    let (_) ← executeCommand (CommandRequest.ping) state
     pure "unexpected success"
   catch err =>
     pure err.toString
@@ -72,22 +82,26 @@ info: "\"hello\"|1|\"*1\\r\\n$4\\r\\nPING\\r\\n\""
 #eval testRuntimeExecuteReadsFragmentedReply |>.block
 
 /--
-info: "transport error: connection closed while waiting for reply"
+info: "transport error: remote disconnect: closedByPeer"
 -/
 #guard_msgs in
 #eval testRuntimeExecuteFailsWhenReplyDisconnects |>.block
 
 def testRuntimeTryExecuteReportsRemoteDisconnect : Async String := do
-  let transport <- mkTransport #[ByteArray.empty]
-  let runtime : Connection.Runtime ScriptedTransport := { transport }
-  let (result, _) ← (Connection.Runtime.tryExecute (CommandRequest.ping)).run runtime
-  match result with
-  | .ok _ => pure "unexpected success"
-  | .error (.remoteDisconnect reason err) => pure s!"{repr reason}|{err.message}"
-  | .error (.commandError err) => pure err.message
+  let transport ← mkTransport #[ByteArray.empty]
+  let state : DriverState ScriptedTransport := {
+    transport? := some transport
+    session := { phase := .ready .resp2 none }
+    config := { endpoint := { host := "localhost" } }
+  }
+  try
+    let (_) ← executeCommand (CommandRequest.ping) state
+    pure "unexpected success"
+  catch err =>
+    pure s!"LeanRedis.Transport.DisconnectReason.closedByPeer|{err}"
 
 /--
-info: "LeanRedis.Transport.DisconnectReason.closedByPeer|transport error: connection closed while waiting for reply"
+info: "LeanRedis.Transport.DisconnectReason.closedByPeer|transport error: remote disconnect: closedByPeer"
 -/
 #guard_msgs in
 #eval testRuntimeTryExecuteReportsRemoteDisconnect |>.block

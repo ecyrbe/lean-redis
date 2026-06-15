@@ -1,26 +1,13 @@
 import Std.Sync.Mutex
 import LeanRedis.Client.Event
-import LeanRedis.Connection.Manager
-import LeanRedis.Connection.Runtime
+import LeanRedis.Connection.Driver
 import LeanRedis.Error
-import LeanRedis.Transport.Tcp
-import Std.Time
 
 namespace LeanRedis
 
-inductive ClientConnectionStatus where
-  | disconnected
-  | connecting
-  | connected
-  | reconnecting
-  | closed
-  deriving BEq, Inhabited, Repr
+open LeanRedis
 
 abbrev ClientEventSubscriptionId := Nat
-
-structure ClientReconnectControl where
-  generation : Nat := 0
-  deriving Inhabited
 
 structure ClientSubscribers where
   nextId : ClientEventSubscriptionId := 0
@@ -28,10 +15,7 @@ structure ClientSubscribers where
   deriving Inhabited
 
 structure Client (τ : Type) where
-  manager : Std.Mutex (Connection.Manager τ)
-  operation : Std.Mutex PUnit
-  status : Std.Mutex ClientConnectionStatus
-  reconnectControl : Std.Mutex ClientReconnectControl
+  state : Std.Mutex (Connection.DriverState τ)
   subscribers : Std.Mutex ClientSubscribers
 
 end LeanRedis

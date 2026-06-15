@@ -30,4 +30,9 @@ structure Config where
   reconnectStrategy : Connection.ReconnectStrategy := .disabled
   deriving BEq, Repr
 
+instance : Inhabited Config where
+  default := {
+    endpoint := { host := "", port := 0 }
+  }
+
 end LeanRedis

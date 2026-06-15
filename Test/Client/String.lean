@@ -21,10 +21,10 @@ private def shiftReplies (ref : IO.Ref (Array ByteArray)) : IO (Option ByteArray
   | none => pure none
 
 private def writesOf (client : Client FakeTransport) : IO (Array ByteArray) := do
-  client.manager.atomically fun ref => do
-    let manager <- ref.get
-    match manager.runtime? with
-    | some runtime => runtime.transport.writes.get
+  client.state.atomically fun ref => do
+    let state <- ref.get
+    match state.transport? with
+    | some transport => transport.writes.get
     | none => pure #[]
 
 private def scriptedReplies (host : String) : Array ByteArray :=
