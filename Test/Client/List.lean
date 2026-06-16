@@ -103,7 +103,7 @@ def testLSet : Async String := do
   client.connect
   let _ ← client.lSet "jobs" 1 "x"
   let writes ← writesOf client
-  pure <| renderBytes <| writes[1]?.getD ByteArray.empty
+  return renderBytes <| writes[1]?.getD ByteArray.empty
 
 def testLMove : Async (Option String) := do
   let client : Client FakeTransport ← Client.new {

@@ -39,7 +39,7 @@ namespace LeanRedis.CLI
       let v ← action.block
       print v
     catch
-      | .interrupted .. => pure ()
+      | .interrupted .. => return ()
       | err => IO.println s!"error: {err}"
 
   def runUnit (action : Async Unit) : IO Unit :=
@@ -243,7 +243,7 @@ namespace LeanRedis.CLI
           | none =>
             IO.println s!"Unknown command '{cmdName}'. Type /help for available commands."
         catch
-          | .interrupted .. => pure ()
+          | .interrupted .. => break
           | err => IO.println s!"error: {err}"
       | [] => pure ()
     IO.println "Interrupted..."
@@ -255,7 +255,7 @@ def main : IO Unit := do
   let config : Config := {
     endpoint := { host := "127.0.0.1", port := 6379 }
     protocolPreference := .resp3
-    reconnectStrategy := .exponentialBackoff ({}) (some 10)
+    reconnectStrategy := .exponentialBackoff ({ jitter:=false}) (some 10)
   }
   let client ← Client.newDefault config
   let subId ← client.onEvent CLI.eventHandler

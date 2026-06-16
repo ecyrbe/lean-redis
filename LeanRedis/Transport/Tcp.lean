@@ -17,10 +17,11 @@ open Std.Net
 private def resolveEndpoint (endpoint : Endpoint) : Async SocketAddress := do
   let addresses ← DNS.getAddrInfo endpoint.host (toString endpoint.port)
   let some addr := addresses[0]? | Error.raise <| .transport s!"failed to resolve {endpoint.host}:{endpoint.port}"
-  pure <|
+  return (
     match addr with
     | .v4 ip => SocketAddress.v4 { addr := ip, port := endpoint.port }
     | .v6 ip => SocketAddress.v6 { addr := ip, port := endpoint.port }
+  )
 
 instance instTransportTCP : Transport TCP where
   connect endpoint := do
@@ -30,14 +31,14 @@ instance instTransportTCP : Transport TCP where
       do
         TCP.Socket.Client.connect socket address
         socket.noDelay
-        pure socket
+        return socket
     catch err =>
       Error.raise <| .transport s!"tcp connect failed for {endpoint.host}:{endpoint.port}: {err}"
 
   recv socket size := do
     try
       match ← socket.recv? size with
-      | some bytes => pure bytes
+      | some bytes => return bytes
       | none => Error.raise <| .transport "remote disconnect: closedByPeer"
     catch err =>
       Error.raise <| .transport s!"tcp read failed: {err}"

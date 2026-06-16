@@ -142,7 +142,7 @@ def testSetExWritesTwoFrames : Async String := do
   client.connect
   let _ ← client.setEx "name" 10 "alice"
   let writes ← writesOf client
-  pure <| renderBytes <| writes[1]?.getD ByteArray.empty
+  return renderBytes <| writes[1]?.getD ByteArray.empty
 
 /--
 info: some "alice"

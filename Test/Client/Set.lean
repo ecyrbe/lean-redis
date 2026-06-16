@@ -141,7 +141,7 @@ def testSScanWritesExpectedFrame : Async String := do
   client.connect
   let _ ← client.sScan "tags" 0 { match? := some "le*", count? := some 10 }
   let writes ← writesOf client
-  pure <| renderBytes <| writes[1]?.getD ByteArray.empty
+  return renderBytes <| writes[1]?.getD ByteArray.empty
 
 /--
 info: 2

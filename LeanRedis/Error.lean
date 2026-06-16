@@ -24,7 +24,7 @@ def Error.message : Error -> String
 instance : MonadLift (Except Error) IO where
   monadLift x :=
     match x with
-    | .ok a => pure a
+    | .ok a => return a
     | .error e => throw <| IO.userError e.message
 
 def Error.raise {α : Type} (err : Error) : IO α :=

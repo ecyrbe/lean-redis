@@ -10,9 +10,9 @@ private def clampNatToUInt32 (value : Nat) : UInt32 :=
 
 private def randomBelow (limit : UInt32) : IO UInt32 := do
   if limit == 0 then
-    pure 0
+    return 0
   else
-    pure <| UInt32.ofNat <| (← IO.rand 0 (limit.toNat - 1))
+    return UInt32.ofNat <| (← IO.rand 0 (limit.toNat - 1))
 
 def ReconnectStrategy.shouldAttempt (strategy : ReconnectStrategy) (attempt : Nat) : Bool :=
   match strategy with
@@ -24,11 +24,11 @@ def ReconnectStrategy.shouldAttempt (strategy : ReconnectStrategy) (attempt : Na
 
 def ReconnectStrategy.delayMs (strategy : ReconnectStrategy) (attempt : Nat) : IO (Option UInt32) := do
   if !strategy.shouldAttempt attempt then
-    pure none
+    return none
   else
     match strategy with
-    | .disabled => pure none
-    | .fixedInterval delayMs _ => pure <| some delayMs
+    | .disabled => return none
+    | .fixedInterval delayMs _ => return some delayMs
     | .exponentialBackoff config _ =>
         let factor := pow2Nat attempt
         let raw := clampNatToUInt32 (config.baseDelayMs.toNat * factor)
@@ -36,6 +36,6 @@ def ReconnectStrategy.delayMs (strategy : ReconnectStrategy) (attempt : Nat) : I
         if config.jitter then
           return some (← randomBelow (capped + 1))
         else
-          pure <| some capped
+          return some capped
 
 end LeanRedis

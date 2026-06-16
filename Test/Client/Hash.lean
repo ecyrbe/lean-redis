@@ -152,7 +152,7 @@ def testHScan : Async String := do
   }
   client.connect
   let result ← client.hScan "user:1" 0 { count? := some 10 }
-  pure s!"{result.cursor}|{result.entries.size}|{result.entries[0]?.map Prod.fst |>.getD ""}"
+  return s!"{result.cursor}|{result.entries.size}|{result.entries[0]?.map Prod.fst |>.getD ""}"
 
 def testHScanWritesExpectedFrame : Async String := do
   let client : Client FakeTransport ← Client.new {
@@ -161,7 +161,7 @@ def testHScanWritesExpectedFrame : Async String := do
   client.connect
   let _ ← client.hScan "user:1" 0 { match? := some "na*", count? := some 10 }
   let writes ← writesOf client
-  pure <| renderBytes <| writes[1]?.getD ByteArray.empty
+  return renderBytes <| writes[1]?.getD ByteArray.empty
 
 /--
 info: some "alice"

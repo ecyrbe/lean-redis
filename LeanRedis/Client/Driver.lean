@@ -87,7 +87,7 @@ def executeCommand [Transport τ]
   Transport.sendAll transport <| Protocol.Resp.Encode.encodeCommand request
   let (reply, parser) ← readOneReply transport state.parser
   let session' := (state.session.step (.replyReceived (some request) reply) state.config).1
-  pure ({ state with parser, session := session' }, reply)
+  return ({ state with parser, session := session' }, reply)
 
 def executeBatch [Transport τ]
     (requests : Array CommandRequest)
@@ -116,7 +116,7 @@ def connectBootstrap [Transport τ]
   let state := { state with session }
   let plan := Protocol.bootstrapPlan config
   if plan.isEmpty then
-    pure (state, #[])
+    return (state, #[])
   else
     for step in plan do
       Transport.sendAll transport <| Protocol.Resp.Encode.encodeCommand step.request
@@ -124,7 +124,7 @@ def connectBootstrap [Transport τ]
     let state := { state with parser }
     let (session', postEffects) := state.session.step (.bootstrapComplete replies) config
     let state := { state with session := session' }
-    pure (state, postEffects)
+    return (state, postEffects)
 
 -- Connect transport + bootstrap (no state transition — caller must call onConnectRequest first)
 def connectTransport [Transport τ]
@@ -145,12 +145,12 @@ def tryReconnect [Transport τ]
       try
         let transport ← Transport.connect state.config.endpoint
         let (state, postEffects) ← connectBootstrap transport state.config { state with session }
-        pure (state, preEffects ++ postEffects)
+        return (state, preEffects ++ postEffects)
       catch err =>
         let (session', effects) := session.step (.transportFailed err.toString) state.config
-        pure ({ state with session := session' }, preEffects ++ effects)
+        return ({ state with session := session' }, preEffects ++ effects)
   | _ =>
-      pure ({ state with session := session }, preEffects)
+      return ({ state with session := session }, preEffects)
 
 -- Full disconnect: requestDisconnect + close transport + closeComplete
 def disconnect [Transport τ] (state : DriverState τ) : Async (DriverState τ × Array Protocol.Effect) := do
@@ -159,6 +159,6 @@ def disconnect [Transport τ] (state : DriverState τ) : Async (DriverState τ �
   | some transport => Transport.close transport
   | none => pure ()
   let (session, postEffects) := session.step .closeComplete state.config
-  pure ({ transport? := none, parser := {}, session, config := state.config }, preEffects ++ postEffects)
+  return ({ transport? := none, parser := {}, session, config := state.config }, preEffects ++ postEffects)
 
 end LeanRedis.Connection

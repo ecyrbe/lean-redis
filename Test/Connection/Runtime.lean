@@ -57,7 +57,7 @@ def testRuntimeExecuteReadsFragmentedReply : Async String := do
   let payload ← match reply with
     | .blobString bytes => pure <| renderBytes bytes
     | _ => pure "unexpected"
-  pure s!"{payload}|{writes.size}|{renderBytes <| writes[0]?.getD ByteArray.empty}"
+  return s!"{payload}|{writes.size}|{renderBytes <| writes[0]?.getD ByteArray.empty}"
 
 def testRuntimeExecuteFailsWhenReplyDisconnects : Async String := do
   try

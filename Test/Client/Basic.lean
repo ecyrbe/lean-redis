@@ -27,8 +27,8 @@ private def shiftReplies (ref : IO.Ref (Array ByteArray)) : IO (Option ByteArray
   match replies[0]? with
   | some reply =>
       ref.set (replies.extract 1 replies.size)
-      pure (some reply)
-  | none => pure none
+      return (some reply)
+  | none => return none
 
 private def writesOf (client : Client FakeTransport) : IO (Array ByteArray) := do
   client.state.atomically fun ref => do
@@ -188,7 +188,7 @@ def testUsernameAuth : Async String := do
   client.connect
   client.auth { username? := some "default", password := "secret" }
   let writes ← writesOf client
-  pure <| renderBytes <| writes[1]?.getD ByteArray.empty
+  return renderBytes <| writes[1]?.getD ByteArray.empty
 
 def testSelectUpdatesClientState : Async String := do
   let client : Client FakeTransport ← Client.new {

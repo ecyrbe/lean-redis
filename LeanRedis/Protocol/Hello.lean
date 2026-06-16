@@ -102,7 +102,7 @@ def applyHelloReply
     (reply : Resp.Value)
     : Option Protocol.State := do
   let version ← protocolAfterHello preference reply
-  pure { state with protocol? := some version, lastReply? := some reply }
+  return { state with protocol? := some version, lastReply? := some reply }
 
 def markBootstrapReady
     (state : Protocol.State)
@@ -183,7 +183,7 @@ def bootstrapStateAfterReplies
       let next ← bootstrapStateAfterStep current config step reply
       current := next
     let protocol := current.protocol?.getD (initialProtocol config.protocolPreference)
-    some <| markBootstrapReady current protocol config.database?
+    return markBootstrapReady current protocol config.database?
 
 def bootstrapSucceeded
     (state : Protocol.State)
@@ -193,6 +193,6 @@ def bootstrapSucceeded
     : Option Protocol.State := do
   let state ← applyHelloReply state preference helloReply
   let protocol ← state.protocol?
-  pure <| markBootstrapReady state protocol database?
+  return markBootstrapReady state protocol database?
 
 end LeanRedis.Protocol

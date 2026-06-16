@@ -50,6 +50,6 @@ def CommandRequest.selectedDb? (request : CommandRequest) : Option UInt32 := do
   let bytes ← request.args[0]?
   let text ← String.fromUTF8? bytes
   let value ← text.toNat?
-  pure value.toUInt32
+  return value.toUInt32
 
 end LeanRedis

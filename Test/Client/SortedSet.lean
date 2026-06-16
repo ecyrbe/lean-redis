@@ -132,7 +132,7 @@ def testZScanWritesExpectedFrame : Async String := do
   client.connect
   let _ ← client.zScan "scores" 0 { match? := some "a*", count? := some 10 }
   let writes ← writesOf client
-  pure <| renderBytes <| writes[1]?.getD ByteArray.empty
+  return renderBytes <| writes[1]?.getD ByteArray.empty
 
 /--
 info: 2
