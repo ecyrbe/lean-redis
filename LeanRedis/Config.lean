@@ -1,4 +1,4 @@
-import LeanRedis.Transport.Types
+import LeanRedis.Transport.Defs
 import LeanRedis.Data.Redacted
 
 namespace LeanRedis

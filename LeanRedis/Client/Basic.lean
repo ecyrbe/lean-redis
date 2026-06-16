@@ -1,8 +1,8 @@
-import LeanRedis.Client.Internal
+import LeanRedis.Client.Defs
 import LeanRedis.Tools.Reconnect
 import LeanRedis.Pipeline.Basic
 import LeanRedis.Transport.Tcp
-import LeanRedis.Transport.Types
+import LeanRedis.Transport.Defs
 
 namespace LeanRedis.Client
 

@@ -4,7 +4,7 @@ import LeanRedis.Protocol.Hello
 import LeanRedis.Protocol.Resp.Encode
 import LeanRedis.Protocol.Resp.Parse
 import LeanRedis.Protocol.Resp.Value
-import LeanRedis.Transport.Types
+import LeanRedis.Transport.Defs
 import LeanRedis.Error
 
 namespace LeanRedis.Connection

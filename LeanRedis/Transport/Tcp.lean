@@ -1,6 +1,6 @@
 import Std.Internal.Async
 import LeanRedis.Error
-import LeanRedis.Transport.Types
+import LeanRedis.Transport.Defs
 
 
 namespace LeanRedis.Transport

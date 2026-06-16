@@ -1,6 +1,6 @@
 import LeanRedis.Error
 import LeanRedis.Command
-import LeanRedis.Transport.Types
+import LeanRedis.Transport.Defs
 import LeanRedis.Transport.Tcp
 import LeanRedis.Config
 import LeanRedis.Protocol.Version
