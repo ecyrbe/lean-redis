@@ -15,8 +15,8 @@ private def eventMetadata
     (error? : Option Error := none)
     (attempt? : Option Nat := none)
     : Async Client.EventMetadata := do
-  pure {
-    timestamp := (← Std.Time.PlainDateTime.now)
+  return {
+    timestamp := ← Std.Time.PlainDateTime.now
     error?
     attempt?
   }
@@ -24,10 +24,9 @@ private def eventMetadata
 private def emitEvent (client : Client τ) (event : Client.Event) : Async Unit := do
   let handlers ← client.subscribers.atomically fun ref => do
     let subscribers ← ref.get
-    pure subscribers.handlers
+    return subscribers.handlers
   for (_, handler) in handlers do
-    let _ ← handler event
-    pure ()
+    handler event
 
 private def emitEffect (client : Client τ) (tag : Protocol.EventTag) : Async Unit := do
   let metadata ← eventMetadata
@@ -45,7 +44,7 @@ private def executeEffects (client : Client τ) (effects : Array Protocol.Effect
   for eff in effects do
     match eff with
     | .emit tag => emitEffect client tag
-    | _ => pure ()
+    | _ => continue
 
 private def getState (client : Client τ) : Async (DriverState τ) :=
   client.state.atomically fun ref => ref.get
@@ -69,8 +68,8 @@ private partial def retryAfterDelay [Transport.Transport τ]
   setState client state'
   executeEffects client effects
   match state'.session.phase with
-  | .reconnecting _ => pure true
-  | _ => pure false
+  | .reconnecting _ => return true
+  | _ => return false
 
 /-- No more retries allowed by the strategy — transition to disconnected and emit stopped. -/
 private def exhaustReconnect [Transport.Transport τ]
@@ -83,30 +82,27 @@ private def exhaustReconnect [Transport.Transport τ]
 
 /-- Reconnection loop: fetch the next delay from the strategy, wait, attempt
     a connection, and repeat until the strategy says stop or we reconnect. -/
-private partial def reconnectLoop [Transport.Transport τ]
+private def reconnectLoop [Transport.Transport τ]
     (client : Client τ)
     : Async Unit := do
-  let state ← getState client
-  match state.session.phase with
-  | .reconnecting n =>
-      let delayMs? ← state.config.reconnectStrategy.delayMs n
-      match delayMs? with
-      | none =>
-          exhaustReconnect client state
-      | some delayMs =>
-          let shouldRetry ← retryAfterDelay client state n delayMs
-          if shouldRetry then
-            reconnectLoop client
-          else
-            pure ()
-  | _ => pure ()
+  let mut shouldRetry := true
+  while shouldRetry do
+    let state ← getState client
+    match state.session.phase with
+    | .reconnecting n =>
+        let delayMs? ← state.config.reconnectStrategy.delayMs n
+        match delayMs? with
+        | none =>
+            client.exhaustReconnect state
+            break
+        | some delayMs =>
+            shouldRetry ← client.retryAfterDelay state n delayMs
+    | _ => break
 
 private def startReconnectWorker [Transport.Transport τ]
     (client : Client τ)
-    : Async Unit := do
-  discard <| IO.asTask do
-    let _ ← (reconnectLoop client).block
-    pure ()
+    : Async Unit :=
+  discard <| IO.asTask do client.reconnectLoop.block
 
 /--
 Execute a single command and return its Redis response value.
@@ -127,7 +123,7 @@ public def execute [Transport.Transport τ]
         try
           let (state', reply) ← executeCommand request state
           ref.set state'
-          pure reply
+          return reply
         catch
           | err =>
             if Error.isTransportIOError err then
@@ -158,9 +154,7 @@ public def runPipeline
         try
           let (state', values) ← executeBatch pipeline.requests state
           ref.set state'
-          match pipeline.exec values with
-          | .ok decoded => pure decoded
-          | .error err => Error.raise err
+          pipeline.exec values
         catch
           | err =>
             if Error.isTransportIOError err then
@@ -182,7 +176,7 @@ let client : LeanRedis.Client MyTransport ← LeanRedis.Client.new cfg
 public def new [Transport.Transport τ] (config : Config) : IO (Client τ) := do
   let state ← Std.Mutex.new ({ config } : DriverState τ)
   let subscribers ← Std.Mutex.new ({} : ClientSubscribers)
-  pure { state, subscribers }
+  return { state, subscribers }
 
 /--
 Create a new client using the default TCP transport without opening a connection.
@@ -225,7 +219,7 @@ def connect [Transport.Transport τ] (client : Client τ) : Async Unit := do
           ref.set state'
           executeEffects client effects
           throw err
-    | _ => pure ()
+    | _ => return ()
 
 /--
 Close the current connection and stop background reconnects until a later explicit `connect`.
@@ -252,7 +246,7 @@ let connected ← client.isConnected
 -/
 def isConnected (client : Client τ) : Async Bool := do
   let state ← getState client
-  pure state.session.isReady
+  return state.session.isReady
 
 /--
 Return the current lifecycle status of the client.
@@ -264,7 +258,7 @@ let status ← client.connectionStatus
 -/
 def connectionStatus (client : Client τ) : Async Protocol.Phase := do
   let state ← getState client
-  pure state.session.phase
+  return state.session.phase
 
 /--
 Fail with an `unavailable` error unless the client is connected.
@@ -289,7 +283,7 @@ let state ← client.currentState
 -/
 def currentState (client : Client τ) : Async Protocol.Session := do
   let state ← getState client
-  pure state.session
+  return state.session
 
 /--
 Subscribe an async handler to client connection lifecycle events.
@@ -310,7 +304,7 @@ def onEvent (client : Client τ) (handler : Client.EventHandler) : IO ClientEven
       nextId := id + 1
       handlers := subscribers.handlers.push (id, handler)
     }
-    pure id
+    return id
 
 /--
 Remove a previously registered event handler.

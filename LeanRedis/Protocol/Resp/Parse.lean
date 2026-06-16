@@ -48,7 +48,7 @@ def parseLineBytes : Parser ByteArray := do
 def parseLineText : Parser String := do
   let bytes ← parseLineBytes
   match decodeUtf8 bytes with
-  | .ok text => pure text
+  | .ok text => return text
   | .error message => fail message
 
 def parseVerbatim (bytes : ByteArray) : Resp.Value :=
@@ -62,37 +62,37 @@ def parseVerbatim (bytes : ByteArray) : Resp.Value :=
 def parseLengthHeader : Parser Int := do
   let text ← parseLineText
   match parseIntText text with
-  | .ok value => pure value
+  | .ok value => return value
   | .error message => fail message
 
 partial def parseBlobLike (mkValue : ByteArray -> Resp.Value) : Parser Resp.Value := do
   let length ← parseLengthHeader
   if length == -1 then
-    pure .null
+    return .null
   else if length < 0 then
     fail s!"invalid bulk length: {length}"
   else
     let payload ← Std.Internal.Parsec.ByteArray.take length.natAbs
     Std.Internal.Parsec.ByteArray.skipByte cr
     Std.Internal.Parsec.ByteArray.skipByte lf
-    pure <| mkValue payload.toByteArray
+    return mkValue payload.toByteArray
 
 partial def parseBool : Parser Resp.Value := do
   let text ← parseLineText
   match text with
-  | "t" => pure (.bool true)
-  | "f" => pure (.bool false)
+  | "t" => return .bool true
+  | "f" => return .bool false
   | _ => fail s!"invalid boolean marker: {text}"
 
 partial def parseNumber : Parser Resp.Value := do
-  pure (.number (← parseLengthHeader))
+  return .number (← parseLengthHeader)
 
 mutual
 
 partial def parseArrayLike (mkValue : Array Resp.Value -> Resp.Value) : Parser Resp.Value := do
   let length ← parseLengthHeader
   if length == -1 then
-    pure .null
+    return .null
   else if length < 0 then
     fail s!"invalid aggregate length: {length}"
   else
@@ -101,30 +101,30 @@ partial def parseArrayLike (mkValue : Array Resp.Value -> Resp.Value) : Parser R
 partial def parseMap : Parser Resp.Value := do
   let length ← parseLengthHeader
   if length == -1 then
-    pure .null
+    return .null
   else if length < 0 then
     fail s!"invalid map length: {length}"
   else
     return .map (← parseMapEntries length.natAbs)
 
 partial def parseAggregateItems (count : Nat) : Parser (Array Resp.Value) := do
-  let rec loop (remaining : Nat) (acc : Array Resp.Value) : Parser (Array Resp.Value) := do
-    if remaining == 0 then
-      pure acc
-    else
-      let value ← parseValue
-      loop (remaining - 1) (acc.push value)
-  loop count #[]
+  let mut acc : Array Resp.Value := #[]
+  let mut remaining := count
+  while remaining > 0 do
+    let value ← parseValue
+    acc := acc.push value
+    remaining := remaining - 1
+  return acc
 
 partial def parseMapEntries (count : Nat) : Parser (Array (Resp.Value × Resp.Value)) := do
-  let rec loop (remaining : Nat) (acc : Array (Resp.Value × Resp.Value)) : Parser (Array (Resp.Value × Resp.Value)) := do
-    if remaining == 0 then
-      pure acc
-    else
-      let key ← parseValue
-      let value ← parseValue
-      loop (remaining - 1) (acc.push (key, value))
-  loop count #[]
+  let mut acc : Array (Resp.Value × Resp.Value) := #[]
+  let mut remaining := count
+  while remaining > 0 do
+    let key ← parseValue
+    let value ← parseValue
+    acc := acc.push (key, value)
+    remaining := remaining - 1
+  return acc
 
 partial def parseValue : Parser Resp.Value := do
   let marker ← any
