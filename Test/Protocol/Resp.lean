@@ -9,7 +9,7 @@ namespace LeanRedisTest.Protocol.Resp
 def parseOne? (input : ByteArray) : Except String (LeanRedis.Protocol.Resp.Value × ByteArray) :=
   let state := LeanRedis.Protocol.Resp.Parse.feed {} input
   match LeanRedis.Protocol.Resp.Parse.parseOne state with
-  | .done (value, nextState) _ => .ok (value, nextState.pending)
+  | .done (value, nextState) => .ok (value, nextState.pending)
   | .needMore => .error "needMore"
   | .error message => .error message
 
@@ -38,7 +38,7 @@ def testIncrementalParseNeedsMore : Except String (LeanRedis.Protocol.Resp.Value
   let state0 : LeanRedis.Protocol.Resp.Parse.ParserState := {}
   let state1 := LeanRedis.Protocol.Resp.Parse.feed state0 "$5\r\nhe".toUTF8
   match LeanRedis.Protocol.Resp.Parse.parseOne state1 with
-  | .done (value, nextState) _ => Except.ok (value, nextState.pending)
+  | .done (value, nextState) => Except.ok (value, nextState.pending)
   | .needMore => Except.error "needMore"
   | .error message => Except.error message
 
@@ -47,7 +47,7 @@ def testIncrementalParseCompletesAcrossChunks : Except String (LeanRedis.Protoco
   let state1 := LeanRedis.Protocol.Resp.Parse.feed state0 "$5\r\nhe".toUTF8
   let state2 := LeanRedis.Protocol.Resp.Parse.feed state1 "llo\r\n".toUTF8
   match LeanRedis.Protocol.Resp.Parse.parseOne state2 with
-  | .done (value, nextState) _ => Except.ok (value, nextState.pending)
+  | .done (value, nextState) => Except.ok (value, nextState.pending)
   | .needMore => Except.error "needMore"
   | .error message => Except.error message
 

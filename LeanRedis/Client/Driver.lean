@@ -22,16 +22,19 @@ structure DriverState (τ : Type) where
 
 def readSize : UInt64 := 4096
 
-private partial def readOneReply [Transport τ] (transport : τ) (parser : Protocol.Resp.Parse.ParserState) : Async (Protocol.Resp.Value × Protocol.Resp.Parse.ParserState) := do
-  match Protocol.Resp.Parse.parseOne parser with
-  | .done (value, parser) _ => return (value, parser)
-  | .error message => Error.raise <| .protocol message
-  | .needMore =>
-      let bytes ← Transport.recv transport readSize
-      if bytes.isEmpty then
-        Error.raise <| .transport "remote disconnect: closedByPeer"
-      else
-        readOneReply transport (Protocol.Resp.Parse.feed parser bytes)
+private def readOneReply [Transport τ] (transport : τ) (parser : Protocol.Resp.Parse.ParserState) : Async (Protocol.Resp.Value × Protocol.Resp.Parse.ParserState) := do
+  let mut parser := parser
+  repeat do
+    match Protocol.Resp.Parse.parseOne parser with
+    | .done state => return state
+    | .error message => Error.raise <| .protocol message
+    | .needMore =>
+        let bytes ← Transport.recv transport readSize
+        if bytes.isEmpty then
+          Error.raise <| .transport "remote disconnect: closedByPeer"
+        else
+          parser := Protocol.Resp.Parse.feed parser bytes
+  unreachable!
 
 private def readNReplies [Transport τ] (transport : τ) (parser : Protocol.Resp.Parse.ParserState) (n : Nat) : Async (Array Protocol.Resp.Value × Protocol.Resp.Parse.ParserState) := do
   let mut values := #[]

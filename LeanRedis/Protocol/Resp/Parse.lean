@@ -12,7 +12,7 @@ open Std.Internal.Parsec
 abbrev Parser := Std.Internal.Parsec.ByteArray.Parser
 
 inductive ParseStatus (α : Type) where
-  | done (value : α) (remaining : ByteArray)
+  | done (value : α)
   | needMore
   | error (message : String)
   deriving Inhabited
@@ -166,7 +166,7 @@ def parseOne (state : ParserState) : ParseStatus (Resp.Value × ParserState) :=
   match parseValue state.pending.iter with
   | .success rest value =>
       let remaining := state.pending.extract rest.pos state.pending.size
-      .done (value, { pending := remaining }) remaining
+      .done (value, { pending := remaining })
   | .error _ .eof => .needMore
   | .error _ err => .error (toString err)
 
@@ -176,7 +176,7 @@ def parseAvailable : ParserM (Array Resp.Value) := do
     repeat do
       let state ← get
       match parseOne state with
-      | .done (value, nextState) _ =>
+      | .done (value, nextState) =>
           acc := acc.push value
           set nextState
       | .needMore => return acc
