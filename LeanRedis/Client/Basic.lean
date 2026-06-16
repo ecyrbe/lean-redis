@@ -102,7 +102,7 @@ private def reconnectLoop [Transport.Transport τ]
 private def startReconnectWorker [Transport.Transport τ]
     (client : Client τ)
     : Async Unit :=
-  discard <| IO.asTask do client.reconnectLoop.block
+  background client.reconnectLoop
 
 /--
 Execute a single command and return its Redis response value.
