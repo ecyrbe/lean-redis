@@ -1,24 +1,6 @@
-namespace LeanRedis.Connection
+import LeanRedis.Config
 
-structure ReconnectExponentialBackoff where
-  baseDelayMs : UInt32 := 100
-  maxDelayMs : UInt32 := 30_000
-  jitter : Bool := true
-  deriving BEq, Inhabited, Repr
-
-inductive ReconnectStrategy where
-  | disabled
-  | fixedInterval (delayMs : UInt32) (maxAttempts? : Option Nat := none)
-  | exponentialBackoff (config : ReconnectExponentialBackoff := {}) (maxAttempts? : Option Nat := none)
-  deriving BEq, Inhabited, Repr
-
-def ReconnectStrategy.shouldAttempt (strategy : ReconnectStrategy) (attempt : Nat) : Bool :=
-  match strategy with
-  | .disabled => false
-  | .fixedInterval _ none => true
-  | .fixedInterval _ (some maxAttempts) => attempt < maxAttempts
-  | .exponentialBackoff _ none => true
-  | .exponentialBackoff _ (some maxAttempts) => attempt < maxAttempts
+namespace LeanRedis
 
 private def pow2Nat (n : Nat) : Nat :=
   Nat.shiftLeft 1 n
@@ -31,6 +13,14 @@ private def randomBelow (limit : UInt32) : IO UInt32 := do
     pure 0
   else
     pure <| UInt32.ofNat <| (← IO.rand 0 (limit.toNat - 1))
+
+def ReconnectStrategy.shouldAttempt (strategy : ReconnectStrategy) (attempt : Nat) : Bool :=
+  match strategy with
+  | .disabled => false
+  | .fixedInterval _ none => true
+  | .fixedInterval _ (some maxAttempts) => attempt < maxAttempts
+  | .exponentialBackoff _ none => true
+  | .exponentialBackoff _ (some maxAttempts) => attempt < maxAttempts
 
 def ReconnectStrategy.delayMs (strategy : ReconnectStrategy) (attempt : Nat) : IO (Option UInt32) := do
   if !strategy.shouldAttempt attempt then
@@ -48,4 +38,4 @@ def ReconnectStrategy.delayMs (strategy : ReconnectStrategy) (attempt : Nat) : I
         else
           pure <| some capped
 
-end LeanRedis.Connection
+end LeanRedis

@@ -1,4 +1,5 @@
 import LeanRedis.Config
+import LeanRedis.Tools.Reconnect
 import LeanRedis.Command
 import LeanRedis.Protocol.Version
 import LeanRedis.Protocol.Resp.Value

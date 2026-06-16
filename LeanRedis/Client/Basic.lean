@@ -1,5 +1,6 @@
 import LeanRedis.Client.Internal
 import LeanRedis.Connection.Driver
+import LeanRedis.Tools.Reconnect
 import LeanRedis.Pipeline.Basic
 import LeanRedis.Transport.Tcp
 import LeanRedis.Transport.Types

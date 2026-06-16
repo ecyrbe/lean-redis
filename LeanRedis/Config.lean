@@ -1,8 +1,19 @@
 import LeanRedis.Transport.Types
-import LeanRedis.Connection.Policy
 import LeanRedis.Data.Redacted
 
 namespace LeanRedis
+
+structure ReconnectExponentialBackoff where
+  baseDelayMs : UInt32 := 100
+  maxDelayMs : UInt32 := 30_000
+  jitter : Bool := true
+  deriving BEq, Inhabited, Repr
+
+inductive ReconnectStrategy where
+  | disabled
+  | fixedInterval (delayMs : UInt32) (maxAttempts? : Option Nat := none)
+  | exponentialBackoff (config : ReconnectExponentialBackoff := {}) (maxAttempts? : Option Nat := none)
+  deriving BEq, Inhabited, Repr
 
 inductive ProtocolPreference where
   | auto
@@ -27,7 +38,7 @@ structure Config where
   protocolPreference : ProtocolPreference := .auto
   clientName? : Option String := none
   timeouts : TimeoutConfig := {}
-  reconnectStrategy : Connection.ReconnectStrategy := .disabled
+  reconnectStrategy : ReconnectStrategy := .disabled
   deriving BEq, Repr
 
 instance : Inhabited Config where
