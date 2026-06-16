@@ -1,6 +1,6 @@
 import Std.Sync.Mutex
 import LeanRedis.Client.Event
-import LeanRedis.Connection.Driver
+import LeanRedis.Client.Driver
 import LeanRedis.Error
 
 namespace LeanRedis
