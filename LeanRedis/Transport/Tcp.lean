@@ -15,7 +15,7 @@ open Std.Net
 
 
 private def resolveEndpoint (endpoint : Endpoint) : Async SocketAddress := do
-  let addresses <- DNS.getAddrInfo endpoint.host (toString endpoint.port)
+  let addresses ← DNS.getAddrInfo endpoint.host (toString endpoint.port)
   let some addr := addresses[0]? | Error.raise <| .transport s!"failed to resolve {endpoint.host}:{endpoint.port}"
   pure <|
     match addr with
@@ -24,8 +24,8 @@ private def resolveEndpoint (endpoint : Endpoint) : Async SocketAddress := do
 
 instance instTransportTCP : Transport TCP where
   connect endpoint := do
-    let socket <- TCP.Socket.Client.mk
-    let address <- resolveEndpoint endpoint
+    let socket ← TCP.Socket.Client.mk
+    let address ← resolveEndpoint endpoint
     try
       do
         TCP.Socket.Client.connect socket address

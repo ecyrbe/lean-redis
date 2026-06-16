@@ -24,7 +24,7 @@ namespace Cache
     return value
 
   def new [Transport.Transport τ] (config: Config) : Async (Cache τ) := do
-    let client: Client τ <- Client.new config
+    let client: Client τ ← Client.new config
     client.connect
     return { redis := client }
 

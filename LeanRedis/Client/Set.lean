@@ -11,7 +11,7 @@ Add members to a set.
 
 Example:
 ```lean
-let added <- client.sAdd "tags" #["lean", "redis"]
+let added ← client.sAdd "tags" #["lean", "redis"]
 ```
 -/
 def Client.sAdd [Transport.Transport τ]
@@ -28,7 +28,7 @@ Remove members from a set.
 
 Example:
 ```lean
-let removed <- client.sRem "tags" #["redis"]
+let removed ← client.sRem "tags" #["redis"]
 ```
 -/
 def Client.sRem [Transport.Transport τ]
@@ -45,7 +45,7 @@ Return the cardinality of a set.
 
 Example:
 ```lean
-let size <- client.sCard "tags"
+let size ← client.sCard "tags"
 ```
 -/
 def Client.sCard [Transport.Transport τ]
@@ -61,7 +61,7 @@ Check whether a member belongs to a set.
 
 Example:
 ```lean
-let present <- client.sIsMember "tags" "lean"
+let present ← client.sIsMember "tags" "lean"
 ```
 -/
 def Client.sIsMember [Transport.Transport τ]
@@ -77,7 +77,7 @@ Check multiple members against a set.
 
 Example:
 ```lean
-let present <- client.sMIsMember "tags" #["lean", "redis"]
+let present ← client.sMIsMember "tags" #["lean", "redis"]
 ```
 -/
 def Client.sMIsMember [Transport.Transport τ]
@@ -94,7 +94,7 @@ Return all members of a set.
 
 Example:
 ```lean
-let members <- client.sMembers "tags"
+let members ← client.sMembers "tags"
 ```
 -/
 def Client.sMembers [Transport.Transport τ]
@@ -110,7 +110,7 @@ Pop one random member from a set.
 
 Example:
 ```lean
-let member <- client.sPop "tags"
+let member ← client.sPop "tags"
 ```
 -/
 def Client.sPop [Transport.Transport τ]
@@ -126,7 +126,7 @@ Pop multiple random members from a set.
 
 Example:
 ```lean
-let members <- client.sPopMany "tags" 2
+let members ← client.sPopMany "tags" 2
 ```
 -/
 def Client.sPopMany [Transport.Transport τ]
@@ -143,7 +143,7 @@ Return one random set member without removing it.
 
 Example:
 ```lean
-let member <- client.sRandMember "tags"
+let member ← client.sRandMember "tags"
 ```
 -/
 def Client.sRandMember [Transport.Transport τ]
@@ -159,7 +159,7 @@ Return random set members without removing them.
 
 Example:
 ```lean
-let members <- client.sRandMembers "tags" 2
+let members ← client.sRandMembers "tags" 2
 ```
 -/
 def Client.sRandMembers [Transport.Transport τ]
@@ -176,7 +176,7 @@ Move a set member to another set.
 
 Example:
 ```lean
-let moved <- client.sMove "todo" "done" "task:1"
+let moved ← client.sMove "todo" "done" "task:1"
 ```
 -/
 def Client.sMove [Transport.Transport τ]
@@ -192,7 +192,7 @@ Return the difference of multiple sets.
 
 Example:
 ```lean
-let members <- client.sDiff #["a", "b"]
+let members ← client.sDiff #["a", "b"]
 ```
 -/
 def Client.sDiff [Transport.Transport τ]
@@ -208,7 +208,7 @@ Store the difference of multiple sets into a destination key.
 
 Example:
 ```lean
-let size <- client.sDiffStore "result" #["a", "b"]
+let size ← client.sDiffStore "result" #["a", "b"]
 ```
 -/
 def Client.sDiffStore [Transport.Transport τ]
@@ -225,7 +225,7 @@ Return the intersection of multiple sets.
 
 Example:
 ```lean
-let members <- client.sInter #["a", "b"]
+let members ← client.sInter #["a", "b"]
 ```
 -/
 def Client.sInter [Transport.Transport τ]
@@ -241,7 +241,7 @@ Return the intersection cardinality of multiple sets.
 
 Example:
 ```lean
-let size <- client.sInterCard #["a", "b"]
+let size ← client.sInterCard #["a", "b"]
 ```
 -/
 def Client.sInterCard [Transport.Transport τ]
@@ -257,7 +257,7 @@ Store the intersection of multiple sets into a destination key.
 
 Example:
 ```lean
-let size <- client.sInterStore "result" #["a", "b"]
+let size ← client.sInterStore "result" #["a", "b"]
 ```
 -/
 def Client.sInterStore [Transport.Transport τ]
@@ -274,7 +274,7 @@ Return the union of multiple sets.
 
 Example:
 ```lean
-let members <- client.sUnion #["a", "b"]
+let members ← client.sUnion #["a", "b"]
 ```
 -/
 def Client.sUnion [Transport.Transport τ]
@@ -290,7 +290,7 @@ Store the union of multiple sets into a destination key.
 
 Example:
 ```lean
-let size <- client.sUnionStore "result" #["a", "b"]
+let size ← client.sUnionStore "result" #["a", "b"]
 ```
 -/
 def Client.sUnionStore [Transport.Transport τ]
@@ -307,7 +307,7 @@ Scan a set incrementally.
 
 Example:
 ```lean
-let page <- client.sScan "tags" 0
+let page ← client.sScan "tags" 0
 ```
 -/
 def Client.sScan [Transport.Transport τ]

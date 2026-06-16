@@ -11,7 +11,7 @@ Add scored members to a sorted set.
 
 Example:
 ```lean
-let added <- client.zAdd "scores" #[{ score := "10", member := "alice" }]
+let added ← client.zAdd "scores" #[{ score := "10", member := "alice" }]
 ```
 -/
 def Client.zAdd [Transport.Transport τ]
@@ -28,7 +28,7 @@ Remove members from a sorted set.
 
 Example:
 ```lean
-let removed <- client.zRem "scores" #["alice"]
+let removed ← client.zRem "scores" #["alice"]
 ```
 -/
 def Client.zRem [Transport.Transport τ]
@@ -45,7 +45,7 @@ Return the cardinality of a sorted set.
 
 Example:
 ```lean
-let size <- client.zCard "scores"
+let size ← client.zCard "scores"
 ```
 -/
 def Client.zCard [Transport.Transport τ]
@@ -61,7 +61,7 @@ Return the score of a sorted-set member.
 
 Example:
 ```lean
-let score <- client.zScore "scores" "alice"
+let score ← client.zScore "scores" "alice"
 ```
 -/
 def Client.zScore [Transport.Transport τ]
@@ -77,7 +77,7 @@ Return the scores for multiple sorted-set members.
 
 Example:
 ```lean
-let scores <- client.zMScore "scores" #["alice", "bob"]
+let scores ← client.zMScore "scores" #["alice", "bob"]
 ```
 -/
 def Client.zMScore [Transport.Transport τ]
@@ -94,7 +94,7 @@ Return the rank of a sorted-set member.
 
 Example:
 ```lean
-let rank <- client.zRank "scores" "alice"
+let rank ← client.zRank "scores" "alice"
 ```
 -/
 def Client.zRank [Transport.Transport τ]
@@ -110,7 +110,7 @@ Return the reverse rank of a sorted-set member.
 
 Example:
 ```lean
-let rank <- client.zRevRank "scores" "alice"
+let rank ← client.zRevRank "scores" "alice"
 ```
 -/
 def Client.zRevRank [Transport.Transport τ]
@@ -126,7 +126,7 @@ Return sorted-set members in score order by rank range.
 
 Example:
 ```lean
-let members <- client.zRange "scores" 0 (-1)
+let members ← client.zRange "scores" 0 (-1)
 ```
 -/
 def Client.zRange [Transport.Transport τ]
@@ -143,7 +143,7 @@ Return sorted-set members with scores by rank range.
 
 Example:
 ```lean
-let entries <- client.zRangeWithScores "scores" 0 (-1)
+let entries ← client.zRangeWithScores "scores" 0 (-1)
 ```
 -/
 def Client.zRangeWithScores [Transport.Transport τ]
@@ -160,7 +160,7 @@ Return sorted-set members in reverse score order by rank range.
 
 Example:
 ```lean
-let members <- client.zRevRange "scores" 0 (-1)
+let members ← client.zRevRange "scores" 0 (-1)
 ```
 -/
 def Client.zRevRange [Transport.Transport τ]
@@ -177,7 +177,7 @@ Return sorted-set members with scores in reverse score order.
 
 Example:
 ```lean
-let entries <- client.zRevRangeWithScores "scores" 0 (-1)
+let entries ← client.zRevRangeWithScores "scores" 0 (-1)
 ```
 -/
 def Client.zRevRangeWithScores [Transport.Transport τ]
@@ -194,7 +194,7 @@ Return sorted-set members within a score range.
 
 Example:
 ```lean
-let members <- client.zRangeByScore "scores" "0" "100"
+let members ← client.zRangeByScore "scores" "0" "100"
 ```
 -/
 def Client.zRangeByScore [Transport.Transport τ]
@@ -210,7 +210,7 @@ Return sorted-set members with scores within a score range.
 
 Example:
 ```lean
-let entries <- client.zRangeByScoreWithScores "scores" "0" "100"
+let entries ← client.zRangeByScoreWithScores "scores" "0" "100"
 ```
 -/
 def Client.zRangeByScoreWithScores [Transport.Transport τ]
@@ -226,7 +226,7 @@ Return sorted-set members within a reverse score range.
 
 Example:
 ```lean
-let members <- client.zRevRangeByScore "scores" "100" "0"
+let members ← client.zRevRangeByScore "scores" "100" "0"
 ```
 -/
 def Client.zRevRangeByScore [Transport.Transport τ]
@@ -242,7 +242,7 @@ Return sorted-set members with scores within a reverse score range.
 
 Example:
 ```lean
-let entries <- client.zRevRangeByScoreWithScores "scores" "100" "0"
+let entries ← client.zRevRangeByScoreWithScores "scores" "100" "0"
 ```
 -/
 def Client.zRevRangeByScoreWithScores [Transport.Transport τ]
@@ -258,7 +258,7 @@ Return sorted-set members within a lexicographic range.
 
 Example:
 ```lean
-let members <- client.zRangeByLex "names" "-" "+"
+let members ← client.zRangeByLex "names" "-" "+"
 ```
 -/
 def Client.zRangeByLex [Transport.Transport τ]
@@ -274,7 +274,7 @@ Return sorted-set members within a reverse lexicographic range.
 
 Example:
 ```lean
-let members <- client.zRevRangeByLex "names" "+" "-"
+let members ← client.zRevRangeByLex "names" "+" "-"
 ```
 -/
 def Client.zRevRangeByLex [Transport.Transport τ]
@@ -290,7 +290,7 @@ Count members within a score range.
 
 Example:
 ```lean
-let count <- client.zCount "scores" "0" "100"
+let count ← client.zCount "scores" "0" "100"
 ```
 -/
 def Client.zCount [Transport.Transport τ]
@@ -306,7 +306,7 @@ Count members within a lexicographic range.
 
 Example:
 ```lean
-let count <- client.zLexCount "names" "-" "+"
+let count ← client.zLexCount "names" "-" "+"
 ```
 -/
 def Client.zLexCount [Transport.Transport τ]
@@ -322,7 +322,7 @@ Remove members by rank range.
 
 Example:
 ```lean
-let removed <- client.zRemRangeByRank "scores" 0 1
+let removed ← client.zRemRangeByRank "scores" 0 1
 ```
 -/
 def Client.zRemRangeByRank [Transport.Transport τ]
@@ -339,7 +339,7 @@ Remove members by score range.
 
 Example:
 ```lean
-let removed <- client.zRemRangeByScore "scores" "0" "10"
+let removed ← client.zRemRangeByScore "scores" "0" "10"
 ```
 -/
 def Client.zRemRangeByScore [Transport.Transport τ]
@@ -355,7 +355,7 @@ Remove members by lexicographic range.
 
 Example:
 ```lean
-let removed <- client.zRemRangeByLex "names" "-" "+"
+let removed ← client.zRemRangeByLex "names" "-" "+"
 ```
 -/
 def Client.zRemRangeByLex [Transport.Transport τ]
@@ -371,7 +371,7 @@ Increment a sorted-set member score.
 
 Example:
 ```lean
-let score <- client.zIncrBy "scores" "1.5" "alice"
+let score ← client.zIncrBy "scores" "1.5" "alice"
 ```
 -/
 def Client.zIncrBy [Transport.Transport τ]
@@ -387,7 +387,7 @@ Return one random sorted-set member without removing it.
 
 Example:
 ```lean
-let member <- client.zRandMember "scores"
+let member ← client.zRandMember "scores"
 ```
 -/
 def Client.zRandMember [Transport.Transport τ]
@@ -403,7 +403,7 @@ Return random sorted-set members without removing them.
 
 Example:
 ```lean
-let members <- client.zRandMembers "scores" 2
+let members ← client.zRandMembers "scores" 2
 ```
 -/
 def Client.zRandMembers [Transport.Transport τ]
@@ -420,7 +420,7 @@ Return random sorted-set members with scores.
 
 Example:
 ```lean
-let entries <- client.zRandMembersWithScores "scores" 2
+let entries ← client.zRandMembersWithScores "scores" 2
 ```
 -/
 def Client.zRandMembersWithScores [Transport.Transport τ]
@@ -437,7 +437,7 @@ Return the difference of multiple sorted sets.
 
 Example:
 ```lean
-let members <- client.zDiff #["a", "b"]
+let members ← client.zDiff #["a", "b"]
 ```
 -/
 def Client.zDiff [Transport.Transport τ]
@@ -453,7 +453,7 @@ Store the difference of multiple sorted sets into a destination key.
 
 Example:
 ```lean
-let size <- client.zDiffStore "result" #["a", "b"]
+let size ← client.zDiffStore "result" #["a", "b"]
 ```
 -/
 def Client.zDiffStore [Transport.Transport τ]
@@ -470,7 +470,7 @@ Return the intersection of multiple sorted sets.
 
 Example:
 ```lean
-let members <- client.zInter #["a", "b"]
+let members ← client.zInter #["a", "b"]
 ```
 -/
 def Client.zInter [Transport.Transport τ]
@@ -486,7 +486,7 @@ Return the intersection cardinality of multiple sorted sets.
 
 Example:
 ```lean
-let size <- client.zInterCard #["a", "b"]
+let size ← client.zInterCard #["a", "b"]
 ```
 -/
 def Client.zInterCard [Transport.Transport τ]
@@ -502,7 +502,7 @@ Store the intersection of multiple sorted sets into a destination key.
 
 Example:
 ```lean
-let size <- client.zInterStore "result" #["a", "b"]
+let size ← client.zInterStore "result" #["a", "b"]
 ```
 -/
 def Client.zInterStore [Transport.Transport τ]
@@ -519,7 +519,7 @@ Return the union of multiple sorted sets.
 
 Example:
 ```lean
-let members <- client.zUnion #["a", "b"]
+let members ← client.zUnion #["a", "b"]
 ```
 -/
 def Client.zUnion [Transport.Transport τ]
@@ -535,7 +535,7 @@ Store the union of multiple sorted sets into a destination key.
 
 Example:
 ```lean
-let size <- client.zUnionStore "result" #["a", "b"]
+let size ← client.zUnionStore "result" #["a", "b"]
 ```
 -/
 def Client.zUnionStore [Transport.Transport τ]
@@ -552,7 +552,7 @@ Scan a sorted set incrementally.
 
 Example:
 ```lean
-let page <- client.zScan "scores" 0
+let page ← client.zScan "scores" 0
 ```
 -/
 def Client.zScan [Transport.Transport τ]

@@ -13,7 +13,7 @@ structure FakeTransport where
   writes : IO.Ref (Array ByteArray)
 
 private def shiftReplies (ref : IO.Ref (Array ByteArray)) : IO (Option ByteArray) := do
-  let replies <- ref.get
+  let replies ← ref.get
   match replies[0]? with
   | some reply =>
       ref.set (replies.extract 1 replies.size)
@@ -22,14 +22,14 @@ private def shiftReplies (ref : IO.Ref (Array ByteArray)) : IO (Option ByteArray
 
 instance : Transport.Transport FakeTransport where
   connect endpoint := do
-    let replies <- IO.mkRef <|
+    let replies ← IO.mkRef <|
       if endpoint.host == "resp2" then
         #["+OK\r\n".toUTF8]
       else if endpoint.host == "resp3-db" then
         #["%2\r\n+server\r\n+redis\r\n+proto\r\n:3\r\n".toUTF8, "+OK\r\n".toUTF8]
       else
         #["%2\r\n+server\r\n+redis\r\n+proto\r\n:3\r\n".toUTF8]
-    let writes <- IO.mkRef #[]
+    let writes ← IO.mkRef #[]
     pure { replies, writes }
 
   recv transport _ := do

@@ -11,7 +11,7 @@ Get the value of a string key.
 
 Example:
 ```lean
-let value <- client.get "key"
+let value ← client.get "key"
 ```
 -/
 def Client.get [Transport.Transport τ]
@@ -27,8 +27,8 @@ Set a string key with optional `SET` modifiers.
 
 Example:
 ```lean
-let stored <- client.set "key" "value"
-let storedNx <- client.set "key" "value" { condition? := some .nx }
+let stored ← client.set "key" "value"
+let storedNx ← client.set "key" "value" { condition? := some .nx }
 ```
 -/
 def Client.set [Transport.Transport τ]
@@ -45,7 +45,7 @@ Get multiple string keys with nullable results.
 
 Example:
 ```lean
-let values <- client.mGet #["a", "b"]
+let values ← client.mGet #["a", "b"]
 ```
 -/
 def Client.mGet [Transport.Transport τ]
@@ -61,7 +61,7 @@ Set multiple string entries with `MSET`.
 
 Example:
 ```lean
-let _ <- client.mSet #[("a", "1"), ("b", "2")]
+let _ ← client.mSet #[("a", "1"), ("b", "2")]
 ```
 -/
 def Client.mSet [Transport.Transport τ]
@@ -77,7 +77,7 @@ Set multiple string entries only if all keys are absent.
 
 Example:
 ```lean
-let stored <- client.mSetNx #[("a", "1"), ("b", "2")]
+let stored ← client.mSetNx #[("a", "1"), ("b", "2")]
 ```
 -/
 def Client.mSetNx [Transport.Transport τ]
@@ -93,7 +93,7 @@ Get and delete a string key.
 
 Example:
 ```lean
-let previous <- client.getDel "key"
+let previous ← client.getDel "key"
 ```
 -/
 def Client.getDel [Transport.Transport τ]
@@ -109,7 +109,7 @@ Get a string key and optionally update its expiration.
 
 Example:
 ```lean
-let value <- client.getEx "key" (some <| .persist)
+let value ← client.getEx "key" (some <| .persist)
 ```
 -/
 def Client.getEx [Transport.Transport τ]
@@ -126,7 +126,7 @@ Read a substring from a string value.
 
 Example:
 ```lean
-let part <- client.getRange "key" 0 4
+let part ← client.getRange "key" 0 4
 ```
 -/
 def Client.getRange [Transport.Transport τ]
@@ -143,7 +143,7 @@ Replace a string value and return the previous one.
 
 Example:
 ```lean
-let previous <- client.getSet "key" "next"
+let previous ← client.getSet "key" "next"
 ```
 -/
 def Client.getSet [Transport.Transport τ]
@@ -159,7 +159,7 @@ Overwrite part of a string starting at the given offset.
 
 Example:
 ```lean
-let size <- client.setRange "key" 2 "xy"
+let size ← client.setRange "key" 2 "xy"
 ```
 -/
 def Client.setRange [Transport.Transport τ]
@@ -177,7 +177,7 @@ Return the length of a string value.
 
 Example:
 ```lean
-let len <- client.strLen "key"
+let len ← client.strLen "key"
 ```
 -/
 def Client.strLen [Transport.Transport τ]
@@ -193,7 +193,7 @@ Append text to a string value.
 
 Example:
 ```lean
-let len <- client.append "key" "suffix"
+let len ← client.append "key" "suffix"
 ```
 -/
 def Client.append [Transport.Transport τ]
@@ -209,7 +209,7 @@ Increment a string integer value by one.
 
 Example:
 ```lean
-let value <- client.incr "counter"
+let value ← client.incr "counter"
 ```
 -/
 def Client.incr [Transport.Transport τ]
@@ -225,7 +225,7 @@ Increment a string integer value by the given amount.
 
 Example:
 ```lean
-let value <- client.incrBy "counter" 5
+let value ← client.incrBy "counter" 5
 ```
 -/
 def Client.incrBy [Transport.Transport τ]
@@ -242,7 +242,7 @@ Increment a string numeric value by a decimal amount.
 
 Example:
 ```lean
-let value <- client.incrByFloat "score" "1.5"
+let value ← client.incrByFloat "score" "1.5"
 ```
 -/
 def Client.incrByFloat [Transport.Transport τ]
@@ -258,7 +258,7 @@ Decrement a string integer value by one.
 
 Example:
 ```lean
-let value <- client.decr "counter"
+let value ← client.decr "counter"
 ```
 -/
 def Client.decr [Transport.Transport τ]
@@ -274,7 +274,7 @@ Decrement a string integer value by the given amount.
 
 Example:
 ```lean
-let value <- client.decrBy "counter" 3
+let value ← client.decrBy "counter" 3
 ```
 -/
 def Client.decrBy [Transport.Transport τ]
@@ -291,7 +291,7 @@ Set a string value only if the key does not exist.
 
 Example:
 ```lean
-let stored <- client.setNx "key" "value"
+let stored ← client.setNx "key" "value"
 ```
 -/
 def Client.setNx [Transport.Transport τ]
@@ -307,7 +307,7 @@ Set a string value with a TTL in seconds.
 
 Example:
 ```lean
-let _ <- client.setEx "key" 30 "value"
+let _ ← client.setEx "key" 30 "value"
 ```
 -/
 def Client.setEx [Transport.Transport τ]
@@ -325,7 +325,7 @@ Set a string value with a TTL in milliseconds.
 
 Example:
 ```lean
-let _ <- client.pSetEx "key" 500 "value"
+let _ ← client.pSetEx "key" 500 "value"
 ```
 -/
 def Client.pSetEx [Transport.Transport τ]

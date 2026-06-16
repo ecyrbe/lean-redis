@@ -13,7 +13,7 @@ structure FakeTransport where
   writes : IO.Ref (Array ByteArray)
 
 private def shiftReplies (ref : IO.Ref (Array ByteArray)) : IO (Option ByteArray) := do
-  let replies <- ref.get
+  let replies ← ref.get
   match replies[0]? with
   | some reply =>
       ref.set (replies.extract 1 replies.size)
@@ -22,7 +22,7 @@ private def shiftReplies (ref : IO.Ref (Array ByteArray)) : IO (Option ByteArray
 
 private def writesOf (client : Client FakeTransport) : IO (Array ByteArray) := do
   client.state.atomically fun ref => do
-    let state <- ref.get
+    let state ← ref.get
     match state.transport? with
     | some transport => transport.writes.get
     | none => pure #[]
@@ -50,8 +50,8 @@ private def scriptedReplies (host : String) : Array ByteArray :=
 
 instance : Transport.Transport FakeTransport where
   connect endpoint := do
-    let replies <- IO.mkRef <| scriptedReplies endpoint.host
-    let writes <- IO.mkRef #[]
+    let replies ← IO.mkRef <| scriptedReplies endpoint.host
+    let writes ← IO.mkRef #[]
     pure { replies, writes }
 
   recv transport _ := do
@@ -69,58 +69,58 @@ instance : Transport.Transport FakeTransport where
   close _ := pure ()
 
 def testLPush : Async Int := do
-  let client : Client FakeTransport <- Client.new {
+  let client : Client FakeTransport ← Client.new {
     endpoint := { host := "list-int", port := 6379 }
   }
   client.connect
   client.lPush "jobs" #["a", "b", "c"]
 
 def testLPop : Async (Option String) := do
-  let client : Client FakeTransport <- Client.new {
+  let client : Client FakeTransport ← Client.new {
     endpoint := { host := "list-pop", port := 6379 }
   }
   client.connect
   client.lPop "jobs"
 
 def testRPopNull : Async (Option String) := do
-  let client : Client FakeTransport <- Client.new {
+  let client : Client FakeTransport ← Client.new {
     endpoint := { host := "list-null", port := 6379 }
   }
   client.connect
   client.rPop "jobs"
 
 def testLRange : Async (Array String) := do
-  let client : Client FakeTransport <- Client.new {
+  let client : Client FakeTransport ← Client.new {
     endpoint := { host := "list-range", port := 6379 }
   }
   client.connect
   client.lRange "jobs" 0 (-1)
 
 def testLSet : Async String := do
-  let client : Client FakeTransport <- Client.new {
+  let client : Client FakeTransport ← Client.new {
     endpoint := { host := "list-ok", port := 6379 }
   }
   client.connect
-  let _ <- client.lSet "jobs" 1 "x"
-  let writes <- writesOf client
+  let _ ← client.lSet "jobs" 1 "x"
+  let writes ← writesOf client
   pure <| renderBytes <| writes[1]?.getD ByteArray.empty
 
 def testLMove : Async (Option String) := do
-  let client : Client FakeTransport <- Client.new {
+  let client : Client FakeTransport ← Client.new {
     endpoint := { host := "list-move", port := 6379 }
   }
   client.connect
   client.lMove "src" "dst" .right .left
 
 def testLPos : Async (Option Int) := do
-  let client : Client FakeTransport <- Client.new {
+  let client : Client FakeTransport ← Client.new {
     endpoint := { host := "list-lpos-one", port := 6379 }
   }
   client.connect
   client.lPos "jobs" "a" { rank? := some 2 }
 
 def testLPosMany : Async (Array Int) := do
-  let client : Client FakeTransport <- Client.new {
+  let client : Client FakeTransport ← Client.new {
     endpoint := { host := "list-lpos-many", port := 6379 }
   }
   client.connect

@@ -16,7 +16,7 @@ structure FakeTransport where
   writes : IO.Ref (Array ByteArray)
 
 private def shiftReplies (ref : IO.Ref (Array ByteArray)) : IO (Option ByteArray) := do
-  let replies <- ref.get
+  let replies ← ref.get
   match replies[0]? with
   | some reply =>
       ref.set (replies.extract 1 replies.size)
@@ -25,7 +25,7 @@ private def shiftReplies (ref : IO.Ref (Array ByteArray)) : IO (Option ByteArray
 
 private def writesOf (client : Client FakeTransport) : IO (Array ByteArray) := do
   client.state.atomically fun ref => do
-    let state <- ref.get
+    let state ← ref.get
     match state.transport? with
     | some transport => transport.writes.get
     | none => pure #[]
@@ -65,8 +65,8 @@ private def scriptedReplies (host : String) : Array ByteArray :=
 
 instance : Transport.Transport FakeTransport where
   connect endpoint := do
-    let replies <- IO.mkRef <| scriptedReplies endpoint.host
-    let writes <- IO.mkRef #[]
+    let replies ← IO.mkRef <| scriptedReplies endpoint.host
+    let writes ← IO.mkRef #[]
     pure { replies, writes }
 
   recv transport _ := do
@@ -84,7 +84,7 @@ instance : Transport.Transport FakeTransport where
   close _ := pure ()
 
 def testPipelineGetSetGet : Async (HList [Option String, Bool, Option String]) := do
-  let client : Client FakeTransport <- Client.new {
+  let client : Client FakeTransport ← Client.new {
     endpoint := { host := "pipeline-get-set-get", port := 6379 }
   }
   client.connect
@@ -95,7 +95,7 @@ def testPipelineGetSetGet : Async (HList [Option String, Bool, Option String]) :
       |>.get "k3"
 
 def testPipelineSetMGet : Async (HList [Bool, Array (Option String)]) := do
-  let client : Client FakeTransport <- Client.new {
+  let client : Client FakeTransport ← Client.new {
     endpoint := { host := "pipeline-set-mget", port := 6379 }
   }
   client.connect
@@ -106,11 +106,11 @@ def testPipelineSetMGet : Async (HList [Bool, Array (Option String)]) := do
 
 def testPipelineServerError : Async String := do
   try
-    let client : Client FakeTransport <- Client.new {
+    let client : Client FakeTransport ← Client.new {
       endpoint := { host := "pipeline-server-error", port := 6379 }
     }
     client.connect
-    let _ <- client.runPipeline <|
+    let _ ← client.runPipeline <|
       Pipeline.empty
         |>.get "k1"
         |>.get "k2"
@@ -119,24 +119,24 @@ def testPipelineServerError : Async String := do
     pure err.toString
 
 def testPipelineWritesCount : Async Nat := do
-  let client : Client FakeTransport <- Client.new {
+  let client : Client FakeTransport ← Client.new {
     endpoint := { host := "pipeline-get-set-get", port := 6379 }
   }
   client.connect
-  let _ <- client.runPipeline <|
+  let _ ← client.runPipeline <|
     Pipeline.empty
       |>.get "k1"
       |>.set "k2" "v"
       |>.get "k3"
-  let writes <- writesOf client
+  let writes ← writesOf client
   pure writes.size
 
 def testPipelineFailsWhenDisconnected : Async String := do
   try
-    let client : Client FakeTransport <- Client.new {
+    let client : Client FakeTransport ← Client.new {
       endpoint := { host := "pipeline-get-set-get", port := 6379 }
     }
-    let _ <- client.runPipeline <|
+    let _ ← client.runPipeline <|
       Pipeline.empty
         |>.get "k1"
     pure "unexpected success"
@@ -145,11 +145,11 @@ def testPipelineFailsWhenDisconnected : Async String := do
 
 def testPipelineIncompleteReplies : Async String := do
   try
-    let client : Client FakeTransport <- Client.new {
+    let client : Client FakeTransport ← Client.new {
       endpoint := { host := "pipeline-incomplete-replies", port := 6379 }
     }
     client.connect
-    let _ <- client.runPipeline <|
+    let _ ← client.runPipeline <|
       Pipeline.empty
         |>.get "k1"
         |>.get "k2"

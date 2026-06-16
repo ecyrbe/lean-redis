@@ -28,16 +28,16 @@ def testDriverConnectToReady : Async Protocol.Phase := do
   pure s'.session.phase
 
 def testDefaultClientStartsDisconnected : Async Bool := do
-  let client <- Client.newDefault {
+  let client ← Client.newDefault {
     endpoint := { host := "127.0.0.1", port := 6379 }
   }
   Client.isConnected client
 
 def testCustomClientConnectNow : Async Bool := do
-  let client: Client FakeTransport <- Client.new {
+  let client: Client FakeTransport ← Client.new {
     endpoint := { host := "127.0.0.1", port := 6379 }
   }
-  let _ <- Client.connect client
+  let _ ← Client.connect client
   Client.isConnected client
 
 /--

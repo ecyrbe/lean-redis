@@ -13,7 +13,7 @@ structure FakeTransport where
   writes : IO.Ref (Array ByteArray)
 
 private def shiftReplies (ref : IO.Ref (Array ByteArray)) : IO (Option ByteArray) := do
-  let replies <- ref.get
+  let replies ← ref.get
   match replies[0]? with
   | some reply =>
       ref.set (replies.extract 1 replies.size)
@@ -22,7 +22,7 @@ private def shiftReplies (ref : IO.Ref (Array ByteArray)) : IO (Option ByteArray
 
 private def writesOf (client : Client FakeTransport) : IO (Array ByteArray) := do
   client.state.atomically fun ref => do
-    let state <- ref.get
+    let state ← ref.get
     match state.transport? with
     | some transport => transport.writes.get
     | none => pure #[]
@@ -50,8 +50,8 @@ private def scriptedReplies (host : String) : Array ByteArray :=
 
 instance : Transport.Transport FakeTransport where
   connect endpoint := do
-    let replies <- IO.mkRef <| scriptedReplies endpoint.host
-    let writes <- IO.mkRef #[]
+    let replies ← IO.mkRef <| scriptedReplies endpoint.host
+    let writes ← IO.mkRef #[]
     pure { replies, writes }
 
   recv transport _ := do
@@ -69,69 +69,69 @@ instance : Transport.Transport FakeTransport where
   close _ := pure ()
 
 def testZAdd : Async Int := do
-  let client : Client FakeTransport <- Client.new {
+  let client : Client FakeTransport ← Client.new {
     endpoint := { host := "zset-int", port := 6379 }
   }
   client.connect
   client.zAdd "scores" #[{ score := "10", member := "alice" }, { score := "20", member := "bob" }]
 
 def testZScore : Async (Option String) := do
-  let client : Client FakeTransport <- Client.new {
+  let client : Client FakeTransport ← Client.new {
     endpoint := { host := "zset-score", port := 6379 }
   }
   client.connect
   client.zScore "scores" "alice"
 
 def testZMScore : Async (Array (Option String)) := do
-  let client : Client FakeTransport <- Client.new {
+  let client : Client FakeTransport ← Client.new {
     endpoint := { host := "zset-scores", port := 6379 }
   }
   client.connect
   client.zMScore "scores" #["alice", "carol", "bob"]
 
 def testZRank : Async (Option Int) := do
-  let client : Client FakeTransport <- Client.new {
+  let client : Client FakeTransport ← Client.new {
     endpoint := { host := "zset-rank", port := 6379 }
   }
   client.connect
   client.zRank "scores" "alice"
 
 def testZRange : Async (Array String) := do
-  let client : Client FakeTransport <- Client.new {
+  let client : Client FakeTransport ← Client.new {
     endpoint := { host := "zset-members", port := 6379 }
   }
   client.connect
   client.zRange "scores" 0 (-1)
 
 def testZRangeWithScores : Async (Array SortedSetEntry) := do
-  let client : Client FakeTransport <- Client.new {
+  let client : Client FakeTransport ← Client.new {
     endpoint := { host := "zset-withscores", port := 6379 }
   }
   client.connect
   client.zRangeWithScores "scores" 0 (-1)
 
 def testZRandMemberNull : Async (Option String) := do
-  let client : Client FakeTransport <- Client.new {
+  let client : Client FakeTransport ← Client.new {
     endpoint := { host := "zset-rand-null", port := 6379 }
   }
   client.connect
   client.zRandMember "scores"
 
 def testZScan : Async String := do
-  let client : Client FakeTransport <- Client.new {
+  let client : Client FakeTransport ← Client.new {
     endpoint := { host := "zset-scan", port := 6379 }
   }
   client.connect
-  let result <- client.zScan "scores" 0 { count? := some 10 }
+  let result ← client.zScan "scores" 0 { count? := some 10 }
   pure s!"{result.cursor}|{result.entries.size}|{result.entries[0]?.map SortedSetEntry.member |>.getD ""}"
 
 def testZScanWritesExpectedFrame : Async String := do
-  let client : Client FakeTransport <- Client.new {
+  let client : Client FakeTransport ← Client.new {
     endpoint := { host := "zset-scan", port := 6379 }
   }
   client.connect
-  let _ <- client.zScan "scores" 0 { match? := some "a*", count? := some 10 }
-  let writes <- writesOf client
+  let _ ← client.zScan "scores" 0 { match? := some "a*", count? := some 10 }
+  let writes ← writesOf client
   pure <| renderBytes <| writes[1]?.getD ByteArray.empty
 
 /--

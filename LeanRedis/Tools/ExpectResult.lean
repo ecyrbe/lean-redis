@@ -118,8 +118,8 @@ def expectStringPairs (context : String) (reply : Protocol.Resp.Value) : Except 
       decodeStringPairsFromArray context items
   | .map entries =>
       entries.mapM fun (key, value) => do
-        let key <- expectString context key
-        let value <- expectString context value
+        let key ← expectString context key
+        let value ← expectString context value
         return (key, value)
   | .simpleError message => throw <| .server message
   | _ => throw <| .decode s!"unexpected {context} reply"
@@ -127,15 +127,15 @@ def expectStringPairs (context : String) (reply : Protocol.Resp.Value) : Except 
 def expectHScanResult (reply : Protocol.Resp.Value) : Except Error HashScanResult := do
   match reply with
   | .array #[cursor, entries] =>
-      let cursorText <- expectString "HSCAN" cursor
+      let cursorText ← expectString "HSCAN" cursor
       let some cursor := cursorText.toNat?
         | throw <| .decode "invalid HSCAN cursor"
-      let entries <- match entries with
+      let entries ← match entries with
         | .array items => decodeStringPairsFromArray "HSCAN" items
         | .map kvs =>
             kvs.mapM fun (key, value) => do
-              let key <- expectString "HSCAN" key
-              let value <- expectString "HSCAN" value
+              let key ← expectString "HSCAN" key
+              let value ← expectString "HSCAN" value
               return (key, value)
         | .simpleError message => throw <| .server message
         | _ => throw <| .decode "unexpected HSCAN entries reply"
@@ -146,10 +146,10 @@ def expectHScanResult (reply : Protocol.Resp.Value) : Except Error HashScanResul
 def expectSetScanResult (reply : Protocol.Resp.Value) : Except Error SetScanResult := do
   match reply with
   | .array #[cursor, members] =>
-      let cursorText <- expectString "SSCAN" cursor
+      let cursorText ← expectString "SSCAN" cursor
       let some cursor := cursorText.toNat?
         | throw <| .decode "invalid SSCAN cursor"
-      let members <- expectPlainStringArray "SSCAN" members
+      let members ← expectPlainStringArray "SSCAN" members
       return { cursor := cursor.toUInt64, members }
   | .simpleError message => throw <| .server message
   | _ => throw <| .decode "unexpected SSCAN reply"
@@ -157,10 +157,10 @@ def expectSetScanResult (reply : Protocol.Resp.Value) : Except Error SetScanResu
 def expectScanResult (reply : Protocol.Resp.Value) : Except Error ScanResult := do
   match reply with
   | .array #[cursor, keys] =>
-      let cursorText <- expectString "SCAN" cursor
+      let cursorText ← expectString "SCAN" cursor
       let some cursor := cursorText.toNat?
         | throw <| .decode "invalid SCAN cursor"
-      let keys <- expectPlainStringArray "SCAN" keys
+      let keys ← expectPlainStringArray "SCAN" keys
       return { cursor := cursor.toUInt64, keys }
   | .simpleError message => throw <| .server message
   | _ => throw <| .decode "unexpected SCAN reply"
@@ -196,8 +196,8 @@ def expectSortedSetEntries (context : String) (reply : Protocol.Resp.Value) : Ex
       decodeSortedSetEntriesFromArray context items
   | .map entries =>
       entries.mapM fun (member, score) => do
-        let member <- expectString context member
-        let score <- expectString context score
+        let member ← expectString context member
+        let score ← expectString context score
         return { member, score }
   | .simpleError message => throw <| .server message
   | _ => throw <| .decode s!"unexpected {context} reply"
@@ -205,10 +205,10 @@ def expectSortedSetEntries (context : String) (reply : Protocol.Resp.Value) : Ex
 def expectSortedSetScanResult (reply : Protocol.Resp.Value) : Except Error SortedSetScanResult := do
   match reply with
   | .array #[cursor, entries] =>
-      let cursorText <- expectString "ZSCAN" cursor
+      let cursorText ← expectString "ZSCAN" cursor
       let some cursor := cursorText.toNat?
         | throw <| .decode "invalid ZSCAN cursor"
-      let entries <- expectSortedSetEntries "ZSCAN" entries
+      let entries ← expectSortedSetEntries "ZSCAN" entries
       return { cursor := cursor.toUInt64, entries }
   | .simpleError message => throw <| .server message
   | _ => throw <| .decode "unexpected ZSCAN reply"

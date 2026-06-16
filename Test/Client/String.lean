@@ -13,7 +13,7 @@ structure FakeTransport where
   writes : IO.Ref (Array ByteArray)
 
 private def shiftReplies (ref : IO.Ref (Array ByteArray)) : IO (Option ByteArray) := do
-  let replies <- ref.get
+  let replies ← ref.get
   match replies[0]? with
   | some reply =>
       ref.set (replies.extract 1 replies.size)
@@ -22,7 +22,7 @@ private def shiftReplies (ref : IO.Ref (Array ByteArray)) : IO (Option ByteArray
 
 private def writesOf (client : Client FakeTransport) : IO (Array ByteArray) := do
   client.state.atomically fun ref => do
-    let state <- ref.get
+    let state ← ref.get
     match state.transport? with
     | some transport => transport.writes.get
     | none => pure #[]
@@ -54,8 +54,8 @@ private def scriptedReplies (host : String) : Array ByteArray :=
 
 instance : Transport.Transport FakeTransport where
   connect endpoint := do
-    let replies <- IO.mkRef <| scriptedReplies endpoint.host
-    let writes <- IO.mkRef #[]
+    let replies ← IO.mkRef <| scriptedReplies endpoint.host
+    let writes ← IO.mkRef #[]
     pure { replies, writes }
 
   recv transport _ := do
@@ -73,75 +73,75 @@ instance : Transport.Transport FakeTransport where
   close _ := pure ()
 
 def testGet : Async (Option String) := do
-  let client : Client FakeTransport <- Client.new {
+  let client : Client FakeTransport ← Client.new {
     endpoint := { host := "string-get", port := 6379 }
   }
   client.connect
   client.get "name"
 
 def testSetReturnsStored : Async Bool := do
-  let client : Client FakeTransport <- Client.new {
+  let client : Client FakeTransport ← Client.new {
     endpoint := { host := "string-set-ok", port := 6379 }
   }
   client.connect
   client.set "name" "alice"
 
 def testSetNxStyleMissReturnsFalse : Async Bool := do
-  let client : Client FakeTransport <- Client.new {
+  let client : Client FakeTransport ← Client.new {
     endpoint := { host := "string-set-nx-miss", port := 6379 }
   }
   client.connect
   client.set "name" "alice" { condition? := some .nx }
 
 def testMGet : Async (Array (Option String)) := do
-  let client : Client FakeTransport <- Client.new {
+  let client : Client FakeTransport ← Client.new {
     endpoint := { host := "string-mget", port := 6379 }
   }
   client.connect
   client.mGet #["a", "b", "c"]
 
 def testMSetNx : Async Bool := do
-  let client : Client FakeTransport <- Client.new {
+  let client : Client FakeTransport ← Client.new {
     endpoint := { host := "string-bool", port := 6379 }
   }
   client.connect
   client.mSetNx #[("a", "1")]
 
 def testGetDelNull : Async (Option String) := do
-  let client : Client FakeTransport <- Client.new {
+  let client : Client FakeTransport ← Client.new {
     endpoint := { host := "string-getdel-null", port := 6379 }
   }
   client.connect
   client.getDel "name"
 
 def testGetRange : Async String := do
-  let client : Client FakeTransport <- Client.new {
+  let client : Client FakeTransport ← Client.new {
     endpoint := { host := "string-getrange", port := 6379 }
   }
   client.connect
   client.getRange "name" 0 2
 
 def testAppend : Async Int := do
-  let client : Client FakeTransport <- Client.new {
+  let client : Client FakeTransport ← Client.new {
     endpoint := { host := "string-int", port := 6379 }
   }
   client.connect
   client.append "name" "ice"
 
 def testIncrByFloat : Async String := do
-  let client : Client FakeTransport <- Client.new {
+  let client : Client FakeTransport ← Client.new {
     endpoint := { host := "string-float", port := 6379 }
   }
   client.connect
   client.incrByFloat "counter" "1.5"
 
 def testSetExWritesTwoFrames : Async String := do
-  let client : Client FakeTransport <- Client.new {
+  let client : Client FakeTransport ← Client.new {
     endpoint := { host := "string-setex", port := 6379 }
   }
   client.connect
-  let _ <- client.setEx "name" 10 "alice"
-  let writes <- writesOf client
+  let _ ← client.setEx "name" 10 "alice"
+  let writes ← writesOf client
   pure <| renderBytes <| writes[1]?.getD ByteArray.empty
 
 /--

@@ -13,7 +13,7 @@ structure FakeTransport where
   writes : IO.Ref (Array ByteArray)
 
 private def shiftReplies (ref : IO.Ref (Array ByteArray)) : IO (Option ByteArray) := do
-  let replies <- ref.get
+  let replies ← ref.get
   match replies[0]? with
   | some reply =>
       ref.set (replies.extract 1 replies.size)
@@ -22,7 +22,7 @@ private def shiftReplies (ref : IO.Ref (Array ByteArray)) : IO (Option ByteArray
 
 private def writesOf (client : Client FakeTransport) : IO (Array ByteArray) := do
   client.state.atomically fun ref => do
-    let state <- ref.get
+    let state ← ref.get
     match state.transport? with
     | some transport => transport.writes.get
     | none => pure #[]
@@ -58,8 +58,8 @@ private def scriptedReplies (host : String) : Array ByteArray :=
 
 instance : Transport.Transport FakeTransport where
   connect endpoint := do
-    let replies <- IO.mkRef <| scriptedReplies endpoint.host
-    let writes <- IO.mkRef #[]
+    let replies ← IO.mkRef <| scriptedReplies endpoint.host
+    let writes ← IO.mkRef #[]
     pure { replies, writes }
 
   recv transport _ := do
@@ -77,90 +77,90 @@ instance : Transport.Transport FakeTransport where
   close _ := pure ()
 
 def testHGet : Async (Option String) := do
-  let client : Client FakeTransport <- Client.new {
+  let client : Client FakeTransport ← Client.new {
     endpoint := { host := "hash-get", port := 6379 }
   }
   client.connect
   client.hGet "user:1" "name"
 
 def testHSet : Async Int := do
-  let client : Client FakeTransport <- Client.new {
+  let client : Client FakeTransport ← Client.new {
     endpoint := { host := "hash-set", port := 6379 }
   }
   client.connect
   client.hSet "user:1" #[("name", "alice"), ("role", "admin")]
 
 def testHMGet : Async (Array (Option String)) := do
-  let client : Client FakeTransport <- Client.new {
+  let client : Client FakeTransport ← Client.new {
     endpoint := { host := "hash-mget", port := 6379 }
   }
   client.connect
   client.hMGet "user:1" #["name", "email", "role"]
 
 def testHGetAllMap : Async (Array (String × String)) := do
-  let client : Client FakeTransport <- Client.new {
+  let client : Client FakeTransport ← Client.new {
     endpoint := { host := "hash-getall-map", port := 6379 }
   }
   client.connect
   client.hGetAll "user:1"
 
 def testHGetAllArray : Async (Array (String × String)) := do
-  let client : Client FakeTransport <- Client.new {
+  let client : Client FakeTransport ← Client.new {
     endpoint := { host := "hash-getall-array", port := 6379 }
   }
   client.connect
   client.hGetAll "user:1"
 
 def testHExists : Async Bool := do
-  let client : Client FakeTransport <- Client.new {
+  let client : Client FakeTransport ← Client.new {
     endpoint := { host := "hash-bool", port := 6379 }
   }
   client.connect
   client.hExists "user:1" "name"
 
 def testHKeys : Async (Array String) := do
-  let client : Client FakeTransport <- Client.new {
+  let client : Client FakeTransport ← Client.new {
     endpoint := { host := "hash-array", port := 6379 }
   }
   client.connect
   client.hKeys "user:1"
 
 def testHIncrByFloat : Async String := do
-  let client : Client FakeTransport <- Client.new {
+  let client : Client FakeTransport ← Client.new {
     endpoint := { host := "hash-float", port := 6379 }
   }
   client.connect
   client.hIncrByFloat "scores" "pi" "1.5"
 
 def testHRandFieldNull : Async (Option String) := do
-  let client : Client FakeTransport <- Client.new {
+  let client : Client FakeTransport ← Client.new {
     endpoint := { host := "hash-rand-null", port := 6379 }
   }
   client.connect
   client.hRandField "user:1"
 
 def testHRandFieldsWithValues : Async (Array (String × String)) := do
-  let client : Client FakeTransport <- Client.new {
+  let client : Client FakeTransport ← Client.new {
     endpoint := { host := "hash-rand-pairs", port := 6379 }
   }
   client.connect
   client.hRandFieldsWithValues "user:1" 2
 
 def testHScan : Async String := do
-  let client : Client FakeTransport <- Client.new {
+  let client : Client FakeTransport ← Client.new {
     endpoint := { host := "hash-scan", port := 6379 }
   }
   client.connect
-  let result <- client.hScan "user:1" 0 { count? := some 10 }
+  let result ← client.hScan "user:1" 0 { count? := some 10 }
   pure s!"{result.cursor}|{result.entries.size}|{result.entries[0]?.map Prod.fst |>.getD ""}"
 
 def testHScanWritesExpectedFrame : Async String := do
-  let client : Client FakeTransport <- Client.new {
+  let client : Client FakeTransport ← Client.new {
     endpoint := { host := "hash-scan", port := 6379 }
   }
   client.connect
-  let _ <- client.hScan "user:1" 0 { match? := some "na*", count? := some 10 }
-  let writes <- writesOf client
+  let _ ← client.hScan "user:1" 0 { match? := some "na*", count? := some 10 }
+  let writes ← writesOf client
   pure <| renderBytes <| writes[1]?.getD ByteArray.empty
 
 /--

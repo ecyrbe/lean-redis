@@ -11,7 +11,7 @@ Push values to the left side of a list.
 
 Example:
 ```lean
-let len <- client.lPush "jobs" #["a", "b"]
+let len ← client.lPush "jobs" #["a", "b"]
 ```
 -/
 def Client.lPush [Transport.Transport τ]
@@ -28,7 +28,7 @@ Push values to the right side of a list.
 
 Example:
 ```lean
-let len <- client.rPush "jobs" #["a", "b"]
+let len ← client.rPush "jobs" #["a", "b"]
 ```
 -/
 def Client.rPush [Transport.Transport τ]
@@ -45,7 +45,7 @@ Push a value to the left only if the list already exists.
 
 Example:
 ```lean
-let len <- client.lPushX "jobs" "a"
+let len ← client.lPushX "jobs" "a"
 ```
 -/
 def Client.lPushX [Transport.Transport τ]
@@ -61,7 +61,7 @@ Push a value to the right only if the list already exists.
 
 Example:
 ```lean
-let len <- client.rPushX "jobs" "a"
+let len ← client.rPushX "jobs" "a"
 ```
 -/
 def Client.rPushX [Transport.Transport τ]
@@ -77,7 +77,7 @@ Pop one value from the left side of a list.
 
 Example:
 ```lean
-let value <- client.lPop "jobs"
+let value ← client.lPop "jobs"
 ```
 -/
 def Client.lPop [Transport.Transport τ]
@@ -93,7 +93,7 @@ Pop one value from the right side of a list.
 
 Example:
 ```lean
-let value <- client.rPop "jobs"
+let value ← client.rPop "jobs"
 ```
 -/
 def Client.rPop [Transport.Transport τ]
@@ -109,7 +109,7 @@ Return the current length of a list.
 
 Example:
 ```lean
-let len <- client.lLen "jobs"
+let len ← client.lLen "jobs"
 ```
 -/
 def Client.lLen [Transport.Transport τ]
@@ -125,7 +125,7 @@ Return the value at a list index.
 
 Example:
 ```lean
-let value <- client.lIndex "jobs" 0
+let value ← client.lIndex "jobs" 0
 ```
 -/
 def Client.lIndex [Transport.Transport τ]
@@ -142,7 +142,7 @@ Return a range of list elements.
 
 Example:
 ```lean
-let values <- client.lRange "jobs" 0 (-1)
+let values ← client.lRange "jobs" 0 (-1)
 ```
 -/
 def Client.lRange [Transport.Transport τ]
@@ -159,7 +159,7 @@ Replace the value at a list index.
 
 Example:
 ```lean
-let _ <- client.lSet "jobs" 0 "next"
+let _ ← client.lSet "jobs" 0 "next"
 ```
 -/
 def Client.lSet [Transport.Transport τ]
@@ -177,7 +177,7 @@ Trim a list to the given inclusive range.
 
 Example:
 ```lean
-let _ <- client.lTrim "jobs" 0 9
+let _ ← client.lTrim "jobs" 0 9
 ```
 -/
 def Client.lTrim [Transport.Transport τ]
@@ -194,7 +194,7 @@ Remove matching elements from a list.
 
 Example:
 ```lean
-let removed <- client.lRem "jobs" 0 "done"
+let removed ← client.lRem "jobs" 0 "done"
 ```
 -/
 def Client.lRem [Transport.Transport τ]
@@ -212,7 +212,7 @@ Insert a value before or after a pivot element.
 
 Example:
 ```lean
-let index <- client.lInsert "jobs" .after "a" "b"
+let index ← client.lInsert "jobs" .after "a" "b"
 ```
 -/
 def Client.lInsert [Transport.Transport τ]
@@ -230,7 +230,7 @@ Move one element between lists.
 
 Example:
 ```lean
-let value <- client.lMove "jobs" "done" .left .right
+let value ← client.lMove "jobs" "done" .left .right
 ```
 -/
 def Client.lMove [Transport.Transport τ]
@@ -247,7 +247,7 @@ Return a single matching position from `LPOS`.
 
 Example:
 ```lean
-let pos <- client.lPos "jobs" "a"
+let pos ← client.lPos "jobs" "a"
 ```
 -/
 def Client.lPos [Transport.Transport τ]
@@ -266,7 +266,7 @@ Return multiple matching positions from `LPOS`.
 
 Example:
 ```lean
-let positions <- client.lPosMany "jobs" "a" { count? := some 3 }
+let positions ← client.lPosMany "jobs" "a" { count? := some 3 }
 ```
 -/
 def Client.lPosMany [Transport.Transport τ]

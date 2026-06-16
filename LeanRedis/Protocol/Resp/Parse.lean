@@ -46,7 +46,7 @@ def parseLineBytes : Parser ByteArray := do
   return bytes.toByteArray
 
 def parseLineText : Parser String := do
-  let bytes <- parseLineBytes
+  let bytes ← parseLineBytes
   match decodeUtf8 bytes with
   | .ok text => pure text
   | .error message => fail message
@@ -60,25 +60,25 @@ def parseVerbatim (bytes : ByteArray) : Resp.Value :=
   | .error _ => .verbatimString "bin" ""
 
 def parseLengthHeader : Parser Int := do
-  let text <- parseLineText
+  let text ← parseLineText
   match parseIntText text with
   | .ok value => pure value
   | .error message => fail message
 
 partial def parseBlobLike (mkValue : ByteArray -> Resp.Value) : Parser Resp.Value := do
-  let length <- parseLengthHeader
+  let length ← parseLengthHeader
   if length == -1 then
     pure .null
   else if length < 0 then
     fail s!"invalid bulk length: {length}"
   else
-    let payload <- Std.Internal.Parsec.ByteArray.take length.natAbs
+    let payload ← Std.Internal.Parsec.ByteArray.take length.natAbs
     Std.Internal.Parsec.ByteArray.skipByte cr
     Std.Internal.Parsec.ByteArray.skipByte lf
     pure <| mkValue payload.toByteArray
 
 partial def parseBool : Parser Resp.Value := do
-  let text <- parseLineText
+  let text ← parseLineText
   match text with
   | "t" => pure (.bool true)
   | "f" => pure (.bool false)
@@ -90,7 +90,7 @@ partial def parseNumber : Parser Resp.Value := do
 mutual
 
 partial def parseArrayLike (mkValue : Array Resp.Value -> Resp.Value) : Parser Resp.Value := do
-  let length <- parseLengthHeader
+  let length ← parseLengthHeader
   if length == -1 then
     pure .null
   else if length < 0 then
@@ -99,7 +99,7 @@ partial def parseArrayLike (mkValue : Array Resp.Value -> Resp.Value) : Parser R
     return mkValue (← parseAggregateItems length.natAbs)
 
 partial def parseMap : Parser Resp.Value := do
-  let length <- parseLengthHeader
+  let length ← parseLengthHeader
   if length == -1 then
     pure .null
   else if length < 0 then
@@ -112,7 +112,7 @@ partial def parseAggregateItems (count : Nat) : Parser (Array Resp.Value) := do
     if remaining == 0 then
       pure acc
     else
-      let value <- parseValue
+      let value ← parseValue
       loop (remaining - 1) (acc.push value)
   loop count #[]
 
@@ -121,13 +121,13 @@ partial def parseMapEntries (count : Nat) : Parser (Array (Resp.Value × Resp.Va
     if remaining == 0 then
       pure acc
     else
-      let key <- parseValue
-      let value <- parseValue
+      let key ← parseValue
+      let value ← parseValue
       loop (remaining - 1) (acc.push (key, value))
   loop count #[]
 
 partial def parseValue : Parser Resp.Value := do
-  let marker <- any
+  let marker ← any
   if marker == '+'.toUInt8 then
     return .simpleString (← parseLineText)
   if marker == '-'.toUInt8 then
@@ -135,7 +135,7 @@ partial def parseValue : Parser Resp.Value := do
   if marker == ':'.toUInt8 then
     return ← parseNumber
   if marker == '_'.toUInt8 then
-    let _ <- parseLineBytes
+    let _ ← parseLineBytes
     return .null
   if marker == '#'.toUInt8 then
     return ← parseBool

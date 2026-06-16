@@ -113,12 +113,12 @@ open LeanRedis
 open Std.Internal.IO.Async
 
 def example : Async (Option String) := do
-  let client <- Client.newDefault {
+  let client ← Client.newDefault {
     endpoint := { host := "127.0.0.1", port := 6379 }
     reconnectStrategy := .exponentialBackoff {}
   }
-  let _ <- client.connect
-  let _ <- client.set "greeting" "hello"
+  let _ ← client.connect
+  let _ ← client.set "greeting" "hello"
   client.get "greeting"
 ```
 
@@ -128,10 +128,10 @@ Basic connection commands:
 
 ```lean
 def pingExample : Async (Option String) := do
-  let client <- LeanRedis.Client.newDefault {
+  let client ← LeanRedis.Client.newDefault {
     endpoint := { host := "127.0.0.1", port := 6379 }
   }
-  let _ <- client.connect
+  let _ ← client.connect
   client.ping
 ```
 
@@ -139,7 +139,7 @@ Reconnect and event callbacks:
 
 ```lean
 def reconnectingExample : Async Unit := do
-  let client <- LeanRedis.Client.newDefault {
+  let client ← LeanRedis.Client.newDefault {
     endpoint := { host := "127.0.0.1", port := 6379 }
     reconnectStrategy := .exponentialBackoff {
       baseDelayMs := 100
@@ -147,9 +147,9 @@ def reconnectingExample : Async Unit := do
       jitter := true
     }
   }
-  let _sub <- client.onEvent fun event => do
+  let _sub ← client.onEvent fun event => do
     IO.println s!"redis event: {repr event}"
-  let _ <- client.connect
+  let _ ← client.connect
   pure ()
 ```
 
@@ -157,12 +157,12 @@ String operations:
 
 ```lean
 def stringExample : Async (Option String) := do
-  let client <- LeanRedis.Client.newDefault {
+  let client ← LeanRedis.Client.newDefault {
     endpoint := { host := "127.0.0.1", port := 6379 }
   }
-  let _ <- client.connect
-  let _ <- client.set "counter" "1"
-  let _ <- client.incr "counter"
+  let _ ← client.connect
+  let _ ← client.set "counter" "1"
+  let _ ← client.incr "counter"
   client.get "counter"
 ```
 
@@ -170,11 +170,11 @@ Hash operations:
 
 ```lean
 def hashExample : Async (Array (String × String)) := do
-  let client <- LeanRedis.Client.newDefault {
+  let client ← LeanRedis.Client.newDefault {
     endpoint := { host := "127.0.0.1", port := 6379 }
   }
-  let _ <- client.connect
-  let _ <- client.hSet "user:1" #[("name", "alice"), ("role", "admin")]
+  let _ ← client.connect
+  let _ ← client.hSet "user:1" #[("name", "alice"), ("role", "admin")]
   client.hGetAll "user:1"
 ```
 
@@ -182,11 +182,11 @@ Sorted set operations:
 
 ```lean
 def sortedSetExample : Async (Array LeanRedis.SortedSetEntry) := do
-  let client <- LeanRedis.Client.newDefault {
+  let client ← LeanRedis.Client.newDefault {
     endpoint := { host := "127.0.0.1", port := 6379 }
   }
-  let _ <- client.connect
-  let _ <- client.zAdd "scores" #[
+  let _ ← client.connect
+  let _ ← client.zAdd "scores" #[
     { score := "10", member := "alice" },
     { score := "20", member := "bob" }
   ]
@@ -197,11 +197,11 @@ Pipeline operations:
 
 ```lean
 def pipelineExample : Async (Option String × Bool × Option String) := do
-  let client <- Client.newDefault {
+  let client ← Client.newDefault {
     endpoint := { host := "127.0.0.1", port := 6379 }
   }
   client.connect
-  let [a, b, c]ₕ <- client.runPipeline <|
+  let [a, b, c]ₕ ← client.runPipeline <|
     Pipeline.empty
       |>.get "greeting"
       |>.set "key" "val"
@@ -227,7 +227,7 @@ structure FakeTransport where
   replies : IO.Ref (Array ByteArray)
 
 private def popReply (ref : IO.Ref (Array ByteArray)) : IO ByteArray := do
-  let replies <- ref.get
+  let replies ← ref.get
   match replies[0]? with
   | some reply =>
       ref.set (replies.extract 1 replies.size)
@@ -237,11 +237,11 @@ private def popReply (ref : IO.Ref (Array ByteArray)) : IO ByteArray := do
 
 instance : Transport.Transport FakeTransport where
   connect _ := do
-    let replies <- IO.mkRef #["+PONG\r\n".toUTF8]
+    let replies ← IO.mkRef #["+PONG\r\n".toUTF8]
     pure { replies }
 
   recv transport _ := do
-    let bytes <- popReply transport.replies
+    let bytes ← popReply transport.replies
     if bytes.isEmpty then
       pure { bytes := ByteArray.empty, disconnect? := some .closedByPeer }
     else
@@ -251,10 +251,10 @@ instance : Transport.Transport FakeTransport where
   close _ := pure ()
 
 def pingWithMock : Async (Option String) := do
-  let client : Client FakeTransport <- Client.new {
+  let client : Client FakeTransport ← Client.new {
     endpoint := { host := "mock", port := 0 }
   }
-  let _ <- client.connect
+  let _ ← client.connect
   client.ping
 ```
 

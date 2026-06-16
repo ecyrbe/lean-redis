@@ -16,21 +16,21 @@ private def eventMetadata
     (attempt? : Option Nat := none)
     : Async Client.EventMetadata := do
   pure {
-    timestamp := (<- Std.Time.PlainDateTime.now)
+    timestamp := (← Std.Time.PlainDateTime.now)
     error?
     attempt?
   }
 
 private def emitEvent (client : Client τ) (event : Client.Event) : Async Unit := do
-  let handlers <- client.subscribers.atomically fun ref => do
-    let subscribers <- ref.get
+  let handlers ← client.subscribers.atomically fun ref => do
+    let subscribers ← ref.get
     pure subscribers.handlers
   for (_, handler) in handlers do
-    let _ <- handler event
+    let _ ← handler event
     pure ()
 
 private def emitEffect (client : Client τ) (tag : Protocol.EventTag) : Async Unit := do
-  let metadata <- eventMetadata
+  let metadata ← eventMetadata
   let event := match tag with
     | .initialConnectFailed => .initialConnectFailed metadata
     | .remoteDisconnected => .remoteDisconnected .closedByPeer metadata
@@ -62,10 +62,10 @@ private partial def retryAfterDelay [Transport.Transport τ]
     (delayMs : UInt32)
     : Async Bool := do
   let attemptNumber := n + 1
-  let scheduled <- eventMetadata (attempt? := some attemptNumber)
+  let scheduled ← eventMetadata (attempt? := some attemptNumber)
   emitEvent client (.reconnectScheduled delayMs scheduled)
   IO.sleep delayMs
-  let (state', effects) <- LeanRedis.Connection.tryReconnect state
+  let (state', effects) ← LeanRedis.Connection.tryReconnect state
   setState client state'
   executeEffects client effects
   match state'.session.phase with
@@ -86,15 +86,15 @@ private def exhaustReconnect [Transport.Transport τ]
 private partial def reconnectLoop [Transport.Transport τ]
     (client : Client τ)
     : Async Unit := do
-  let state <- getState client
+  let state ← getState client
   match state.session.phase with
   | .reconnecting n =>
-      let delayMs? <- state.config.reconnectStrategy.delayMs n
+      let delayMs? ← state.config.reconnectStrategy.delayMs n
       match delayMs? with
       | none =>
           exhaustReconnect client state
       | some delayMs =>
-          let shouldRetry <- retryAfterDelay client state n delayMs
+          let shouldRetry ← retryAfterDelay client state n delayMs
           if shouldRetry then
             reconnectLoop client
           else
@@ -105,7 +105,7 @@ private def startReconnectWorker [Transport.Transport τ]
     (client : Client τ)
     : Async Unit := do
   discard <| IO.asTask do
-    let _ <- (reconnectLoop client).block
+    let _ ← (reconnectLoop client).block
     pure ()
 
 /--
@@ -113,7 +113,7 @@ Execute a single command and return its Redis response value.
 
 Example:
 ```lean
-let reply <- client.execute (Command.ping ()).request
+let reply ← client.execute (Command.ping ()).request
 ```
 -/
 public def execute [Transport.Transport τ]
@@ -121,11 +121,11 @@ public def execute [Transport.Transport τ]
     (request : CommandRequest)
     : Async Protocol.Resp.Value := do
   client.state.atomically fun ref => do
-    let state <- ref.get
+    let state ← ref.get
     match state.session.phase with
     | .ready _ _ =>
         try
-          let (state', reply) <- executeCommand request state
+          let (state', reply) ← executeCommand request state
           ref.set state'
           pure reply
         catch
@@ -152,11 +152,11 @@ public def runPipeline
     (pipeline : Pipeline α)
     : Async (HList α) := do
   client.state.atomically fun ref => do
-    let state <- ref.get
+    let state ← ref.get
     match state.session.phase with
     | .ready _ _ =>
         try
-          let (state', values) <- executeBatch pipeline.requests state
+          let (state', values) ← executeBatch pipeline.requests state
           ref.set state'
           match pipeline.exec values with
           | .ok decoded => pure decoded
@@ -176,12 +176,12 @@ Create a new client value for the given transport type without opening a connect
 
 Example:
 ```lean
-let client : LeanRedis.Client MyTransport <- LeanRedis.Client.new cfg
+let client : LeanRedis.Client MyTransport ← LeanRedis.Client.new cfg
 ```
 -/
 public def new [Transport.Transport τ] (config : Config) : IO (Client τ) := do
-  let state <- Std.Mutex.new ({ config } : DriverState τ)
-  let subscribers <- Std.Mutex.new ({} : ClientSubscribers)
+  let state ← Std.Mutex.new ({ config } : DriverState τ)
+  let subscribers ← Std.Mutex.new ({} : ClientSubscribers)
   pure { state, subscribers }
 
 /--
@@ -189,7 +189,7 @@ Create a new client using the default TCP transport without opening a connection
 
 Example:
 ```lean
-let client <- LeanRedis.Client.newDefault {
+let client ← LeanRedis.Client.newDefault {
   endpoint := { host := "127.0.0.1", port := 6379 }
 }
 ```
@@ -204,23 +204,23 @@ If a reconnect wait is in progress, this cancels it logically and tries immediat
 
 Example:
 ```lean
-let _ <- client.connect
+let _ ← client.connect
 ```
 -/
 def connect [Transport.Transport τ] (client : Client τ) : Async Unit := do
   client.state.atomically fun ref => do
-    let state <- ref.get
+    let state ← ref.get
     match state.session.phase with
     | .disconnected | .failed _ =>
         let (state, preEffects) := LeanRedis.Connection.onConnectRequest state
         ref.set state
         executeEffects client preEffects
         try
-          let (state', postEffects) <- LeanRedis.Connection.connectTransport state
+          let (state', postEffects) ← LeanRedis.Connection.connectTransport state
           ref.set state'
           executeEffects client postEffects
         catch err =>
-          let state <- ref.get
+          let state ← ref.get
           let (state', effects) := LeanRedis.Connection.onTransportFailed state err.toString
           ref.set state'
           executeEffects client effects
@@ -232,13 +232,13 @@ Close the current connection and stop background reconnects until a later explic
 
 Example:
 ```lean
-let _ <- client.disconnect
+let _ ← client.disconnect
 ```
 -/
 def disconnect [Transport.Transport τ] (client : Client τ) : Async Unit := do
   client.state.atomically fun ref => do
-    let state <- ref.get
-    let (state', effects) <- LeanRedis.Connection.disconnect state
+    let state ← ref.get
+    let (state', effects) ← LeanRedis.Connection.disconnect state
     ref.set state'
     executeEffects client effects
 
@@ -247,11 +247,11 @@ Return `true` when the client currently has a ready runtime.
 
 Example:
 ```lean
-let connected <- client.isConnected
+let connected ← client.isConnected
 ```
 -/
 def isConnected (client : Client τ) : Async Bool := do
-  let state <- getState client
+  let state ← getState client
   pure state.session.isReady
 
 /--
@@ -259,11 +259,11 @@ Return the current lifecycle status of the client.
 
 Example:
 ```lean
-let status <- client.connectionStatus
+let status ← client.connectionStatus
 ```
 -/
 def connectionStatus (client : Client τ) : Async Protocol.Phase := do
-  let state <- getState client
+  let state ← getState client
   pure state.session.phase
 
 /--
@@ -271,11 +271,11 @@ Fail with an `unavailable` error unless the client is connected.
 
 Example:
 ```lean
-let _ <- client.requireConnected
+let _ ← client.requireConnected
 ```
 -/
 def requireConnected [Transport.Transport τ] (client : Client τ) : Async Unit := do
-  let state <- getState client
+  let state ← getState client
   unless state.session.isReady do
     Error.raise <| .unavailable "client is not connected"
 
@@ -284,11 +284,11 @@ Read the current internal connection state tracked by the client.
 
 Example:
 ```lean
-let state <- client.currentState
+let state ← client.currentState
 ```
 -/
 def currentState (client : Client τ) : Async Protocol.Session := do
-  let state <- getState client
+  let state ← getState client
   pure state.session
 
 /--
@@ -298,13 +298,13 @@ Returns a subscription id that can later be passed to `offEvent`.
 
 Example:
 ```lean
-let sub <- client.onEvent fun event => do
+let sub ← client.onEvent fun event => do
   IO.println s!"{repr event}"
 ```
 -/
 def onEvent (client : Client τ) (handler : Client.EventHandler) : IO ClientEventSubscriptionId :=
   client.subscribers.atomically fun ref => do
-    let subscribers <- ref.get
+    let subscribers ← ref.get
     let id := subscribers.nextId
     ref.set {
       nextId := id + 1
@@ -317,13 +317,13 @@ Remove a previously registered event handler.
 
 Example:
 ```lean
-let sub <- client.onEvent fun _ => pure ()
+let sub ← client.onEvent fun _ => pure ()
 client.offEvent sub
 ```
 -/
 def offEvent (client : Client τ) (subscriptionId : ClientEventSubscriptionId) : IO Unit :=
   client.subscribers.atomically fun ref => do
-    let subscribers <- ref.get
+    let subscribers ← ref.get
     ref.set {
       subscribers with
       handlers := subscribers.handlers.filter fun (id, _) => id != subscriptionId

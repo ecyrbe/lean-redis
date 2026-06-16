@@ -47,9 +47,9 @@ abbrev Command.select (database : UInt32) : Command Unit := ⟨ CommandRequest.s
 
 def CommandRequest.selectedDb? (request : CommandRequest) : Option UInt32 := do
   guard (request.name == "SELECT")
-  let bytes <- request.args[0]?
-  let text <- String.fromUTF8? bytes
-  let value <- text.toNat?
+  let bytes ← request.args[0]?
+  let text ← String.fromUTF8? bytes
+  let value ← text.toNat?
   pure value.toUInt32
 
 end LeanRedis

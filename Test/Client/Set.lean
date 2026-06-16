@@ -13,7 +13,7 @@ structure FakeTransport where
   writes : IO.Ref (Array ByteArray)
 
 private def shiftReplies (ref : IO.Ref (Array ByteArray)) : IO (Option ByteArray) := do
-  let replies <- ref.get
+  let replies ← ref.get
   match replies[0]? with
   | some reply =>
       ref.set (replies.extract 1 replies.size)
@@ -22,7 +22,7 @@ private def shiftReplies (ref : IO.Ref (Array ByteArray)) : IO (Option ByteArray
 
 private def writesOf (client : Client FakeTransport) : IO (Array ByteArray) := do
   client.state.atomically fun ref => do
-    let state <- ref.get
+    let state ← ref.get
     match state.transport? with
     | some transport => transport.writes.get
     | none => pure #[]
@@ -52,8 +52,8 @@ private def scriptedReplies (host : String) : Array ByteArray :=
 
 instance : Transport.Transport FakeTransport where
   connect endpoint := do
-    let replies <- IO.mkRef <| scriptedReplies endpoint.host
-    let writes <- IO.mkRef #[]
+    let replies ← IO.mkRef <| scriptedReplies endpoint.host
+    let writes ← IO.mkRef #[]
     pure { replies, writes }
 
   recv transport _ := do
@@ -71,76 +71,76 @@ instance : Transport.Transport FakeTransport where
   close _ := pure ()
 
 def testSAdd : Async Int := do
-  let client : Client FakeTransport <- Client.new {
+  let client : Client FakeTransport ← Client.new {
     endpoint := { host := "set-int", port := 6379 }
   }
   client.connect
   client.sAdd "tags" #["lean", "redis"]
 
 def testSIsMember : Async Bool := do
-  let client : Client FakeTransport <- Client.new {
+  let client : Client FakeTransport ← Client.new {
     endpoint := { host := "set-bool", port := 6379 }
   }
   client.connect
   client.sIsMember "tags" "lean"
 
 def testSMIsMember : Async (Array Bool) := do
-  let client : Client FakeTransport <- Client.new {
+  let client : Client FakeTransport ← Client.new {
     endpoint := { host := "set-bools", port := 6379 }
   }
   client.connect
   client.sMIsMember "tags" #["lean", "lisp", "redis"]
 
 def testSMembers : Async (Array String) := do
-  let client : Client FakeTransport <- Client.new {
+  let client : Client FakeTransport ← Client.new {
     endpoint := { host := "set-members", port := 6379 }
   }
   client.connect
   client.sMembers "tags"
 
 def testSPop : Async (Option String) := do
-  let client : Client FakeTransport <- Client.new {
+  let client : Client FakeTransport ← Client.new {
     endpoint := { host := "set-pop-one", port := 6379 }
   }
   client.connect
   client.sPop "tags"
 
 def testSPopMany : Async (Array String) := do
-  let client : Client FakeTransport <- Client.new {
+  let client : Client FakeTransport ← Client.new {
     endpoint := { host := "set-pop-many", port := 6379 }
   }
   client.connect
   client.sPopMany "tags" 2
 
 def testSRandMemberNull : Async (Option String) := do
-  let client : Client FakeTransport <- Client.new {
+  let client : Client FakeTransport ← Client.new {
     endpoint := { host := "set-rand-null", port := 6379 }
   }
   client.connect
   client.sRandMember "tags"
 
 def testSRandMembers : Async (Array String) := do
-  let client : Client FakeTransport <- Client.new {
+  let client : Client FakeTransport ← Client.new {
     endpoint := { host := "set-rand-many", port := 6379 }
   }
   client.connect
   client.sRandMembers "tags" 2
 
 def testSScan : Async String := do
-  let client : Client FakeTransport <- Client.new {
+  let client : Client FakeTransport ← Client.new {
     endpoint := { host := "set-scan", port := 6379 }
   }
   client.connect
-  let result <- client.sScan "tags" 0 { count? := some 10 }
+  let result ← client.sScan "tags" 0 { count? := some 10 }
   pure s!"{result.cursor}|{result.members.size}|{result.members[0]?.getD ""}"
 
 def testSScanWritesExpectedFrame : Async String := do
-  let client : Client FakeTransport <- Client.new {
+  let client : Client FakeTransport ← Client.new {
     endpoint := { host := "set-scan", port := 6379 }
   }
   client.connect
-  let _ <- client.sScan "tags" 0 { match? := some "le*", count? := some 10 }
-  let writes <- writesOf client
+  let _ ← client.sScan "tags" 0 { match? := some "le*", count? := some 10 }
+  let writes ← writesOf client
   pure <| renderBytes <| writes[1]?.getD ByteArray.empty
 
 /--

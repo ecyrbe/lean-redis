@@ -14,7 +14,7 @@ structure ScriptedTransport where
   writes : IO.Ref (Array ByteArray)
 
 private def shiftReads (ref : IO.Ref (Array ByteArray)) : IO ByteArray := do
-  let reads <- ref.get
+  let reads ← ref.get
   match reads[0]? with
   | some bytes =>
       ref.set (reads.extract 1 reads.size)
@@ -23,8 +23,8 @@ private def shiftReads (ref : IO.Ref (Array ByteArray)) : IO ByteArray := do
       pure ByteArray.empty
 
 private def mkTransport (reads : Array ByteArray) : IO ScriptedTransport := do
-  let reads <- IO.mkRef reads
-  let writes <- IO.mkRef #[]
+  let reads ← IO.mkRef reads
+  let writes ← IO.mkRef #[]
   pure { reads, writes }
 
 instance : Transport.Transport ScriptedTransport where
@@ -53,8 +53,8 @@ def testRuntimeExecuteReadsFragmentedReply : Async String := do
     config := { endpoint := { host := "localhost" } }
   }
   let (_, reply) ← executeCommand (CommandRequest.ping) state
-  let writes <- transport.writes.get
-  let payload <- match reply with
+  let writes ← transport.writes.get
+  let payload ← match reply with
     | .blobString bytes => pure <| renderBytes bytes
     | _ => pure "unexpected"
   pure s!"{payload}|{writes.size}|{renderBytes <| writes[0]?.getD ByteArray.empty}"
