@@ -2,6 +2,11 @@ import LeanRedis.Client
 
 def Inflight := IO.Promise (Except IO.Error String)
 
+/--
+  Cache Aside pattern with a Redis backend.
+  When a cache miss occurs, we fetch from the source callback and store it in Redis.
+  Cache Stampete prevention with inflight request detection.
+-/
 structure Cache (τ : Type) where
   redis : LeanRedis.Client τ
   inflight : Std.Mutex (Std.HashMap String Inflight)
@@ -48,9 +53,7 @@ open Std.Internal.IO.Async
   private def getInflight? (cache : Cache τ) (key : String): IO (Option Inflight) :=
     cache.inflight.atomically fun ref => do
       let map ← ref.get
-      match map[key]? with
-      | some promise => return some promise
-      | none => return none
+      return map[key]?
 
   private def consume (promise : Inflight) : Async String := do
     match promise.result?.get with
