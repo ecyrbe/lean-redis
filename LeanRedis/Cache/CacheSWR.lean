@@ -114,8 +114,7 @@ open Transport
       (cb : Unit → Async String)
       (opts : CacheSWROptions)
       (promise : Inflight)
-      : Async Unit :=
-    background do
+      : Async Unit := do
       try
         let value ← cb ()
         promise.resolve (.ok value)
@@ -148,7 +147,7 @@ open Transport
     | .hit value => return value
     | .staleInflight value => return value
     | .stale value promise =>
-        refresh cache key cb opts promise
+        background <| refresh cache key cb opts promise
         return value
     | .missInflight promise => consume promise
     | .miss promise => produce cache key cb opts promise
