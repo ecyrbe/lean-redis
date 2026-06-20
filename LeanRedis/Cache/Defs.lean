@@ -2,7 +2,7 @@ import LeanRedis.Client
 
 namespace LeanRedis
   open LeanRedis
-open Std.Internal.IO.Async
+open Std.Async
 
 def Inflight := IO.Promise (Except IO.Error String)
 

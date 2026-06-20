@@ -1,7 +1,7 @@
 import LeanRedis
 import Std.Time.Format
 
-open Std.Internal.IO.Async
+open Std.Async
 
 namespace LeanRedis.CLI
 

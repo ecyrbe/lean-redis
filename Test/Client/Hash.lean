@@ -4,7 +4,7 @@ import Test.Utils
 
 open LeanRedis
 open LeanRedisTest.Utils
-open Std.Internal.IO.Async
+open Std.Async
 
 namespace LeanRedisTest.Client.Hash
 

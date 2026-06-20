@@ -2,7 +2,7 @@ import LeanRedis.Cache.Defs
 
 namespace LeanRedis.Cache
 open LeanRedis
-open Std.Internal.IO.Async
+open Std.Async
 
   def new [Transport.Transport τ] (config : Config) : Async (Cache τ) := do
     let client : Client τ ← Client.new config

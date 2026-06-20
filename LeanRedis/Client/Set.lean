@@ -3,7 +3,7 @@ import LeanRedis.Command.Set
 
 namespace LeanRedis
 
-open Std.Internal.IO.Async
+open Std.Async
 open LeanRedis
 
 /--

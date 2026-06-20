@@ -1,8 +1,8 @@
-import Std.Internal.Async
+import Std.Async
 
 namespace LeanRedis.Transport
 
-open Std.Internal.IO.Async
+open Std.Async
 
 structure Endpoint where
   host : String

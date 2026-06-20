@@ -1,16 +1,16 @@
-import Std.Internal.Async
+import Std.Async
 import LeanRedis.Error
 import LeanRedis.Transport.Defs
 
 
 namespace LeanRedis.Transport
 
-abbrev TCP := Std.Internal.IO.Async.TCP.Socket.Client
+abbrev TCP := Std.Async.TCP.Socket.Client
 
 namespace TCP
 
 open LeanRedis.Transport
-open Std.Internal.IO.Async
+open Std.Async
 open Std.Net
 
 

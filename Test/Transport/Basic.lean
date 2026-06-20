@@ -5,7 +5,7 @@ open LeanRedis.Connection
 
 namespace LeanRedisTest.Transport.Basic
 
-open Std.Internal.IO.Async
+open Std.Async
 
 def testBytes : ByteArray := "%2\r\n+server\r\n+redis\r\n+proto\r\n:3\r\n".toUTF8
 

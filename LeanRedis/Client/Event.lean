@@ -21,6 +21,6 @@ inductive Event where
   | explicitlyDisconnected (metadata : EventMetadata)
   deriving Repr
 
-abbrev EventHandler := Event -> Std.Internal.IO.Async.Async Unit
+abbrev EventHandler := Event -> Std.Async.Async Unit
 
 end LeanRedis.Client

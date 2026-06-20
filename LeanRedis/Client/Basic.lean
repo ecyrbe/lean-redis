@@ -6,7 +6,7 @@ import LeanRedis.Transport.Defs
 
 namespace LeanRedis.Client
 
-open Std.Internal.IO.Async
+open Std.Async
 open LeanRedis
 open LeanRedis.Connection
 open LeanRedis.Transport

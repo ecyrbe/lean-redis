@@ -11,7 +11,7 @@ namespace LeanRedis.Connection
 
 open LeanRedis
 open LeanRedis.Transport
-open Std.Internal.IO.Async
+open Std.Async
 
 structure DriverState (τ : Type) where
   transport? : Option τ := none

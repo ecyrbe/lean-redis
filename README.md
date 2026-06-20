@@ -2,7 +2,7 @@
 
 # LeanRedis
 
-[![Lean](https://img.shields.io/badge/Lean-4.30.0-0f4c81)](https://lean-lang.org/)
+[![Lean](https://img.shields.io/badge/Lean-4.31.0-0f4c81)](https://lean-lang.org/)
 [![Lake](https://img.shields.io/badge/build-Lake-blue)](https://github.com/leanprover/lake)
 [![Version](https://img.shields.io/badge/version-0.2.0-2ea44f)](./lakefile.toml)
 [![Redis](https://img.shields.io/badge/Redis-6%20%7C%207%20%7C%208-red)](https://redis.io/)
@@ -17,7 +17,7 @@ Typed commands, RESP2/RESP3 support, native async TCP, and a design built for ex
 ## Highlights
 
 - 🚀 Async-only public client API
-- 🔌 Native Lean TCP transport built on `Std.Internal.IO.Async`
+- 🔌 Native Lean TCP transport built on `Std.Async`
 - 🧠 RESP2 and RESP3 parsing, encoding, and protocol fallback
 - 🧱 Clear layering: `Client` -> `Connection.Manager` -> `Connection.Runtime` -> RESP codec
 - 🔄 Opt-in background reconnect with fixed-interval or exponential backoff strategies
@@ -66,7 +66,7 @@ Current non-goals for v1:
 | RESP2 support | Yes | parser, encoder, bootstrap fallback |
 | RESP3 support | Yes | parser, encoder, typed reply handling |
 | Async client API | Yes | public API is async-only |
-| Native TCP transport | Yes | built on `Std.Internal.IO.Async` |
+| Native TCP transport | Yes | built on `Std.Async` |
 | Mockable custom transports | Yes | transport is a typeclass over the concrete handle type |
 | Connection bootstrap | Yes | auth, HELLO negotiation, DB select |
 | Background reconnect | Yes | opt-in client-owned reconnect worker with pluggable strategies |
@@ -88,7 +88,7 @@ Current non-goals for v1:
 
 ## Requirements
 
-- Lean `4.30.0`
+- Lean `4.31.0`
 - Lake
 
 Toolchain is pinned in `lean-toolchain`.
@@ -116,7 +116,7 @@ lake build LeanRedisTest
 import LeanRedis
 
 open LeanRedis
-open Std.Internal.IO.Async
+open Std.Async
 
 def example : Async (Option String) := do
   let client ← Client.newDefault {
@@ -233,7 +233,7 @@ for the first response instead of recomputing.
 import LeanRedis
 
 open LeanRedis
-open Std.Internal.IO.Async
+open Std.Async
 
 def cacheExample : Async String := do
   let cache ← Cache.newDefault {
@@ -263,7 +263,7 @@ to both fresh misses and stale-value refreshes.
 import LeanRedis
 
 open LeanRedis
-open Std.Internal.IO.Async
+open Std.Async
 
 def cacheSWRExample : Async String := do
   let cache ← CacheSWR.newDefault {
@@ -289,7 +289,7 @@ Mocked transport for tests:
 import LeanRedis
 
 open LeanRedis
-open Std.Internal.IO.Async
+open Std.Async
 
 structure FakeTransport where
   replies : IO.Ref (Array ByteArray)
