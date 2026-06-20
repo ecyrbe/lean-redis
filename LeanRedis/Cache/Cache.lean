@@ -17,7 +17,7 @@ open Std.Async
     try
       cache.redis.get key
     catch err =>
-      IO.eprintln s!"Calling callback after error fetching key {key} from Redis: {err}"
+      IO.eprintln s!"Error fetching key {key} from Redis: {err}"
       pure none
 
 
@@ -26,21 +26,21 @@ open Std.Async
       let map ← ref.get
       ref.set <| map.erase key
 
-  private def geStatus [Transport.Transport τ] (cache : Cache τ) (key: String) := do
+  private def resolveStatus [Transport.Transport τ] (cache : Cache τ) (key: String): Async CacheInflightStatus := do
     match ← cache.getSafe key with
-    | some value => return CacheInflightStatus.hit value
+    | some value => return .hit value
     | none =>
       cache.inflight.atomically fun ref => do
         let map ← ref.get
         match map[key]? with
         -- we should consume
         | some promise =>
-            return CacheInflightStatus.missInflight promise
+            return .missInflight promise
         -- we should produce
         | none =>
             let promise: Inflight ← IO.Promise.new
             ref.set (map.insert key promise)
-            return CacheInflightStatus.miss promise
+            return .miss promise
 
 
   private def getInflight? (cache : Cache τ) (key : String): IO (Option Inflight) :=
@@ -75,7 +75,7 @@ open Std.Async
           | some seconds => cache.redis.set key value { expiry? := some <| .relative <| .ex seconds}
           | none => cache.redis.set key value
         catch err =>
-          IO.println s!"Redis SET error for {key}: {err}"
+          IO.eprintln s!"Redis SET error for {key}: {err}"
         finally
           cache.removeInflight key
       return value
@@ -102,7 +102,7 @@ open Std.Async
     match ← cache.getInflight? key with
     | some promise => consume promise
     | none =>
-        match ← cache.geStatus key with
+        match ← cache.resolveStatus key with
         | .hit value => return value
         | .missInflight promise => consume promise
         | .miss promise => cache.produce key cb ttl promise

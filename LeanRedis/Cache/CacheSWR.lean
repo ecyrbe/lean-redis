@@ -17,7 +17,7 @@ open Std.Async
     try
       cache.redis.hMGet key #["value", "expiresAt"]
     catch err =>
-      IO.eprintln s!"Calling callback after error fetching key {key} from Redis: {err}"
+      IO.eprintln s!"Error fetching key {key} from Redis: {err}"
       pure #[]
 
   private def removeInflight (cache : CacheSWR τ) (key : String) : IO Unit := do
@@ -25,53 +25,42 @@ open Std.Async
       let map ← ref.get
       ref.set <| map.erase key
 
-  private def getNowSeconds : Async Int := do
+  private def getNowSeconds : IO Int := do
     let ts ← Std.Time.Timestamp.now
-    pure ts.toSecondsSinceUnixEpoch.val
+    return ts.toSecondsSinceUnixEpoch.val
 
   private def parseHMGetResult (result : Array (Option String)) : Option (String × String) := do
     match result with
-    | #[some value, some expiresAtOpt] => return (value, expiresAtOpt)
+    | #[some value, some expiresAt] => return (value, expiresAt)
     | _ => none
 
-  private def geStatus [Transport.Transport τ] (cache : CacheSWR τ) (key : String) := do
-    match ← getSafe cache key with
-    | #[] =>
-      cache.inflight.atomically fun ref => do
-        let map ← ref.get
-        match map[key]? with
-        | some promise => return CacheSWRStatus.missInflight promise
-        | none =>
-          let promise : Inflight ← IO.Promise.new
-          ref.set (map.insert key promise)
-          return CacheSWRStatus.miss promise
-    | result =>
-      match parseHMGetResult result with
+  private def acquireInflight (cache : CacheSWR τ) (key : String) : IO (Inflight × Bool) :=
+    cache.inflight.atomically fun ref => do
+      let map ← ref.get
+      match map[key]? with
+      | some promise => return (promise, false)
       | none =>
-        cache.inflight.atomically fun ref => do
-          let map ← ref.get
-          match map[key]? with
-          | some promise => return CacheSWRStatus.missInflight promise
-          | none =>
-            let promise : Inflight ← IO.Promise.new
-            ref.set (map.insert key promise)
-            return CacheSWRStatus.miss promise
-      | some (value, expiresAt) =>
-        let now ← getNowSeconds
-        match expiresAt.toInt? with
-        | none => return CacheSWRStatus.hit value
-        | some expiresAtInt =>
-          if now < expiresAtInt then
-            return CacheSWRStatus.hit value
-          else
-            cache.inflight.atomically fun ref => do
-              let map ← ref.get
-              match map[key]? with
-              | some _ => return CacheSWRStatus.staleInflight value
-              | none =>
-                let promise : Inflight ← IO.Promise.new
-                ref.set (map.insert key promise)
-                return CacheSWRStatus.stale value promise
+        let promise : Inflight ← IO.Promise.new
+        ref.set (map.insert key promise)
+        return (promise, true)
+
+  private def resolveStatus [Transport.Transport τ] (cache : CacheSWR τ) (key : String): Async CacheSWRStatus := do
+    let cached ← getSafe cache key
+    match parseHMGetResult cached with
+    | none => match ← acquireInflight cache key with
+      | (promise, true) => return .miss promise
+      | (promise, false) => return .missInflight promise
+    | some (value, expiresAt) =>
+      let now ← getNowSeconds
+      match expiresAt.toInt? with
+      | none => return .hit value
+      | some expiresAtInt =>
+        if now < expiresAtInt then
+          return .hit value
+        else
+          match ← acquireInflight cache key with
+          | (promise, true) => return .stale value promise
+          | (_, false) => return .staleInflight value
 
   private def consume (promise : Inflight) : Async String := do
     match promise.result?.get with
@@ -108,7 +97,7 @@ open Std.Async
         try
           storeInRedis cache key value opts
         catch err =>
-          IO.println s!"Redis HMSET error for {key}: {err}"
+          IO.eprintln s!"Redis HMSET error for {key}: {err}"
         finally
           removeInflight cache key
       return value
@@ -137,14 +126,15 @@ open Std.Async
 
   /--
      Gets a value from the cache by key.
-     If a fresh value is found, it is returned immediately.
-     If a stale value is found, it is returned immediately and
+
+     - If a fresh value is found, it is returned immediately.
+     - If a stale value is found, it is returned immediately and
      a background refresh is triggered to update the cache.
-     If no value is found, the callback will be called to populate it.
+     - If no value is found, the callback will be called to populate it.
      The callback is executed exactly once for each key,
      even if multiple requests request the same key concurrently.
-     Cache stampedes are prevented.
-  -/
+     - Cache stampedes are prevented.
+   -/
   @[inline, specialize]
   def get
       [Transport.Transport τ]
@@ -153,7 +143,7 @@ open Std.Async
       (cb : Unit → Async String)
       (opts : CacheSWROptions)
       : Async String := do
-    match ← geStatus cache key with
+    match ← resolveStatus cache key with
     | .hit value => return value
     | .staleInflight value => return value
     | .stale value promise =>
