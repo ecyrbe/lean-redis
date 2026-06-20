@@ -3,17 +3,18 @@ import LeanRedis.Cache.Defs
 namespace LeanRedis.CacheSWR
 open LeanRedis
 open Std.Async
+open Transport
 
-  def new [Transport.Transport τ] (config : Config) : Async (CacheSWR τ) := do
+  def new [Transport τ] (config : Config) : Async (CacheSWR τ) := do
     let client : Client τ ← Client.new config
     client.connect
     let inflight ← Std.Mutex.new ({} : Std.HashMap String Inflight)
     return ⟨client, inflight⟩
 
-  def newDefault (config : Config) : Async (CacheSWR Transport.TCP) :=
+  def newDefault (config : Config) : Async (CacheSWR TCP) :=
     new config
 
-  private def getSafe [Transport.Transport τ] (cache : CacheSWR τ) (key : String) := do
+  private def getSafe [Transport τ] (cache : CacheSWR τ) (key : String) := do
     try
       cache.redis.hMGet key #["value", "expiresAt"]
     catch err =>
@@ -44,7 +45,7 @@ open Std.Async
         ref.set (map.insert key promise)
         return (promise, true)
 
-  private def resolveStatus [Transport.Transport τ] (cache : CacheSWR τ) (key : String): Async CacheSWRStatus := do
+  private def resolveStatus [Transport τ] (cache : CacheSWR τ) (key : String): Async CacheSWRStatus := do
     let cached ← getSafe cache key
     match parseHMGetResult cached with
     | none => match ← acquireInflight cache key with
@@ -69,7 +70,7 @@ open Std.Async
     | none => throw (IO.userError "Concurrent promise was dropped")
 
   private def storeInRedis
-      [Transport.Transport τ]
+      [Transport τ]
       (cache : CacheSWR τ)
       (key : String)
       (value : String)
@@ -83,7 +84,7 @@ open Std.Async
     | none => discard <| cache.redis.expire key (opts.staleTtl * 2)
 
   private def produce
-      [Transport.Transport τ]
+      [Transport τ]
       (cache : CacheSWR τ)
       (key : String)
       (cb : Unit → Async String)
@@ -107,7 +108,7 @@ open Std.Async
       throw err
 
   private def refresh
-      [Transport.Transport τ]
+      [Transport τ]
       (cache : CacheSWR τ)
       (key : String)
       (cb : Unit → Async String)
@@ -137,7 +138,7 @@ open Std.Async
    -/
   @[inline, specialize]
   def get
-      [Transport.Transport τ]
+      [Transport τ]
       (cache : CacheSWR τ)
       (key : String)
       (cb : Unit → Async String)

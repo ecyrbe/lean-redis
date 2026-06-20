@@ -3,17 +3,18 @@ import LeanRedis.Cache.Defs
 namespace LeanRedis.Cache
 open LeanRedis
 open Std.Async
+open Transport
 
-  def new [Transport.Transport τ] (config : Config) : Async (Cache τ) := do
+  def new [Transport τ] (config : Config) : Async (Cache τ) := do
     let client : Client τ ← Client.new config
     client.connect
     let inflight ← Std.Mutex.new ({} : Std.HashMap String Inflight)
     return ⟨client,inflight⟩
 
-  def newDefault (config : Config) : Async (Cache Transport.TCP) :=
+  def newDefault (config : Config) : Async (Cache TCP) :=
     new config
 
-  private def getSafe [Transport.Transport τ] (cache : Cache τ) (key : String) := do
+  private def getSafe [Transport τ] (cache : Cache τ) (key : String) := do
     try
       cache.redis.get key
     catch err =>
@@ -26,7 +27,7 @@ open Std.Async
       let map ← ref.get
       ref.set <| map.erase key
 
-  private def resolveStatus [Transport.Transport τ] (cache : Cache τ) (key: String): Async CacheInflightStatus := do
+  private def resolveStatus [Transport τ] (cache : Cache τ) (key: String): Async CacheInflightStatus := do
     match ← cache.getSafe key with
     | some value => return .hit value
     | none =>
@@ -55,7 +56,7 @@ open Std.Async
     | none => throw (IO.userError "Concurrent promise was dropped")
 
   private def produce
-      [Transport.Transport τ]
+      [Transport τ]
       (cache : Cache τ)
       (key : String)
       (cb : Unit → Async String)
@@ -93,7 +94,7 @@ open Std.Async
   -/
   @[inline, specialize]
   def get
-      [Transport.Transport τ]
+      [Transport τ]
       (cache : Cache τ)
       (key : String)
       (cb : Unit → Async String)
