@@ -19,7 +19,7 @@ open Transport
       cache.redis.get key
     catch err =>
       IO.eprintln s!"Error fetching key {key} from Redis: {err}"
-      pure none
+      return none
 
 
   private def removeInflight (cache : Cache τ) (key : String) : IO Unit := do

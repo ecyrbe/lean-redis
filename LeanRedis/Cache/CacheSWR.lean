@@ -19,7 +19,7 @@ open Transport
       cache.redis.hMGet key #["value", "expiresAt"]
     catch err =>
       IO.eprintln s!"Error fetching key {key} from Redis: {err}"
-      pure #[]
+      return #[]
 
   private def removeInflight (cache : CacheSWR τ) (key : String) : IO Unit := do
     cache.inflight.atomically fun ref => do
@@ -46,7 +46,7 @@ open Transport
         return (promise, true)
 
   private def resolveStatus [Transport τ] (cache : CacheSWR τ) (key : String): Async CacheSWRStatus := do
-    let cached ← getSafe cache key
+    let cached ← cache.getSafe key
     match parseHMGetResult cached with
     | none => match ← acquireInflight cache key with
       | (promise, true) => return .miss promise
@@ -79,9 +79,9 @@ open Transport
     let ts ← Std.Time.Timestamp.now
     let expiresAt := toString (ts.toSecondsSinceUnixEpoch.val + (opts.staleTtl.toNat : Int))
     discard <| cache.redis.hMSet key #[("value", value), ("expiresAt", expiresAt)]
-    match opts.ttl with
-    | some secs => discard <| cache.redis.expire key secs
-    | none => discard <| cache.redis.expire key (opts.staleTtl * 2)
+    discard <| match opts.ttl with
+    | some secs => cache.redis.expire key secs
+    | none => cache.redis.expire key (opts.staleTtl * 2)
 
   private def produce
       [Transport τ]
