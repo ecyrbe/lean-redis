@@ -28,6 +28,8 @@ Typed commands, RESP2/RESP3 support, native async TCP, and a design built for ex
 - 🧩 Heterogeneous result lists (`HList`) pair each pipeline command's return type with its position in the result tuple
 - 🧪 Scripted tests for protocol, transport, connection, and typed command decoding
 - 🛠️ Modular internal layout split by command family for easier review and maintenance
+- 🛡️ **Cache** — cache-aside with Redis backend and built-in cache-stampede prevention
+- ⏳ **CacheSWR** — stale-while-revalidate pattern with background refresh and stampede prevention
 
 ## Supported Features
 
@@ -38,6 +40,8 @@ Core:
 - connection bootstrap and opt-in background reconnect
 - async client lifecycle, reconnect events, and connection state inspection
 - pipeline batching with typed `HList` result unpacking
+- **Cache** — cache-aside pattern with Redis backend and cache-stampede prevention via inflight request deduplication
+- **CacheSWR** — stale-while-revalidate pattern that serves stale values immediately while refreshing the cache in the background
 
 Command families:
 - 🔐 Connection: `AUTH`, `PING`, `SELECT`
@@ -75,6 +79,8 @@ Current non-goals for v1:
 | Sorted set commands | Yes | includes `ZSCAN` |
 | Scripted transport tests | Yes | protocol, runtime, manager, client |
 | Pipelines  | Yes | typed, uses `HList` for positional result unpacking |
+| Cache (stampede prevention) | Yes | cache-aside with inflight request deduplication |
+| CacheSWR (stale-while-revalidate) | Yes | serves stale values, background refresh, inflight dedup |
 | Transactions | No | not part of v1 |
 | Pub/Sub | No | not part of v1 |
 | TLS | No | intended as future extension |
@@ -215,6 +221,68 @@ Results are unpacked positionally via `HList`. The example above destructures in
 Pipeline command families mirror the single-command client API — strings, hashes, lists,
 sets, sorted sets, generics, and connection commands are all supported inside a pipeline.
 
+### Cache (cache-aside with stampede prevention)
+
+The `Cache` module implements a cache-aside pattern backed by Redis. When a requested key is not
+found in Redis, the provided callback is invoked to compute the value, which is then stored in
+Redis and returned. **Cache-stampede prevention** ensures the callback runs exactly once per key,
+even when multiple concurrent requests arrive for the same missing key — subsequent callers wait
+for the first response instead of recomputing.
+
+```lean
+import LeanRedis
+
+open LeanRedis
+open Std.Internal.IO.Async
+
+def cacheExample : Async String := do
+  let cache ← Cache.newDefault {
+    endpoint := { host := "127.0.0.1", port := 6379 }
+  }
+  -- On a cache miss the callback populates the cache.
+  -- On a cache hit the cached value is returned immediately.
+  cache.get "mykey" fun _ => do
+    pure "expensive computation result"
+```
+
+The optional `ttl` parameter controls the Redis key expiration:
+
+```lean
+cache.get "mykey" (fun _ => pure "computed") (ttl := some 60)
+```
+
+### CacheSWR (stale-while-revalidate)
+
+`CacheSWR` extends the cache-aside pattern with **stale-while-revalidate**. Values are stored
+alongside an `expiresAt` timestamp in a Redis hash. When a value is still fresh, it is returned
+immediately (hit). When the value is stale, it is returned immediately **and** a background
+refresh is triggered — the caller never waits for the refresh. Cache-stampede prevention applies
+to both fresh misses and stale-value refreshes.
+
+```lean
+import LeanRedis
+
+open LeanRedis
+open Std.Internal.IO.Async
+
+def cacheSWRExample : Async String := do
+  let cache ← CacheSWR.newDefault {
+    endpoint := { host := "127.0.0.1", port := 6379 }
+  }
+  -- On a hit: returns the fresh value.
+  -- On a stale: returns the stale value and triggers a background refresh.
+  -- On a miss: calls the callback, stores the result, returns it.
+  cache.get "mykey" (fun _ => pure "refreshed value") { staleTtl := 60 }
+```
+
+`staleTtl` controls how many seconds a value is considered fresh. After that, the value is stale
+and a background refresh fires on the next read. The optional `ttl` field sets an overall Redis
+key TTL (defaults to `staleTtl * 2`):
+
+```lean
+cache.get "mykey" (fun _ => pure "refreshed") { staleTtl := 60, ttl := some 300 }
+```
+
 Mocked transport for tests:
 
 ```lean
@@ -274,6 +342,10 @@ Main public entry points:
 - `Client.offEvent`
 - `Client.currentState`
 - `Client.runPipeline`
+- `Cache.new` / `Cache.newDefault`
+- `Cache.get`
+- `CacheSWR.new` / `CacheSWR.newDefault`
+- `CacheSWR.get`
 
 Design notes:
 
@@ -336,6 +408,12 @@ Internal client layout:
 - `LeanRedis/Client/Set.lean`
 - `LeanRedis/Client/SortedSet.lean`
 - `LeanRedis/Client/Generic.lean`
+
+Cache modules:
+
+- `LeanRedis/Cache/Defs.lean` — shared types (`Cache`, `CacheSWR`, `CacheSWROptions`, status enums)
+- `LeanRedis/Cache/Cache.lean` — cache-aside with stampede prevention
+- `LeanRedis/Cache/CacheSWR.lean` — stale-while-revalidate with background refresh
 
 Pipeline layout:
 
