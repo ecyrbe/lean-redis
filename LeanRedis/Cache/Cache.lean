@@ -1,17 +1,6 @@
-import LeanRedis.Client
+import LeanRedis.Cache.Defs
 
-def Inflight := IO.Promise (Except IO.Error String)
-
-/--
-  Cache Aside pattern with a Redis backend.
-  When a cache miss occurs, we fetch from the source callback and store it in Redis.
-  Cache Stampete prevention with inflight request detection.
--/
-structure Cache (τ : Type) where
-  redis : LeanRedis.Client τ
-  inflight : Std.Mutex (Std.HashMap String Inflight)
-
-namespace Cache
+namespace LeanRedis.Cache
 open LeanRedis
 open Std.Internal.IO.Async
 
@@ -37,18 +26,22 @@ open Std.Internal.IO.Async
       let map ← ref.get
       ref.set <| map.erase key
 
-  private def consume_or_produce (cache : Cache τ) (key: String) :=
-    cache.inflight.atomically fun ref => do
-      let map ← ref.get
-      match map[key]? with
-      -- we should consume
-      | some promise =>
-          return (Sum.inl promise)
-      -- we should produce
-      | none =>
-          let promise: Inflight ← IO.Promise.new
-          ref.set (map.insert key promise)
-          return (Sum.inr promise)
+  private def geStatus [Transport.Transport τ] (cache : Cache τ) (key: String) := do
+    match ← cache.getSafe key with
+    | some value => return CacheInflightStatus.hit value
+    | none =>
+      cache.inflight.atomically fun ref => do
+        let map ← ref.get
+        match map[key]? with
+        -- we should consume
+        | some promise =>
+            return CacheInflightStatus.missInflight promise
+        -- we should produce
+        | none =>
+            let promise: Inflight ← IO.Promise.new
+            ref.set (map.insert key promise)
+            return CacheInflightStatus.miss promise
+
 
   private def getInflight? (cache : Cache τ) (key : String): IO (Option Inflight) :=
     cache.inflight.atomically fun ref => do
@@ -66,7 +59,7 @@ open Std.Internal.IO.Async
       (cache : Cache τ)
       (key : String)
       (cb : Unit → Async String)
-      (options : SetOptions)
+      (ttl: Option UInt64)
       (promise : Inflight)
       : Async String := do
     try
@@ -78,7 +71,9 @@ open Std.Internal.IO.Async
       -- so that incoming request can still get it
       background do
         try
-          discard <| cache.redis.set key value options
+          discard <| match ttl with
+          | some seconds => cache.redis.set key value { expiry? := some <| .relative <| .ex seconds}
+          | none => cache.redis.set key value
         catch err =>
           IO.println s!"Redis SET error for {key}: {err}"
         finally
@@ -102,18 +97,14 @@ open Std.Internal.IO.Async
       (cache : Cache τ)
       (key : String)
       (cb : Unit → Async String)
-      (options : SetOptions := {})
+      (ttl: Option UInt64 := none)
       : Async String := do
-
     match ← cache.getInflight? key with
     | some promise => consume promise
     | none =>
-        match ← cache.getSafe key with
-        | some value => return value
-        | none =>
-            let decision ← cache.consume_or_produce key
-            match decision with
-            | Sum.inl promise => consume promise
-            | Sum.inr promise => cache.produce key cb options promise
+        match ← cache.geStatus key with
+        | .hit value => return value
+        | .missInflight promise => consume promise
+        | .miss promise => cache.produce key cb ttl promise
 
-end Cache
+end LeanRedis.Cache

@@ -15,3 +15,5 @@ import Test.Pipeline.Basic
 import Test.Connection.Manager
 import Test.Connection.Runtime
 import Test.Transport.Basic
+import Test.Cache.Cache
+import Test.Cache.CacheSWR
