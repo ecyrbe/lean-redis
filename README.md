@@ -315,14 +315,6 @@ def pingWithMock : Async (Option String) := do
 
 This is the same mechanism used by the library test suite for scripted bootstrap, partial replies, and disconnect scenarios.
 
-## Testing
-
-Build the test target with:
-
-```bash
-lake build LeanRedisTest
-```
-
 ## License
 
 MIT License. See [`LICENSE`](./LICENSE).
