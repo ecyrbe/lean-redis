@@ -104,10 +104,10 @@ This repository is currently install-from-source.
 lake build
 ```
 
-3. Build the test target:
+3. Build and run the test target:
 
 ```bash
-lake build LeanRedisTest
+lake test
 ```
 
 ## Quick Start
