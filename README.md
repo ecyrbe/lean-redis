@@ -19,7 +19,6 @@ Typed commands, RESP2/RESP3 support, native async TCP, and a design built for ex
 - 🚀 Async-only public client API
 - 🔌 Native Lean TCP transport built on `Std.Async`
 - 🧠 RESP2 and RESP3 parsing, encoding, and protocol fallback
-- 🧱 Clear layering: `Client` -> `Connection.Manager` -> `Connection.Runtime` -> RESP codec
 - 🔄 Opt-in background reconnect with fixed-interval or exponential backoff strategies
 - 📣 Async connection lifecycle event callbacks for disconnect and reconnect logging
 - 🧪 Transport abstraction makes mocked and scripted transports easy to use in tests
@@ -29,7 +28,6 @@ Typed commands, RESP2/RESP3 support, native async TCP, and a design built for ex
 - 🧪 Scripted tests for protocol, transport, connection, and typed command decoding
 - 🛠️ Modular internal layout split by command family for easier review and maintenance
 - 🛡️ **Cache** — cache-aside with Redis backend and built-in cache-stampede prevention
-- ⏳ **CacheSWR** — stale-while-revalidate pattern with background refresh and stampede prevention
 
 ## Supported Features
 

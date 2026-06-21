@@ -96,20 +96,19 @@ def testProtocolFallbackResp3Strict : Option LeanRedis.Protocol.Version :=
   LeanRedis.Protocol.protocolAfterHello .resp3 (.simpleError "ERR unknown command 'HELLO'")
 
 /--
-info: Except.ok (LeanRedis.Protocol.Resp.Value.simpleString "PONG", "")
+info: Except.ok (simpleString "PONG", "")
 -/
 #guard_msgs in
 #eval testParseSimpleString
 
 /--
-info: Except.ok (LeanRedis.Protocol.Resp.Value.blobString [104, 101, 108, 108, 111], "")
+info: Except.ok (blobString [104, 101, 108, 108, 111], "")
 -/
 #guard_msgs in
 #eval testParseBlobString
 
 /--
-info: Except.ok (LeanRedis.Protocol.Resp.Value.array ["LeanRedis.Protocol.Resp.Value.blobString [71, 69, 84]", "LeanRedis.Protocol.Resp.Value.blobString [107, 101, 121]"],
- "")
+info: Except.ok (array ["blobString [71, 69, 84]", "blobString [107, 101, 121]"], "")
 -/
 #guard_msgs in
 #eval testParseArray
@@ -127,13 +126,13 @@ info: Except.error "needMore"
 #eval testIncrementalParseNeedsMore
 
 /--
-info: Except.ok (LeanRedis.Protocol.Resp.Value.blobString [104, 101, 108, 108, 111], "")
+info: Except.ok (blobString [104, 101, 108, 108, 111], "")
 -/
 #guard_msgs in
 #eval testIncrementalParseCompletesAcrossChunks
 
 /--
-info: Except.ok (#[LeanRedis.Protocol.Resp.Value.simpleString "OK", LeanRedis.Protocol.Resp.Value.number 42], "")
+info: Except.ok (#[simpleString "OK", number 42], "")
 -/
 #guard_msgs in
 #eval testParseAvailableValues
@@ -187,14 +186,13 @@ info: "\">2\\r\\n+pubsub\\r\\n$7\\r\\nchannel\\r\\n\""
 #eval testEncodePushValue
 
 /--
-info: Except.ok (LeanRedis.Protocol.Resp.Value.simpleString "PONG", "")
+info: Except.ok (simpleString "PONG", "")
 -/
 #guard_msgs in
 #eval testRoundTripSimpleString
 
 /--
-info: Except.ok (LeanRedis.Protocol.Resp.Value.array ["LeanRedis.Protocol.Resp.Value.simpleString \"OK\"", "LeanRedis.Protocol.Resp.Value.number 42"],
- "")
+info: Except.ok (array ["simpleString \"OK\"", "number 42"], "")
 -/
 #guard_msgs in
 #eval testRoundTripArray
