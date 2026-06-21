@@ -29,19 +29,8 @@ Typed commands, RESP2/RESP3 support, native async TCP, and a design built for ex
 - 🛠️ Modular internal layout split by command family for easier review and maintenance
 - 🛡️ **Cache** — cache-aside with Redis backend and built-in cache-stampede prevention
 
-## Supported Features
+## Command families
 
-Core:
-- RESP parser and encoder
-- RESP2 / RESP3 bootstrap negotiation
-- default TCP transport
-- connection bootstrap and opt-in background reconnect
-- async client lifecycle, reconnect events, and connection state inspection
-- pipeline batching with typed `HList` result unpacking
-- **Cache** — cache-aside pattern with Redis backend and cache-stampede prevention via inflight request deduplication
-- **CacheSWR** — stale-while-revalidate pattern that serves stale values immediately while refreshing the cache in the background
-
-Command families:
 - 🔐 Connection: `AUTH`, `PING`, `SELECT`
 - 📝 Strings: `GET`, `SET`, `MGET`, `MSET`, `INCR`, `DECR`, `GETEX`, and related commands
 - 🧾 Hashes: `HGET`, `HSET`, `HMGET`, `HMSET`, `HGETALL`, `HSCAN`, and related commands
@@ -326,36 +315,6 @@ def pingWithMock : Async (Option String) := do
 
 This is the same mechanism used by the library test suite for scripted bootstrap, partial replies, and disconnect scenarios.
 
-## API Overview
-
-Main public entry points:
-
-- `Client.new`
-- `Client.newDefault`
-- `Client.connect`
-- `Client.disconnect`
-- `Client.isConnected`
-- `Client.connectionStatus`
-- `Client.onEvent`
-- `Client.offEvent`
-- `Client.currentState`
-- `Client.runPipeline`
-- `Cache.new` / `Cache.newDefault`
-- `Cache.get`
-- `CacheSWR.new` / `CacheSWR.newDefault`
-- `CacheSWR.get`
-
-Design notes:
-
-- `new*` allocates client state only
-- `new*` is `IO` because it allocates mutable client state, but it does not open a connection
-- `connect` performs transport setup and Redis bootstrap
-- commands fail fast while disconnected or reconnecting
-- remote disconnects trigger background reconnect only when `reconnectStrategy` is enabled
-- `onEvent` and `offEvent` are lightweight `IO` registration calls; callback delivery is fire-and-forget
-- command methods are typed and async
-- command families are split into dedicated modules internally
-
 ## Testing
 
 Build the test target with:
@@ -363,82 +322,6 @@ Build the test target with:
 ```bash
 lake build LeanRedisTest
 ```
-
-The test suite covers:
-
-- RESP parser basics
-- incremental parsing across fragmented inputs
-- command encoding
-- bootstrap encoding and negotiation behavior
-- scripted transport behavior
-- connection bootstrap and reconnect scenarios
-- typed client decoding for all implemented command families
-- runtime-level scripted partial-read and disconnect handling
-
-Tests live under `Test/` and are primarily Lean-native `#guard_msgs` / `#eval` checks.
-
-## Project Layout
-
-Public modules:
-
-- `LeanRedis`
-- `LeanRedis.Command`
-- `LeanRedis.Client`
-
-Internal command layout:
-
-- `LeanRedis/Command/Base.lean`
-- `LeanRedis/Command/Connection.lean`
-- `LeanRedis/Command/String.lean`
-- `LeanRedis/Command/Hash.lean`
-- `LeanRedis/Command/List.lean`
-- `LeanRedis/Command/Set.lean`
-- `LeanRedis/Command/SortedSet.lean`
-- `LeanRedis/Command/Generic.lean`
-
-Internal client layout:
-
-- `LeanRedis/Client/Internal.lean`
-- `LeanRedis/Client/Connection.lean`
-- `LeanRedis/Client/String.lean`
-- `LeanRedis/Client/Hash.lean`
-- `LeanRedis/Client/List.lean`
-- `LeanRedis/Client/Set.lean`
-- `LeanRedis/Client/SortedSet.lean`
-- `LeanRedis/Client/Generic.lean`
-
-Cache modules:
-
-- `LeanRedis/Cache/Defs.lean` — shared types (`Cache`, `CacheSWR`, `CacheSWROptions`, status enums)
-- `LeanRedis/Cache/Cache.lean` — cache-aside with stampede prevention
-- `LeanRedis/Cache/CacheSWR.lean` — stale-while-revalidate with background refresh
-
-Pipeline layout:
-
-- `LeanRedis/Pipeline/Basic.lean` — `Pipeline` structure, `empty`, `fromCommand`, `hAppend`
-- `LeanRedis/Pipeline/Runtime.lean` — batch execution on the runtime transport
-- `LeanRedis/Pipeline/Manager.lean` — pipeline execution via `Connection.Manager`
-- `LeanRedis/Pipeline/Connection.lean` — connection command builders
-- `LeanRedis/Pipeline/String.lean` — string command builders
-- `LeanRedis/Pipeline/Hash.lean` — hash command builders
-- `LeanRedis/Pipeline/List.lean` — list command builders
-- `LeanRedis/Pipeline/Set.lean` — set command builders
-- `LeanRedis/Pipeline/SortedSet.lean` — sorted set command builders
-- `LeanRedis/Pipeline/Generic.lean` — generic command builders
-
-## Status
-
-Implemented and verified:
-
-- architecture and module boundaries
-- RESP protocol support
-- transport abstraction and default TCP transport
-- connection management
-- async public client API
-- connection, generic, string, hash, list, set, and sorted-set command families
-- pipeline batching with typed `HList` result unpacking
-
-Tracking details live in `docs/features/TODO.md`.
 
 ## License
 
