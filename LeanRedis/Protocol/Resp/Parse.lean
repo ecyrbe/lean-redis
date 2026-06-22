@@ -34,11 +34,6 @@ def decodeUtf8 (bytes : ByteArray) : Except String String :=
 def bytesToString (slice : ByteSlice) : Except String String :=
   decodeUtf8 slice.toByteArray
 
-def parseIntText (text : String) : Except String Int :=
-  match text.toInt? with
-  | some value => .ok value
-  | none => .error s!"invalid integer: {text}"
-
 def parseLineBytes : Parser ByteArray := do
   let bytes ← Std.Internal.Parsec.ByteArray.takeUntil (· == cr)
   Std.Internal.Parsec.ByteArray.skipByte cr
@@ -65,9 +60,9 @@ def parseVerbatim (bytes : ByteArray) : Resp.Value :=
 
 def parseLengthHeader : Parser Int := do
   let text ← parseLineText
-  match parseIntText text with
-  | .ok value => return value
-  | .error message => fail message
+  match text.toInt? with
+  | some value => return value
+  | none => fail s!"invalid integer: {text}"
 
 partial def parseBlobLike (mkValue : ByteArray -> Resp.Value) : Parser Resp.Value := do
   let length ← parseLengthHeader
