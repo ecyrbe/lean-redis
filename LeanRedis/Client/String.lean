@@ -19,7 +19,7 @@ def Client.get [Transport.Transport τ]
     (key : String)
     : Async (Option String) := do
   let cmd := Command.get key
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -37,7 +37,7 @@ def Client.set [Transport.Transport τ]
     (options : SetOptions := {})
     : Async Bool := do
   let cmd := Command.set key value options
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -53,7 +53,7 @@ def Client.mGet [Transport.Transport τ]
     (keys : Array String)
     : Async (Array (Option String)) := do
   let cmd := Command.mGet keys
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -69,7 +69,7 @@ def Client.mSet [Transport.Transport τ]
     (entries : Array (String × String))
     : Async Unit := do
   let cmd := Command.mSet entries
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -85,7 +85,7 @@ def Client.mSetNx [Transport.Transport τ]
     (entries : Array (String × String))
     : Async Bool := do
   let cmd := Command.mSetNx entries
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -101,7 +101,7 @@ def Client.getDel [Transport.Transport τ]
     (key : String)
     : Async (Option String) := do
   let cmd := Command.getDel key
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -118,7 +118,7 @@ def Client.getEx [Transport.Transport τ]
     (mode? : Option GetExMode := none)
     : Async (Option String) := do
   let cmd := Command.getEx key mode?
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -135,7 +135,7 @@ def Client.getRange [Transport.Transport τ]
     (start stop : Int)
     : Async String := do
   let cmd := Command.getRange key start stop
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -151,7 +151,7 @@ def Client.getSet [Transport.Transport τ]
     (key value : String)
     : Async (Option String) := do
   let cmd := Command.getSet key value
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -169,7 +169,7 @@ def Client.setRange [Transport.Transport τ]
     (value : String)
     : Async Int := do
   let cmd := Command.setRange key offset value
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -185,7 +185,7 @@ def Client.strLen [Transport.Transport τ]
     (key : String)
     : Async Int := do
   let cmd := Command.strLen key
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -201,7 +201,7 @@ def Client.append [Transport.Transport τ]
     (key value : String)
     : Async Int := do
   let cmd := Command.append key value
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -217,7 +217,7 @@ def Client.incr [Transport.Transport τ]
     (key : String)
     : Async Int := do
   let cmd := Command.incr key
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -234,7 +234,7 @@ def Client.incrBy [Transport.Transport τ]
     (amount : Int)
     : Async Int := do
   let cmd := Command.incrBy key amount
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -250,7 +250,7 @@ def Client.incrByFloat [Transport.Transport τ]
     (key amount : String)
     : Async String := do
   let cmd := Command.incrByFloat key amount
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -266,7 +266,7 @@ def Client.decr [Transport.Transport τ]
     (key : String)
     : Async Int := do
   let cmd := Command.decr key
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -283,7 +283,7 @@ def Client.decrBy [Transport.Transport τ]
     (amount : Int)
     : Async Int := do
   let cmd := Command.decrBy key amount
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -299,7 +299,7 @@ def Client.setNx [Transport.Transport τ]
     (key value : String)
     : Async Bool := do
   let cmd := Command.setNx key value
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -317,7 +317,7 @@ def Client.setEx [Transport.Transport τ]
     (value : String)
     : Async Unit := do
   let cmd := Command.setEx key seconds value
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -335,7 +335,7 @@ def Client.pSetEx [Transport.Transport τ]
     (value : String)
     : Async Unit := do
   let cmd := Command.pSetEx key milliseconds value
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 end LeanRedis

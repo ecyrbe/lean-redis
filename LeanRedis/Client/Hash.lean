@@ -19,7 +19,7 @@ def Client.hGet [Transport.Transport τ]
     (key field : String)
     : Async (Option String) := do
   let cmd := Command.hGet key field
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -36,7 +36,7 @@ def Client.hSet [Transport.Transport τ]
     (entries : Array (String × String))
     : Async Int := do
   let cmd := Command.hSet key entries
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -53,7 +53,7 @@ def Client.hMGet [Transport.Transport τ]
     (fields : Array String)
     : Async (Array (Option String)) := do
   let cmd := Command.hMGet key fields
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -70,7 +70,7 @@ def Client.hMSet [Transport.Transport τ]
     (entries : Array (String × String))
     : Async Unit := do
   let cmd := Command.hMSet key entries
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -86,7 +86,7 @@ def Client.hGetAll [Transport.Transport τ]
     (key : String)
     : Async (Array (String × String)) := do
   let cmd := Command.hGetAll key
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -103,7 +103,7 @@ def Client.hDel [Transport.Transport τ]
     (fields : Array String)
     : Async Int := do
   let cmd := Command.hDel key fields
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -119,7 +119,7 @@ def Client.hExists [Transport.Transport τ]
     (key field : String)
     : Async Bool := do
   let cmd := Command.hExists key field
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -135,7 +135,7 @@ def Client.hLen [Transport.Transport τ]
     (key : String)
     : Async Int := do
   let cmd := Command.hLen key
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -151,7 +151,7 @@ def Client.hKeys [Transport.Transport τ]
     (key : String)
     : Async (Array String) := do
   let cmd := Command.hKeys key
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -167,7 +167,7 @@ def Client.hVals [Transport.Transport τ]
     (key : String)
     : Async (Array String) := do
   let cmd := Command.hVals key
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -183,7 +183,7 @@ def Client.hStrLen [Transport.Transport τ]
     (key field : String)
     : Async Int := do
   let cmd := Command.hStrLen key field
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -200,7 +200,7 @@ def Client.hIncrBy [Transport.Transport τ]
     (amount : Int)
     : Async Int := do
   let cmd := Command.hIncrBy key field amount
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -216,7 +216,7 @@ def Client.hIncrByFloat [Transport.Transport τ]
     (key field amount : String)
     : Async String := do
   let cmd := Command.hIncrByFloat key field amount
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -232,7 +232,7 @@ def Client.hSetNx [Transport.Transport τ]
     (key field value : String)
     : Async Bool := do
   let cmd := Command.hSetNx key field value
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -248,7 +248,7 @@ def Client.hRandField [Transport.Transport τ]
     (key : String)
     : Async (Option String) := do
   let cmd := Command.hRandField key
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -265,7 +265,7 @@ def Client.hRandFields [Transport.Transport τ]
     (count : Int)
     : Async (Array String) := do
   let cmd := Command.hRandFields key count
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -282,7 +282,7 @@ def Client.hRandFieldsWithValues [Transport.Transport τ]
     (count : Int)
     : Async (Array (String × String)) := do
   let cmd := Command.hRandFieldsWithValues key count
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -300,7 +300,7 @@ def Client.hScan [Transport.Transport τ]
     (options : HScanOptions := {})
     : Async HashScanResult := do
   let cmd := Command.hScan key cursor options
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 end LeanRedis

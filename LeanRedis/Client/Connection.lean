@@ -20,7 +20,7 @@ def Client.ping [Transport.Transport τ]
     (message? : Option String := none)
     : Async (Option String) := do
   let cmd := Command.ping message?
-  let reply ← Client.execute client cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 private def Client.updateConfig [Transport.Transport τ]
@@ -44,7 +44,7 @@ def Client.auth [Transport.Transport τ]
     (auth : AuthConfig)
     : Async Unit := do
   let cmd := Command.auth auth
-  let reply ← Client.execute client cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
   client.updateConfig fun c => { c with auth? := some auth }
 
@@ -61,7 +61,7 @@ def Client.select [Transport.Transport τ]
     (database : UInt32)
     : Async Unit := do
   let cmd := Command.select database
-  let reply ← Client.execute client cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
   client.updateConfig fun c => { c with database? := some database }
 

@@ -193,7 +193,7 @@ namespace LeanRedis.CLI
     let cmdName := args[0]!
     let cmdArgs := if args.size > 1 then args.extract 1 args.size else #[]
     let request : CommandRequest := { name := cmdName, args := CommandRequest.utf8Args cmdArgs }
-    execAsync (Client.execute client request) printReply
+    execAsync (client.execute request) printReply
 
   -- ── /help ────────────────────────────────────────────────
 

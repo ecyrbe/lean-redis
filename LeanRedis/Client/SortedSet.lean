@@ -20,7 +20,7 @@ def Client.zAdd [Transport.Transport τ]
     (entries : Array SortedSetEntry)
     : Async Int := do
   let cmd := Command.zAdd key entries
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -37,7 +37,7 @@ def Client.zRem [Transport.Transport τ]
     (members : Array String)
     : Async Int := do
   let cmd := Command.zRem key members
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -53,7 +53,7 @@ def Client.zCard [Transport.Transport τ]
     (key : String)
     : Async Int := do
   let cmd := Command.zCard key
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -69,7 +69,7 @@ def Client.zScore [Transport.Transport τ]
     (key member : String)
     : Async (Option String) := do
   let cmd := Command.zScore key member
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -86,7 +86,7 @@ def Client.zMScore [Transport.Transport τ]
     (members : Array String)
     : Async (Array (Option String)) := do
   let cmd := Command.zMScore key members
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -102,7 +102,7 @@ def Client.zRank [Transport.Transport τ]
     (key member : String)
     : Async (Option Int) := do
   let cmd := Command.zRank key member
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -118,7 +118,7 @@ def Client.zRevRank [Transport.Transport τ]
     (key member : String)
     : Async (Option Int) := do
   let cmd := Command.zRevRank key member
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -135,7 +135,7 @@ def Client.zRange [Transport.Transport τ]
     (start stop : Int)
     : Async (Array String) := do
   let cmd := Command.zRange key start stop
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -152,7 +152,7 @@ def Client.zRangeWithScores [Transport.Transport τ]
     (start stop : Int)
     : Async (Array SortedSetEntry) := do
   let cmd := Command.zRangeWithScores key start stop
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -169,7 +169,7 @@ def Client.zRevRange [Transport.Transport τ]
     (start stop : Int)
     : Async (Array String) := do
   let cmd := Command.zRevRange key start stop
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -186,7 +186,7 @@ def Client.zRevRangeWithScores [Transport.Transport τ]
     (start stop : Int)
     : Async (Array SortedSetEntry) := do
   let cmd := Command.zRevRangeWithScores key start stop
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -202,7 +202,7 @@ def Client.zRangeByScore [Transport.Transport τ]
     (key min max : String)
     : Async (Array String) := do
   let cmd := Command.zRangeByScore key min max
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -218,7 +218,7 @@ def Client.zRangeByScoreWithScores [Transport.Transport τ]
     (key min max : String)
     : Async (Array SortedSetEntry) := do
   let cmd := Command.zRangeByScoreWithScores key min max
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -234,7 +234,7 @@ def Client.zRevRangeByScore [Transport.Transport τ]
     (key max min : String)
     : Async (Array String) := do
   let cmd := Command.zRevRangeByScore key max min
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -250,7 +250,7 @@ def Client.zRevRangeByScoreWithScores [Transport.Transport τ]
     (key max min : String)
     : Async (Array SortedSetEntry) := do
   let cmd := Command.zRevRangeByScoreWithScores key max min
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -266,7 +266,7 @@ def Client.zRangeByLex [Transport.Transport τ]
     (key min max : String)
     : Async (Array String) := do
   let cmd := Command.zRangeByLex key min max
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -282,7 +282,7 @@ def Client.zRevRangeByLex [Transport.Transport τ]
     (key max min : String)
     : Async (Array String) := do
   let cmd := Command.zRevRangeByLex key max min
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -298,7 +298,7 @@ def Client.zCount [Transport.Transport τ]
     (key min max : String)
     : Async Int := do
   let cmd := Command.zCount key min max
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -314,7 +314,7 @@ def Client.zLexCount [Transport.Transport τ]
     (key min max : String)
     : Async Int := do
   let cmd := Command.zLexCount key min max
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -331,7 +331,7 @@ def Client.zRemRangeByRank [Transport.Transport τ]
     (start stop : Int)
     : Async Int := do
   let cmd := Command.zRemRangeByRank key start stop
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -347,7 +347,7 @@ def Client.zRemRangeByScore [Transport.Transport τ]
     (key min max : String)
     : Async Int := do
   let cmd := Command.zRemRangeByScore key min max
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -363,7 +363,7 @@ def Client.zRemRangeByLex [Transport.Transport τ]
     (key min max : String)
     : Async Int := do
   let cmd := Command.zRemRangeByLex key min max
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -379,7 +379,7 @@ def Client.zIncrBy [Transport.Transport τ]
     (key increment member : String)
     : Async String := do
   let cmd := Command.zIncrBy key increment member
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -395,7 +395,7 @@ def Client.zRandMember [Transport.Transport τ]
     (key : String)
     : Async (Option String) := do
   let cmd := Command.zRandMember key
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -412,7 +412,7 @@ def Client.zRandMembers [Transport.Transport τ]
     (count : Int)
     : Async (Array String) := do
   let cmd := Command.zRandMembers key count
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -429,7 +429,7 @@ def Client.zRandMembersWithScores [Transport.Transport τ]
     (count : Int)
     : Async (Array SortedSetEntry) := do
   let cmd := Command.zRandMembersWithScores key count
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -445,7 +445,7 @@ def Client.zDiff [Transport.Transport τ]
     (keys : Array String)
     : Async (Array String) := do
   let cmd := Command.zDiff keys
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -462,7 +462,7 @@ def Client.zDiffStore [Transport.Transport τ]
     (keys : Array String)
     : Async Int := do
   let cmd := Command.zDiffStore destination keys
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -478,7 +478,7 @@ def Client.zInter [Transport.Transport τ]
     (keys : Array String)
     : Async (Array String) := do
   let cmd := Command.zInter keys
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -494,7 +494,7 @@ def Client.zInterCard [Transport.Transport τ]
     (keys : Array String)
     : Async Int := do
   let cmd := Command.zInterCard keys
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -511,7 +511,7 @@ def Client.zInterStore [Transport.Transport τ]
     (keys : Array String)
     : Async Int := do
   let cmd := Command.zInterStore destination keys
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -527,7 +527,7 @@ def Client.zUnion [Transport.Transport τ]
     (keys : Array String)
     : Async (Array String) := do
   let cmd := Command.zUnion keys
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -544,7 +544,7 @@ def Client.zUnionStore [Transport.Transport τ]
     (keys : Array String)
     : Async Int := do
   let cmd := Command.zUnionStore destination keys
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -562,7 +562,7 @@ def Client.zScan [Transport.Transport τ]
     (options : ZScanOptions := {})
     : Async SortedSetScanResult := do
   let cmd := Command.zScan key cursor options
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 end LeanRedis

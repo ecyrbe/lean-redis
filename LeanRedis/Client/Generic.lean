@@ -20,7 +20,7 @@ def Client.copy [Transport.Transport τ]
     (options : CopyOptions := {})
     : Async Bool := do
   let cmd := Command.copy source destination options
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -36,7 +36,7 @@ def Client.del [Transport.Transport τ]
     (keys : Array String)
     : Async Int := do
   let cmd := Command.del keys
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -52,7 +52,7 @@ def Client.dump [Transport.Transport τ]
     (key : String)
     : Async String := do
   let cmd := Command.dump key
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -68,7 +68,7 @@ def Client.exists [Transport.Transport τ]
     (keys : Array String)
     : Async Int := do
   let cmd := Command.exists keys
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -86,7 +86,7 @@ def Client.expire [Transport.Transport τ]
     (option : Option ExpireOption := none)
     : Async Bool := do
   let cmd := Command.expire key seconds option
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -104,7 +104,7 @@ def Client.expireAt [Transport.Transport τ]
     (option : Option ExpireOption := none)
     : Async Bool := do
   let cmd := Command.expireAt key timestamp option
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -120,7 +120,7 @@ def Client.expireTime [Transport.Transport τ]
     (key : String)
     : Async Int := do
   let cmd := Command.expireTime key
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -136,7 +136,7 @@ def Client.keys [Transport.Transport τ]
     (pattern : String)
     : Async (Array String) := do
   let cmd := Command.keys pattern
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -153,7 +153,7 @@ def Client.move [Transport.Transport τ]
     (destinationDb : UInt32)
     : Async Bool := do
   let cmd := Command.move key destinationDb
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -169,7 +169,7 @@ def Client.objectEncoding [Transport.Transport τ]
     (key : String)
     : Async String := do
   let cmd := Command.objectEncoding key
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -185,7 +185,7 @@ def Client.objectFreq [Transport.Transport τ]
     (key : String)
     : Async Int := do
   let cmd := Command.objectFreq key
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -201,7 +201,7 @@ def Client.objectIdleTime [Transport.Transport τ]
     (key : String)
     : Async Int := do
   let cmd := Command.objectIdleTime key
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -217,7 +217,7 @@ def Client.objectRefCount [Transport.Transport τ]
     (key : String)
     : Async Int := do
   let cmd := Command.objectRefCount key
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -233,7 +233,7 @@ def Client.persist [Transport.Transport τ]
     (key : String)
     : Async Bool := do
   let cmd := Command.persist key
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -251,7 +251,7 @@ def Client.pexpire [Transport.Transport τ]
     (option : Option ExpireOption := none)
     : Async Bool := do
   let cmd := Command.pexpire key milliseconds option
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -269,7 +269,7 @@ def Client.pexpireAt [Transport.Transport τ]
     (option : Option ExpireOption := none)
     : Async Bool := do
   let cmd := Command.pexpireAt key timestamp option
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -285,7 +285,7 @@ def Client.pttl [Transport.Transport τ]
     (key : String)
     : Async Int := do
   let cmd := Command.pttl key
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -300,7 +300,7 @@ def Client.randomKey [Transport.Transport τ]
     (client : Client τ)
     : Async (Option String) := do
   let cmd := Command.randomKey
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -316,7 +316,7 @@ def Client.rename [Transport.Transport τ]
     (key newKey : String)
     : Async Unit := do
   let cmd := Command.rename key newKey
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -332,7 +332,7 @@ def Client.renameNx [Transport.Transport τ]
     (key newKey : String)
     : Async Bool := do
   let cmd := Command.renameNx key newKey
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -351,7 +351,7 @@ def Client.restore [Transport.Transport τ]
     (options : RestoreOptions := {})
     : Async Unit := do
   let cmd := Command.restore key ttl serializedValue options
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -368,7 +368,7 @@ def Client.scan [Transport.Transport τ]
     (options : ScanOptions := {})
     : Async ScanResult := do
   let cmd := Command.scan cursor options
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -389,7 +389,7 @@ def Client.sort [Transport.Transport τ]
     (options : SortOptions := {})
     : Async (Array String) := do
   let cmd := Command.sort key options
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -406,7 +406,7 @@ def Client.sortRo [Transport.Transport τ]
     (options : SortRoOptions := {})
     : Async (Array String) := do
   let cmd := Command.sortRo key options
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -422,7 +422,7 @@ def Client.touch [Transport.Transport τ]
     (keys : Array String)
     : Async Int := do
   let cmd := Command.touch keys
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -438,7 +438,7 @@ def Client.ttl [Transport.Transport τ]
     (key : String)
     : Async Int := do
   let cmd := Command.TTL key
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -454,7 +454,7 @@ def Client.type [Transport.Transport τ]
     (key : String)
     : Async String := do
   let cmd := Command.type key
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -470,7 +470,7 @@ def Client.unlink [Transport.Transport τ]
     (keys : Array String)
     : Async Int := do
   let cmd := Command.unlink keys
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 end LeanRedis

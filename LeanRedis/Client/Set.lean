@@ -20,7 +20,7 @@ def Client.sAdd [Transport.Transport τ]
     (members : Array String)
     : Async Int := do
   let cmd := Command.sAdd key members
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -37,7 +37,7 @@ def Client.sRem [Transport.Transport τ]
     (members : Array String)
     : Async Int := do
   let cmd := Command.sRem key members
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -53,7 +53,7 @@ def Client.sCard [Transport.Transport τ]
     (key : String)
     : Async Int := do
   let cmd := Command.sCard key
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -69,7 +69,7 @@ def Client.sIsMember [Transport.Transport τ]
     (key member : String)
     : Async Bool := do
   let cmd := Command.sIsMember key member
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -86,7 +86,7 @@ def Client.sMIsMember [Transport.Transport τ]
     (members : Array String)
     : Async (Array Bool) := do
   let cmd := Command.sMIsMember key members
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -102,7 +102,7 @@ def Client.sMembers [Transport.Transport τ]
     (key : String)
     : Async (Array String) := do
   let cmd := Command.sMembers key
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -118,7 +118,7 @@ def Client.sPop [Transport.Transport τ]
     (key : String)
     : Async (Option String) := do
   let cmd := Command.sPop key
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -135,7 +135,7 @@ def Client.sPopMany [Transport.Transport τ]
     (count : UInt64)
     : Async (Array String) := do
   let cmd := Command.sPopMany key count
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -151,7 +151,7 @@ def Client.sRandMember [Transport.Transport τ]
     (key : String)
     : Async (Option String) := do
   let cmd := Command.sRandMember key
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -168,7 +168,7 @@ def Client.sRandMembers [Transport.Transport τ]
     (count : Int)
     : Async (Array String) := do
   let cmd := Command.sRandMembers key count
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -184,7 +184,7 @@ def Client.sMove [Transport.Transport τ]
     (source destination member : String)
     : Async Bool := do
   let cmd := Command.sMove source destination member
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -200,7 +200,7 @@ def Client.sDiff [Transport.Transport τ]
     (keys : Array String)
     : Async (Array String) := do
   let cmd := Command.sDiff keys
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -217,7 +217,7 @@ def Client.sDiffStore [Transport.Transport τ]
     (keys : Array String)
     : Async Int := do
   let cmd := Command.sDiffStore destination keys
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -233,7 +233,7 @@ def Client.sInter [Transport.Transport τ]
     (keys : Array String)
     : Async (Array String) := do
   let cmd := Command.sInter keys
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -249,7 +249,7 @@ def Client.sInterCard [Transport.Transport τ]
     (keys : Array String)
     : Async Int := do
   let cmd := Command.sInterCard keys
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -266,7 +266,7 @@ def Client.sInterStore [Transport.Transport τ]
     (keys : Array String)
     : Async Int := do
   let cmd := Command.sInterStore destination keys
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -282,7 +282,7 @@ def Client.sUnion [Transport.Transport τ]
     (keys : Array String)
     : Async (Array String) := do
   let cmd := Command.sUnion keys
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -299,7 +299,7 @@ def Client.sUnionStore [Transport.Transport τ]
     (keys : Array String)
     : Async Int := do
   let cmd := Command.sUnionStore destination keys
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -317,7 +317,7 @@ def Client.sScan [Transport.Transport τ]
     (options : SScanOptions := {})
     : Async SetScanResult := do
   let cmd := Command.sScan key cursor options
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 end LeanRedis

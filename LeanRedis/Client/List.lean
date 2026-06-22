@@ -20,7 +20,7 @@ def Client.lPush [Transport.Transport τ]
     (values : Array String)
     : Async Int := do
   let cmd := Command.lPush key values
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -37,7 +37,7 @@ def Client.rPush [Transport.Transport τ]
     (values : Array String)
     : Async Int := do
   let cmd := Command.rPush key values
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -53,7 +53,7 @@ def Client.lPushX [Transport.Transport τ]
     (key value : String)
     : Async Int := do
   let cmd := Command.lPushX key value
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -69,7 +69,7 @@ def Client.rPushX [Transport.Transport τ]
     (key value : String)
     : Async Int := do
   let cmd := Command.rPushX key value
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -85,7 +85,7 @@ def Client.lPop [Transport.Transport τ]
     (key : String)
     : Async (Option String) := do
   let cmd := Command.lPop key
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -101,7 +101,7 @@ def Client.rPop [Transport.Transport τ]
     (key : String)
     : Async (Option String) := do
   let cmd := Command.rPop key
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -117,7 +117,7 @@ def Client.lLen [Transport.Transport τ]
     (key : String)
     : Async Int := do
   let cmd := Command.lLen key
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -134,7 +134,7 @@ def Client.lIndex [Transport.Transport τ]
     (index : Int)
     : Async (Option String) := do
   let cmd := Command.lIndex key index
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -151,7 +151,7 @@ def Client.lRange [Transport.Transport τ]
     (start stop : Int)
     : Async (Array String) := do
   let cmd := Command.lRange key start stop
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -169,7 +169,7 @@ def Client.lSet [Transport.Transport τ]
     (value : String)
     : Async Unit := do
   let cmd := Command.lSet key index value
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -186,7 +186,7 @@ def Client.lTrim [Transport.Transport τ]
     (start stop : Int)
     : Async Unit := do
   let cmd := Command.lTrim key start stop
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -204,7 +204,7 @@ def Client.lRem [Transport.Transport τ]
     (value : String)
     : Async Int := do
   let cmd := Command.lRem key count value
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -222,7 +222,7 @@ def Client.lInsert [Transport.Transport τ]
     (pivot value : String)
     : Async Int := do
   let cmd := Command.lInsert key position pivot value
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -239,7 +239,7 @@ def Client.lMove [Transport.Transport τ]
     (fromWhere toWhere : LMoveWhere)
     : Async (Option String) := do
   let cmd := Command.lMove source destination fromWhere toWhere
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -258,7 +258,7 @@ def Client.lPos [Transport.Transport τ]
   if options.count?.isSome then
     Error.raise <| .decode "LPOS with COUNT returns multiple positions; use lPosMany"
   let cmd := Command.lPos key element options
-  let reply ← Client.execute client <| cmd.request
+  let reply ← client.execute cmd.request
   cmd.decode reply
 
 /--
@@ -278,7 +278,7 @@ def Client.lPosMany [Transport.Transport τ]
   | none => Error.raise <| .decode "lPosMany requires COUNT"
   | some _ =>
       let cmd := Command.lPosMany key element options
-      let reply ← Client.execute client <| cmd.request
+      let reply ← client.execute cmd.request
       cmd.decode reply
 
 end LeanRedis
