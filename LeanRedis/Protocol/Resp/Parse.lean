@@ -51,6 +51,10 @@ def parseLineText : Parser String := do
   | .ok text => return text
   | .error message => fail message
 
+def parseChar : Parser Char := do
+  let byte ← any
+  return Char.ofUInt8 byte
+
 def parseVerbatim (bytes : ByteArray) : Resp.Value :=
   match decodeUtf8 bytes with
   | .ok text =>
@@ -127,35 +131,22 @@ partial def parseMapEntries (count : Nat) : Parser (Array (Resp.Value × Resp.Va
   return acc
 
 partial def parseValue : Parser Resp.Value := do
-  let marker ← any
-  if marker == '+'.toUInt8 then
-    return .simpleString (← parseLineText)
-  if marker == '-'.toUInt8 then
-    return .simpleError (← parseLineText)
-  if marker == ':'.toUInt8 then
-    return ← parseNumber
-  if marker == '_'.toUInt8 then
-    let _ ← parseLineBytes
-    return .null
-  if marker == '#'.toUInt8 then
-    return ← parseBool
-  if marker == ','.toUInt8 then
-    return .double (← parseLineText)
-  if marker == '('.toUInt8 then
-    return .bigNumber (← parseLineText)
-  if marker == '$'.toUInt8 then
-    return ← parseBlobLike Resp.Value.blobString
-  if marker == '='.toUInt8 then
-    return ← parseBlobLike parseVerbatim
-  if marker == '*'.toUInt8 then
-    return ← parseArrayLike Resp.Value.array
-  if marker == '~'.toUInt8 then
-    return ← parseArrayLike Resp.Value.set
-  if marker == '>'.toUInt8 then
-    return ← parseArrayLike Resp.Value.push
-  if marker == '%'.toUInt8 then
-    return ← parseMap
-  fail s!"unsupported RESP marker byte: {marker.toNat}"
+  let marker ← parseChar
+  match marker with
+  | '+' => return .simpleString (← parseLineText)
+  | '-' => return .simpleError (← parseLineText)
+  | ':' => return ← parseNumber
+  | '_' => let _ ← parseLineBytes; return .null
+  | '#' => return ← parseBool
+  | ',' => return .double (← parseLineText)
+  | '(' => return .bigNumber (← parseLineText)
+  | '$' => return ← parseBlobLike Resp.Value.blobString
+  | '=' => return ← parseBlobLike parseVerbatim
+  | '*' => return ← parseArrayLike Resp.Value.array
+  | '~' => return ← parseArrayLike Resp.Value.set
+  | '>' => return ← parseArrayLike Resp.Value.push
+  | '%' => return ← parseMap
+  | _ => fail s!"unsupported RESP marker byte: {marker.toNat}"
 
 end
 
